@@ -724,12 +724,13 @@ function renderPlane(){
   const left=PMAX-st.guesses.length;
   let h=banner()+`<div class="pl"><div class="plimg"><div class="plframe" id="pframe" style="--z:${z};--fx:${fx}%;--fy:${fy}%"><p class="meta">Loading photo…</p></div><p class="meta plcredit" id="pcredit"></p></div><div class="plform">`;
   if(!st.done){
-    const opt=(arr,v,ph)=>`<option value="">${ph}</option>`+arr.map(a=>`<option${a===v?" selected":""}>${esc(a)}</option>`).join("");
+    const bad={mk:new Set(st.guesses.filter(g=>g.mk!==t.v[0]).map(g=>g.mk)),md:new Set(st.guesses.filter(g=>g.md!==t.v[1]).map(g=>g.mk+"|"+g.md)),al:new Set(st.guesses.filter(g=>g.al!==t.v[2]).map(g=>g.al))};
+    const opt=(arr,v,ph,isBad)=>`<option value="">${ph}</option>`+arr.map(a=>{const b=isBad(a);return`<option${a===v&&!b?" selected":""}${b?" disabled":""}>${esc(a)}${b?" ✗":""}</option>`}).join("");
     const models=(st.sel.mk?cur.CAT[st.sel.mk]:[]);
     h+=`<p class="pltitle">Select a make, model and airline</p><div class="plsel">
-      <select id="pmk" aria-label="Make">${opt(makes,st.sel.mk,"Make")}</select>
-      <select id="pmd" aria-label="Model"${st.sel.mk?"":" disabled"}>${opt(models,st.sel.md,st.sel.mk?"Model":"Pick a make first")}</select>
-      <select id="pal" aria-label="Airline">${opt(airlines,st.sel.al,"Airline")}</select></div>
+      <select id="pmk" aria-label="Make">${opt(makes,st.sel.mk,"Make",a=>bad.mk.has(a))}</select>
+      <select id="pmd" aria-label="Model"${st.sel.mk?"":" disabled"}>${opt(models,st.sel.md,st.sel.mk?"Model":"Pick a make first",a=>bad.md.has(st.sel.mk+"|"+a))}</select>
+      <select id="pal" aria-label="Airline">${opt(airlines,st.sel.al,"Airline",a=>bad.al.has(a))}</select></div>
       <button class="btn primary plgo" id="pgo">Guess (${left} left)</button>
       <div class="bar" style="margin-top:8px"><button class="btn" id="shuffle">Shuffle new plane</button><button class="btn" id="giveup">Give up</button></div>`;
   }else{
@@ -751,7 +752,7 @@ function renderPlane(){
   $("#pmd").onchange=e=>{st.sel.md=e.target.value};
   $("#pal").onchange=e=>{st.sel.al=e.target.value};
   $("#pgo").onclick=()=>{const g={mk:st.sel.mk,md:st.sel.md,al:st.sel.al};if(!g.mk||!g.md||!g.al){$("#pgo").textContent="Pick a make, model and airline";return}
-    st.guesses.push(g);if(g.mk===t.v[0]&&g.md===t.v[1]&&g.al===t.v[2]){st.done=true;st.won=true;bump(true)}else if(st.guesses.length>=PMAX){st.done=true;st.won=false;bump(false)}render()};
+    st.guesses.push(g);if(g.mk!==t.v[0]){st.sel.mk="";st.sel.md=""}else if(g.md!==t.v[1])st.sel.md="";if(g.al!==t.v[2])st.sel.al="";if(g.mk===t.v[0]&&g.md===t.v[1]&&g.al===t.v[2]){st.done=true;st.won=true;bump(true)}else if(st.guesses.length>=PMAX){st.done=true;st.won=false;bump(false)}render()};
 }
 
 function searchBar(placeholder){
