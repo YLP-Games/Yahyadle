@@ -794,6 +794,7 @@ function songPool(){
 }
 GAMES.push({id:"song",name:"Songdle",tag:"Guess the song",c:"#1ed760",modes:["Song","Artist"],listName:"Song list",
   attrs:[["Artist"],["Year","num"],["Genre"],["From"]],get items(){return songPool().map(x=>({name:x.name,v:[x.v[0],x.v[1],x.v[2],x.src]}))}});
+if(store.last==="song"){cur=GAMES.find(g=>g.id==="song");mode="Song"}
 function songRound(){const pool=songPool();return{target:pool.length?pick(pool,"song"):null,guesses:[],done:false,step:0}}
 let songAudio=null,songTimer=null;
 function songStop(){if(songTimer){clearTimeout(songTimer);songTimer=null}if(songAudio){songAudio.pause()}document.querySelectorAll(".sg-play").forEach(b=>b.classList.remove("playing"))}
@@ -889,17 +890,11 @@ function parseCSV(text){
 fetch("playlists.json",{cache:"no-cache"}).then(r=>r.ok?r.json():null).then(p=>{if(!p)return;for(const w of ["layla","yahya"])if(Array.isArray(p[w])&&p[w].length&&!PLAY[w].length)PLAY[w]=p[w];if(cur.id==="song")render()}).catch(()=>{});
 
 const FLAME='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c1 3.5-1.5 5-1.5 7.5 0 1.4 1 2.5 2.3 2.5 1.5 0 2.4-1.2 2.2-3 2.6 1.9 4 4.6 4 7.5A7 7 0 0 1 5 16.5c0-4.6 4.2-7.2 7-14.5z"/></svg>';
-<<<<<<< Updated upstream
 // Franchise logos from Wikimedia Commons (public-domain text logos): [file, width, height, "dle" text]
 const LOGOS={bleach:["bleach.webp",822,180,"DLE"],jjk:["jjk.svg",1261,278,"DLE"],clover:["clover.webp",1027,180,"dle"],hxh:["hxh.webp",416,180,"DLE"],sw:["sw.svg",636,290,"DLE"],marvel:["marvel.svg",149,67,"DLE"],hp:["hp.svg",1730,579,"dle"]};
 function banner(){const m=/dle$/i.test(cur.name)?[cur.name.slice(0,-3),"dle"]:[cur.name.slice(0,-3),cur.name.slice(-3)];const n=m[0];const s=store[cur.id]||{w:0,streak:0,best:0};const L=LOGOS[cur.id];
   return (L?`<div class="logo img" role="img" aria-label="${esc(cur.name)}"><img src="logos/${L[0]}" width="${L[1]}" height="${L[2]}" alt="" fetchpriority="high"><span>${L[3]}</span></div>`:`<div class="logo">${esc(n)}<span>${esc(m[1])}</span></div>`)+`<div class="chips"><span class="chip" title="Current win streak">${FLAME}Streak ${s.streak}</span><span class="chip ghost">Best ${s.best||0}</span><span class="chip ghost">Wins ${s.w}</span></div>`}
-function render(){renderCarts();renderTabs();mode==="Character list"?renderList():mode==="Classic"?(cur.id==="plane"?renderPlane():renderClassic()):renderClue()}
-=======
-function banner(){const m=/dle$/i.test(cur.name)?[cur.name.slice(0,-3),"dle"]:[cur.name.slice(0,-3),cur.name.slice(-3)];const n=m[0];const s=store[cur.id]||{w:0,streak:0,best:0};
-  return `<div class="logo">${esc(n)}<span>${esc(m[1])}</span></div><div class="chips"><span class="chip" title="Current win streak">${FLAME}Streak ${s.streak}</span><span class="chip ghost">Best ${s.best||0}</span><span class="chip ghost">Wins ${s.w}</span></div>`}
 function render(){renderCarts();renderTabs();if(cur.id!=="song")songStop();mode==="Character list"?renderList():cur.id==="song"?renderSong():mode==="Classic"?(cur.id==="plane"?renderPlane():renderClassic()):renderClue()}
->>>>>>> Stashed changes
 const PZ=[3,2.3,1.75,1.35,1.1],PMAX=5;
 function renderPlane(){
   const st=state(),t=st.target;
@@ -1013,11 +1008,7 @@ function renderList(){
   const ss=$("#sortsel");if(ss)ss.onchange=()=>{const c=+ss.value;if(c===sortCol)sortDir*=-1;else{sortCol=c;sortDir=1}renderList()};
   document.querySelectorAll("th[data-c]").forEach(th=>th.onclick=()=>{const c=+th.dataset.c;if(c===sortCol)sortDir*=-1;else{sortCol=c;sortDir=1}renderList()});
 }
-<<<<<<< Updated upstream
-$("#carts").onclick=e=>{const b=e.target.closest(".cart");if(!b)return;cur=GAMES.find(g=>g.id===b.dataset.id);store.last=cur.id;save();if(mode!=="Character list"&&mode!=="Classic"&&!(cur.clues||{})[mode])mode="Classic";sortCol=0;filter="";render()};
-=======
-$("#carts").onclick=e=>{const b=e.target.closest(".cart");if(!b)return;cur=GAMES.find(g=>g.id===b.dataset.id);if(mode!=="Character list"&&mode!=="Classic"&&!(cur.clues||{})[mode]&&!(cur.modes||[]).includes(mode))mode="Classic";if(cur.modes&&mode==="Classic")mode=cur.modes[0];sortCol=0;songStop();filter="";render()};
->>>>>>> Stashed changes
+$("#carts").onclick=e=>{const b=e.target.closest(".cart");if(!b)return;cur=GAMES.find(g=>g.id===b.dataset.id);store.last=cur.id;save();if(mode!=="Character list"&&mode!=="Classic"&&!(cur.clues||{})[mode]&&!(cur.modes||[]).includes(mode))mode="Classic";if(cur.modes&&mode==="Classic")mode=cur.modes[0];sortCol=0;songStop();filter="";render()};
 $("#tabs").onclick=e=>{const b=e.target.closest(".tab");if(!b)return;mode=b.dataset.m;sortCol=0;render()};
 render();
 // Warm the cache with the other logos once the page is idle, so switching games doesn't flash
