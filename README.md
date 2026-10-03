@@ -35,7 +35,9 @@ then open http://localhost:8765. Opening `index.html` straight from disk also wo
 Unofficial fan project, not affiliated with any of the original sites or rights holders.
 
 ## Songdle
-- Audio comes from free 30-second iTunes previews, looked up by song and artist (US store first, then the UK store). If a song has no preview, a new one is dealt automatically.
+- Audio comes from free 30-second iTunes previews. Songs in `playlists.json` carry their iTunes track ID (`"i"`, plus `"c":"GB"` for UK-only tracks), so each clip is one exact lookup. Songs without an ID fall back to searching by song and artist (US store, then UK). If a song has no preview, a new one is dealt automatically.
+- While you play a round, the next song is picked and its clip loads in the background, so **Next song** starts instantly.
+- After adding songs to `playlists.json`, run `python3 tools/itunes_ids.py` to look up IDs for the new ones. It works through each artist's iTunes catalogue (more reliable than song search) and corrects years to the original release. Add `--retry-missing` to retry songs it couldn't find before.
 - The play bar works like Songspot's: drag or tap it (or use the arrow keys) to move around inside the unlocked part of the clip. Once the round is over it covers the whole preview.
 - Built-in chart pool with genre and era filters, or play your own playlists: export from Spotify (exportify.app) or Apple Music (tunemymusic.com) as CSV and import it in the Songdle tab, or add a shared `playlists.json` to the repo.
 - `playlists.json` holds both playlists. Layla's has 2,099 songs from her Spotify export. Yahya's is his Apple Music library: 1,488 songs, covering every song in the library plus songs that are only in his playlists. Untagged local files were identified from their file names; a digital booklet, a 20-second clip and one unidentifiable file with no local copy were left out, and duplicates were merged.
