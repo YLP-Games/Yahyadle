@@ -327,6 +327,8 @@ html[data-game="song"]{--bg:#0a0f0c;--panel:#111a14;--panel2:#1a271e;--line:#2a3
 .sg-rows{display:flex;flex-direction:column;gap:6px;max-width:720px;margin:10px auto 0}
 .sg-row{display:flex;gap:6px}
 .sg-row span{flex:1;min-width:0;border-radius:8px;padding:8px;text-align:center;font-weight:600;font-size:14px;overflow-wrap:anywhere;animation:flip .35s both}
+.sg-own{display:block;width:fit-content;margin-top:8px;padding:4px 11px;border-radius:999px;font:700 12px var(--body);background:var(--panel2);border:1px solid var(--line);color:var(--fg)}
+.sg-own.both{background:var(--accent);border-color:var(--accent);color:var(--on-accent,#0b1a10)}
 .sg-row span.wide{flex:1}
 .sg-row small{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.06em;opacity:.8}
 .sg-row .hit{background:var(--hit)}.sg-row .miss{background:var(--miss)}
@@ -811,10 +813,29 @@ const ERAS=[["All",0,9999],["Classic",0,1999],["2000s",2000,2009],["2010s",2010,
 let YEARFIX={};try{YEARFIX=JSON.parse(localStorage.getItem("songyears")||"{}")}catch(e){}
 const mkSong=(t,a,y,g,src)=>{const f=YEARFIX[t+"|"+a];y=+y||0;if(f&&(!y||f<y))y=f;return{name:t,v:[a,[y,y?String(y):"?"],g||"—"],src}};
 function applyYear(song,info){const y=info&&info.year;if(!y)return false;const cy=song.v[1][0];if(cy&&cy<=y)return false;song.v[1]=[y,String(y)];YEARFIX[song.name+"|"+song.v[0]]=y;try{localStorage.setItem("songyears",JSON.stringify(YEARFIX))}catch(e){}return true}
+// Same song on both playlists? Match on title + main artist, ignoring feat. credits, remaster/edit tags, accents and punctuation
+// (so Apple Music's "Dave & Central Cee" matches a Spotify export's "Dave"). Remixes, live and sped-up versions stay separate.
+const songKey=(t,a)=>{const n=x=>String(x).normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase(),k=x=>x.replace(/[^a-z0-9]+/g," ").trim();
+  const title=n(t).replace(/\s*[(\[][^)\]]*\b(feat|ft|with|remaster(ed)?|explicit|clean|radio edit|single version|album version)\b[^)\]]*[)\]]/g,"")
+    .replace(/\s+-\s+.*\b(remaster(ed)?|radio edit|single version|album version|explicit)\b.*$/,"").replace(/\s+(feat|ft)\.?\s.*$/,"");
+  const artist=n(a).split(/\s*(?:&|,|;|\bx\b|\bfeat\.?|\bft\.?|\bwith\b|\band\b)\s*/)[0].replace(/^the\s+/,"");
+  return k(title)+"|"+k(artist)};
+// "Both playlists": one entry per song, remembering whose playlists it's on
+let bothCache=null;
+function bothSongs(){
+  if(bothCache&&bothCache.l===PLAY.layla&&bothCache.y===PLAY.yahya)return bothCache.out;
+  const m=new Map();
+  for(const [w,who] of [["layla","Layla"],["yahya","Yahya"]])for(const r of PLAY[w]){const k=songKey(r.t,r.a),o=m.get(k);
+    if(!o){m.set(k,{t:r.t,a:r.a,y:r.y,g:r.g,who:[who]});continue}
+    if(!o.who.includes(who))o.who.push(who);
+    if(String(r.a).length>String(o.a).length){o.t=r.t;o.a=r.a}   // keep the fuller artist credit
+    if(+r.y&&(!+o.y||+r.y<+o.y))o.y=r.y;if(!o.g&&r.g)o.g=r.g}
+  const out=[...m.values()];bothCache={l:PLAY.layla,y:PLAY.yahya,out,shared:out.filter(x=>x.who.length>1).length};return out}
 function songPool(){
   let p;
   if(SONG.src==="charts")p=CHARTS.map(r=>mkSong(r[0],r[1],r[2],r[3],"Charts"));
-  else{const who=SONG.src==="both"?["layla","yahya"]:[SONG.src];p=who.flatMap(w=>PLAY[w].map(r=>mkSong(r.t,r.a,r.y,r.g,w==="layla"?"Layla":"Yahya")));}
+  else if(SONG.src==="both")p=bothSongs().map(r=>{const x=mkSong(r.t,r.a,r.y,r.g,r.who.length>1?"Both":r.who[0]);x.who=r.who;return x});
+  else p=PLAY[SONG.src].map(r=>mkSong(r.t,r.a,r.y,r.g,SONG.src==="layla"?"Layla":"Yahya"));
   const e=ERAS.find(x=>x[0]===SONG.era)||ERAS[0];
   return p.filter(x=>(SONG.genre==="All"||x.v[2]===SONG.genre)&&(e[0]==="All"||(x.v[1][0]>=e[1]&&x.v[1][0]<=e[2])));
 }
@@ -856,7 +877,7 @@ function renderSong(){
   const genres=["All",...new Set((SONG.src==="charts"?CHARTS.map(r=>r[3]):[...PLAY.layla,...PLAY.yahya].map(r=>r.g).filter(Boolean)))];
   const srcs=[["charts","Charts"],["layla","Layla's playlist"],["yahya","Yahya's playlist"],["both","Both playlists"]];
   let h=banner();
-  h+=`<div class="sg-filters"><label>Songs from <select id="sg-src">${srcs.map(([k,l])=>`<option value="${k}"${SONG.src===k?" selected":""}>${l}${k!=="charts"&&k!=="both"?` (${PLAY[k].length})`:k==="both"?` (${PLAY.layla.length+PLAY.yahya.length})`:""}</option>`).join("")}</select></label>
+  h+=`<div class="sg-filters"><label>Songs from <select id="sg-src">${srcs.map(([k,l])=>`<option value="${k}"${SONG.src===k?" selected":""}>${l}${k!=="charts"&&k!=="both"?` (${PLAY[k].length})`:k==="both"?` (${bothSongs().length}${bothCache.shared?`, ${bothCache.shared} on both`:""})`:""}</option>`).join("")}</select></label>
     <label>Genre <select id="sg-genre">${genres.map(g=>`<option${SONG.genre===g?" selected":""}>${esc(g)}</option>`).join("")}</select></label>
     <label>Era <select id="sg-era">${ERAS.map(e=>`<option${SONG.era===e[0]?" selected":""}>${e[0]}</option>`).join("")}</select></label></div>`;
   if(!t){h+=`<div class="clue"><span class="k">No songs here yet</span>${SONG.src==="charts"?"No chart songs match these filters. Try another genre or era.":"This playlist is empty. Import it below, or pick Charts."}</div>`+songImport();$("#stage").innerHTML=h;wireSongFilters();return}
@@ -865,7 +886,7 @@ function renderSong(){
     <label class="sg-vol" for="sg-vol"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z"/></svg><span class="sr">Volume</span><input type="range" id="sg-vol" min="0" max="100" step="1" value="${Math.round(songVol*100)}" aria-label="Volume"><output id="sg-vol-out">${Math.round(songVol*100)}%</output></label>
     <div class="sg-meter">${CLIPS.map((c,i)=>`<span class="${i<=step||st.done?"on":""}" >${c}s</span>`).join("")}</div>
     <p class="meta" id="sg-status">${st.done?"Full preview":"Clip: "+len+"s"} · loading…</p></div>`;
-  if(st.done)h+=`<div class="win ${st.won?"":"lose"}"><img id="sg-art" class="av big" alt="" hidden><div><h3>${st.won?"Got it":"It was"}: ${esc(t.name)}</h3><span class="meta">${esc(t.v[0])} · ${esc(t.v[1][1])}${t.v[2]!=="—"?" · "+esc(t.v[2]):""} · ${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span></div></div>`;
+  if(st.done)h+=`<div class="win ${st.won?"":"lose"}"><img id="sg-art" class="av big" alt="" hidden><div><h3>${st.won?"Got it":"It was"}: ${esc(t.name)}</h3><span class="meta">${esc(t.v[0])} · ${esc(t.v[1][1])}${t.v[2]!=="—"?" · "+esc(t.v[2]):""} · ${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span>${t.who?`<span class="sg-own${t.who.length>1?" both":""}">${t.who.length>1?"On both your playlists":"Only on "+esc(t.who[0])+"'s playlist"}</span>`:""}</div></div>`;
   else h+=`<div class="bar"><div class="search"><input id="guess" autocomplete="off" placeholder="${artistMode?"Type an artist…":"Type a song title…"}" aria-label="Guess"><ul class="sugg" id="sugg" hidden></ul></div>
     <button class="btn primary" id="go">Guess</button><button class="btn" id="giveup">Give up</button></div>
     <p class="meta" style="text-align:center">${CLIPS.length-st.guesses.length} guess${CLIPS.length-st.guesses.length===1?"":"es"} left</p>`;
