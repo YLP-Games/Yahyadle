@@ -150,6 +150,40 @@ table.g tr.new td{animation:flip .35s both}
   table.list tr:hover td{background:none}
   .sortsel{background:var(--panel2);border:1px solid var(--line);color:var(--fg);font:14px var(--body);padding:10px;border-radius:9px;width:100%}
 }
+
+/* ---- Scale v3: original-dle-sized tiles ---- */
+:root{--tile:88px}
+table.g{border-spacing:6px}
+table.g th{font-size:12px;padding:4px}
+table.g th:first-child{width:calc(var(--tile) + 12px)}
+table.g td{height:var(--tile);font-size:14px;padding:8px 6px;border-radius:9px;box-shadow:inset 0 0 0 2px rgba(0,0,0,.18)}
+table.g td.name{padding:0;text-align:center;background:transparent;box-shadow:none}
+table.g td.name .av{width:var(--tile);height:var(--tile);margin:0;border-radius:9px;display:block}
+table.g td.name .nm{display:block;font:600 11px/1.2 var(--body);color:var(--muted);margin-top:4px;white-space:normal;overflow-wrap:anywhere}
+table.g td.name.noimg{background:transparent;font:600 13px var(--body);padding:4px}
+td .arr{font-size:20px;margin-top:2px}
+.av.big{width:150px;height:150px}
+.sugg .av{width:40px;height:40px}
+.sugg li{padding:6px 10px;font-size:15px}
+table.list td{padding:10px 8px;vertical-align:middle}
+table.list .av{width:52px;height:52px}
+@media (min-width:701px){
+  :root{--tile:clamp(84px,calc((100vw - 180px) / 11),118px)}
+  table.g{width:auto;table-layout:auto;margin:0 auto}
+  table.g th{width:var(--tile);max-width:var(--tile)}
+  table.g td{width:var(--tile);min-width:var(--tile);max-width:var(--tile);font-size:13px;line-height:1.25}
+}
+@media (min-width:1500px){table.g td{font-size:14px}}
+@media (max-width:700px){
+  :root{--tile:64px}
+  table.g td{min-height:64px;font-size:13px;box-shadow:none}
+  table.g td.name{background:transparent;text-align:left;flex-direction:row;align-items:center;gap:12px}
+  table.g td.name .av{width:64px;height:64px}
+  table.g td.name .nm{display:inline;font:600 16px var(--body);color:var(--fg);margin:0}
+  td .arr{font-size:16px}
+  .av.big{width:96px;height:96px}
+  table.list .av{width:48px;height:48px}
+}
 </style>
 </head>
 <body>
@@ -591,7 +625,7 @@ function renderClassic(){
   if(cur.photos)h+=`<div id="pphoto" style="margin-bottom:14px"><p class="meta">Loading photo…</p></div>`;
   if(cur.hints)h+=`<div class="bar">${cur.hints.map(([n,l,k])=>st.done||st.guesses.length>=n?`<span class="clue" style="margin:0;padding:10px 14px;font-size:14px;flex:1 1 220px"><span class="k">${l}</span>${esc(t[k]||"—")}</span>`:`<span class="btn" style="cursor:default;opacity:.6">${l} in ${n-st.guesses.length}</span>`).join("")}</div>`;
   h+=`<div class="gridwrap"><table class="g"><thead><tr><th style="text-align:left">${cur.id==="plane"?"Aircraft":"Character"}</th>${cur.attrs.map(a=>`<th>${a[0]}</th>`).join("")}</tr></thead><tbody>`;
-  h+=st.guesses.slice().reverse().map((g,gi)=>`<tr${gi===0&&!st.done?' class="new"':""}><td class="name">${av(g.img)}${esc(g.name)}</td>${cur.attrs.map((a,i)=>{const[c,arr]=cmp(a,g.v[i],t.v[i]);return`<td class="${c}" data-l="${a[0]}" style="animation-delay:${i*90}ms">${esc(fmt(a,g.v[i]))}${arr?`<span class="arr">${arr}</span>`:""}</td>`}).join("")}</tr>`).join("");
+  h+=st.guesses.slice().reverse().map((g,gi)=>`<tr${gi===0&&!st.done?' class="new"':""}><td class="name${g.img?"":" noimg"}" title="${esc(g.name)}">${av(g.img)}<span class="nm">${esc(g.name)}</span></td>${cur.attrs.map((a,i)=>{const[c,arr]=cmp(a,g.v[i],t.v[i]);return`<td class="${c}" data-l="${a[0]}" style="animation-delay:${i*90}ms">${esc(fmt(a,g.v[i]))}${arr?`<span class="arr">${arr}</span>`:""}</td>`}).join("")}</tr>`).join("");
   h+=`</tbody></table></div>`;
   if(!st.guesses.length)h+=`<p class="meta">Make a guess. Each column turns green on a match, amber on a partial match, red on a miss. Arrows point toward the answer.</p>`;
   h+=`<div class="legend"><span><i style="background:var(--hit)"></i>Correct</span><span><i style="background:var(--near)"></i>Partial</span><span><i style="background:var(--miss)"></i>Wrong</span><span>↑ ↓ higher / later, lower / earlier</span></div>`;
