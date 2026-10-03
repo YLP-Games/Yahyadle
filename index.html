@@ -349,6 +349,12 @@ table.list td.name .nm{overflow-wrap:anywhere}
 span.sg-side{visibility:hidden}
 .sg-side small{font:600 11px var(--mono);color:var(--muted)}
 @media (max-width:700px){.sg-controls{gap:10px}.sg-side{min-width:0;flex:1;padding:10px 8px}}
+
+.sg-vol{display:flex;align-items:center;gap:8px;color:var(--muted);font:600 12px var(--mono)}
+.sg-vol svg{width:18px;height:18px}
+.sg-vol input{width:min(220px,50vw);accent-color:var(--accent);cursor:pointer}
+.sg-vol output{min-width:3.5ch;text-align:right}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 </style>
 </head>
 <body>
@@ -813,7 +819,7 @@ GAMES.push({id:"song",name:"Songdle",tag:"Guess the song",c:"#1ed760",modes:["So
   attrs:[["Artist"],["Year","num"],["Genre"],["From"]],get items(){return songPool().map(x=>({name:x.name,v:[x.v[0],x.v[1],x.v[2],x.src]}))}});
 if(store.last==="song"){cur=GAMES.find(g=>g.id==="song");mode="Song"}
 function songRound(){const pool=songPool();return{target:pool.length?pick(pool,"song"):null,guesses:[],done:false,step:0}}
-let songAudio=null,songTimer=null;
+let songAudio=null,songTimer=null;let songVol=0.8;try{const v=parseFloat(localStorage.getItem("songvol"));if(v>=0&&v<=1)songVol=v}catch(e){}
 function songStop(){if(songTimer){clearTimeout(songTimer);songTimer=null}if(songAudio){songAudio.pause()}document.querySelectorAll(".sg-play").forEach(b=>{b.classList.remove("playing");b.setAttribute("aria-label","Play")})}
 const prevCache={};
 function jsonp(url){return new Promise((res,rej)=>{const cb="__jp"+Math.random().toString(36).slice(2);const sc=document.createElement("script");const t=setTimeout(()=>{cleanup();rej(new Error("timeout"))},9000);
@@ -846,6 +852,7 @@ function renderSong(){
   if(!t){h+=`<div class="clue"><span class="k">No songs here yet</span>${SONG.src==="charts"?"No chart songs match these filters. Try another genre or era.":"This playlist is empty. Import it below, or pick Charts."}</div>`+songImport();$("#stage").innerHTML=h;wireSongFilters();return}
   const step=Math.min(st.guesses.length,CLIPS.length-1),len=st.done?0:CLIPS[step];
   h+=`<div class="sg-player"><div class="sg-controls">${st.done?`<span class="sg-side"></span>`:`<button class="btn sg-side" id="skip">Skip<small>+${CLIPS[Math.min(step+1,CLIPS.length-1)]}s</small></button>`}<button class="sg-play" id="sg-play" aria-label="Play"><svg class="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><svg class="i-pause" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></button><button class="btn sg-side" id="shuffle">${st.done?"Next song":"New song"}</button></div>
+    <label class="sg-vol" for="sg-vol"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z"/></svg><span class="sr">Volume</span><input type="range" id="sg-vol" min="0" max="100" step="1" value="${Math.round(songVol*100)}" aria-label="Volume"><output id="sg-vol-out">${Math.round(songVol*100)}%</output></label>
     <div class="sg-meter">${CLIPS.map((c,i)=>`<span class="${i<=step||st.done?"on":""}" >${c}s</span>`).join("")}</div>
     <p class="meta" id="sg-status">${st.done?"Full preview":"Clip: "+len+"s"} · loading…</p></div>`;
   if(st.done)h+=`<div class="win ${st.won?"":"lose"}"><img id="sg-art" class="av big" alt="" hidden><div><h3>${st.won?"Got it":"It was"}: ${esc(t.name)}</h3><span class="meta">${esc(t.v[0])} · ${esc(t.v[1][1])}${t.v[2]!=="—"?" · "+esc(t.v[2]):""} · ${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span></div></div>`;
@@ -864,9 +871,10 @@ function renderSong(){
   const status=$("#sg-status"),play=$("#sg-play");songAudio=null;
   findPreview(t).then(p=>{if(!$("#sg-play"))return;
     if(!p){status.textContent="No preview found for this song. Press New song.";return}
-    songAudio=new Audio(p.url);songAudio.preload="auto";status.textContent=(st.done?"Full preview":"Clip: "+len+"s")+" · press play";if(st.done&&st.won&&!st.autoplayed){st.autoplayed=true;status.textContent="Full preview · playing";playClip(0,$("#sg-play"))}
+    songAudio=new Audio(p.url);songAudio.preload="auto";songAudio.volume=songVol;status.textContent=(st.done?"Full preview":"Clip: "+len+"s")+" · press play";if(st.done&&st.won&&!st.autoplayed){st.autoplayed=true;status.textContent="Full preview · playing";playClip(0,$("#sg-play"))}
     if(st.done){const a=$("#sg-art");if(a&&p.art){a.src=p.art;a.hidden=false}}
   }).catch(()=>{if(status)status.textContent="Couldn't reach the preview service. Song audio works on the GitHub Pages site."});
+  const vol=$("#sg-vol");if(vol)vol.oninput=()=>{songVol=vol.value/100;if(songAudio)songAudio.volume=songVol;$("#sg-vol-out").textContent=vol.value+"%";try{localStorage.setItem("songvol",String(songVol))}catch(e){}};
   play.onclick=()=>{if(songAudio&&!songAudio.paused){songStop();play.setAttribute("aria-label","Play")}else if(st.done&&songAudio&&songAudio.currentTime>0&&!songAudio.ended){const q=songAudio.play();if(q&&q.catch)q.catch(()=>{});play.classList.add("playing");play.setAttribute("aria-label","Pause")}else{playClip(len,play);play.setAttribute("aria-label","Pause")}};
   const sh=$("#shuffle");sh.onclick=()=>{songStop();lastAns[cur.id+mode]=t.name+" — "+t.v[0];S[cur.id+":"+mode]=newRound();render()};
   if(st.done)return;
