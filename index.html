@@ -815,11 +815,11 @@ const mkSong=(t,a,y,g,src)=>{const f=YEARFIX[t+"|"+a];y=+y||0;if(f&&(!y||f<y))y=
 function applyYear(song,info){const y=info&&info.year;if(!y)return false;const cy=song.v[1][0];if(cy&&cy<=y)return false;song.v[1]=[y,String(y)];YEARFIX[song.name+"|"+song.v[0]]=y;try{localStorage.setItem("songyears",JSON.stringify(YEARFIX))}catch(e){}return true}
 // Same song on both playlists? Match on title + main artist, ignoring feat. credits, remaster/edit tags, accents and punctuation
 // (so Apple Music's "Dave & Central Cee" matches a Spotify export's "Dave"). Remixes, live and sped-up versions stay separate.
+const mainArtist=a=>String(a).normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase().split(/\s*(?:&|,|;|\bx\b|\bfeat\.?|\bft\.?|\bwith\b|\band\b)\s*/)[0].replace(/^the\s+/,"").replace(/[^a-z0-9]+/g," ").trim();
 const songKey=(t,a)=>{const n=x=>String(x).normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase(),k=x=>x.replace(/[^a-z0-9]+/g," ").trim();
   const title=n(t).replace(/\s*[(\[][^)\]]*\b(feat|ft|with|remaster(ed)?|explicit|clean|radio edit|single version|album version)\b[^)\]]*[)\]]/g,"")
     .replace(/\s+-\s+.*\b(remaster(ed)?|radio edit|single version|album version|explicit)\b.*$/,"").replace(/\s+(feat|ft)\.?\s.*$/,"");
-  const artist=n(a).split(/\s*(?:&|,|;|\bx\b|\bfeat\.?|\bft\.?|\bwith\b|\band\b)\s*/)[0].replace(/^the\s+/,"");
-  return k(title)+"|"+k(artist)};
+  return k(title)+"|"+mainArtist(a)};
 // "Both playlists": one entry per song, remembering whose playlists it's on
 let bothCache=null;
 function bothSongs(){
@@ -874,7 +874,7 @@ function playClip(sec,btn){
 function renderSong(){
   songStop();
   const st=state(),t=st.target,artistMode=mode==="Artist";
-  const genres=["All",...new Set((SONG.src==="charts"?CHARTS.map(r=>r[3]):[...PLAY.layla,...PLAY.yahya].map(r=>r.g).filter(Boolean)))];
+  const genres=["All",...new Set((SONG.src==="charts"?CHARTS.map(r=>r[3]):(SONG.src==="both"?[...PLAY.layla,...PLAY.yahya]:PLAY[SONG.src]).map(r=>r.g).filter(Boolean)))];
   const srcs=[["charts","Charts"],["layla","Layla's playlist"],["yahya","Yahya's playlist"],["both","Both playlists"]];
   let h=banner();
   h+=`<div class="sg-filters"><label>Songs from <select id="sg-src">${srcs.map(([k,l])=>`<option value="${k}"${SONG.src===k?" selected":""}>${l}${k!=="charts"&&k!=="both"?` (${PLAY[k].length})`:k==="both"?` (${bothSongs().length}${bothCache.shared?`, ${bothCache.shared} on both`:""})`:""}</option>`).join("")}</select></label>
@@ -892,7 +892,7 @@ function renderSong(){
     <p class="meta" style="text-align:center">${CLIPS.length-st.guesses.length} guess${CLIPS.length-st.guesses.length===1?"":"es"} left</p>`;
   h+=`<div class="sg-rows">`+st.guesses.slice().reverse().map(g=>{if(g.skip)return`<div class="sg-row"><span class="miss wide">Skipped</span></div>`;
     const yr=g.v[1][0],ty=t.v[1][0],ya=!yr||!ty||yr===ty?"":ty>yr?"↑":"↓";
-    const cells=artistMode?[["Artist",g.v[0],g.v[0]===t.v[0]]]:[["Song",g.name,g.name===t.name&&g.v[0]===t.v[0]],["Artist",g.v[0],g.v[0]===t.v[0]]];
+    const cells=artistMode?[["Artist",g.v[0],mainArtist(g.v[0])===mainArtist(t.v[0])]]:[["Song",g.name,g.name===t.name&&g.v[0]===t.v[0]],["Artist",g.v[0],mainArtist(g.v[0])===mainArtist(t.v[0])]];
     cells.push(["Year",(g.v[1][1]||"?")+(ya?" "+ya:""),yr&&yr===ty]);
     return`<div class="sg-row">${cells.map(([l,v,ok])=>`<span class="${ok?"hit":"miss"}"><small>${l}</small>${esc(v)}</span>`).join("")}</div>`}).join("")+`</div>`;
   if(lastAns[cur.id+mode])h+=`<p class="prev">Previous song was <b>${esc(lastAns[cur.id+mode])}</b></p>`;
@@ -903,7 +903,7 @@ function renderSong(){
   findPreview(t).then(p=>{if(!$("#sg-play"))return;if(p&&applyYear(t,p)){render();return}if(p&&p.none)p=null;
     // No clip for this one (it happens for a few songs Apple's search can't find): quietly deal another before anyone has guessed
     if(!p){const k=cur.id+":"+mode;if(!st.done&&!st.guesses.length&&S[k]===st&&(st.auto||0)<5){const n=songRound();n.auto=(st.auto||0)+1;S[k]=n;render();return}
-      status.textContent="No preview found for this song. Press New song.";return}
+      status.textContent=st.done?"No preview found for this song.":"No preview found for this song. Press Give up to get another one.";return}
     songAudio=new Audio(p.url);songAudio.preload="auto";songAudio.volume=songVol;status.textContent=(st.done?"Full preview":"Clip: "+len+"s")+" · press play";if(st.done&&st.won&&!st.autoplayed){st.autoplayed=true;status.textContent="Full preview · playing";playClip(0,$("#sg-play"))}
     if(st.done){const a=$("#sg-art");if(a&&p.art){a.src=p.art;a.hidden=false}}
   }).catch(()=>{if(status)status.textContent="Couldn't reach the preview service. Song audio works on the GitHub Pages site."});
