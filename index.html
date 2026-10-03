@@ -87,7 +87,7 @@ table.list tr:hover td{background:var(--panel2)}
   <nav class="carts" id="carts" aria-label="Games"></nav>
   <div class="tabs" id="tabs"></div>
   <section class="stage" id="stage"></section>
-  <p class="note">Bleachdle, Jujutsudle, Cloverdle, Hunterdle, Starwarsdle and Marveldle use the character databases from their sites. Jujutsudle and Hunterdle only include characters who have appeared in the anime so far (JJK through season 3, HxH through the Election arc). Harry Potterdle uses the site's character and spell lists, with details checked against the books. Planespottle uses a hand-compiled list. Quote mode uses paraphrased lines.</p>
+  <p class="note">Bleachdle, Jujutsudle, Cloverdle, Hunterdle, Starwarsdle and Marveldle use the character databases from their sites. Jujutsudle and Hunterdle only include characters who have appeared in the anime so far (JJK through season 3, HxH through the Election arc). Harry Potterdle uses the site's character and spell lists, with details checked against the books. Planespottle uses a hand-compiled list, with aircraft photos from Planespotters.net (credited to each photographer). Quote mode uses paraphrased lines.</p>
 </div>
 
 <script>
@@ -411,8 +411,9 @@ Minerva McGonagall|Transfiguration professor and registered cat Animagus.
 Ginevra Molly Weasley|Wrote to a diary that turned out to hold a young Tom Riddle.
 Peter Pettigrew|Spent twelve years disguised as a family rat.`)}
  }},
-{id:"plane",name:"Planespottle",tag:"Aircraft",c:"#7fc8c2",
- attrs:[["Manufacturer"],["Role"],["Engines","num"],["Engine type"],["Country"],["First flight","num"]],
+{id:"plane",name:"Planespottle",tag:"Aircraft",c:"#7fc8c2",photos:true,
+ hints:[[3,"Airline","al"],[6,"Registration","reg"]],extra:[["Airline","al"],["Registration","reg"]],
+ attrs:[["Make"],["Role"],["Engines","num"],["Engine type"],["Country"],["First flight","num"]],
  rows:P(`Boeing 737|Boeing|Airliner|2|Jet|USA|1967
 Boeing 747|Boeing|Airliner|4|Jet|USA|1969
 Boeing 757|Boeing|Airliner|2|Jet|USA|1982
@@ -445,6 +446,22 @@ Supermarine Spitfire|Supermarine|Fighter|1|Piston|UK|1936`)}
 ];
 GAMES.forEach(g=>{if(g.items)return;g.items=g.rows.map(r=>({name:r[0],v:r.slice(1).map((x,i)=>{const a=g.attrs[i];return a[1]==="ord"?[+x,a[2][+x]]:a[1]==="num"?[+x,x]:x})}))});
 
+const PLANE_REGS={"Boeing 737":["EI-DCL","Ryanair"],"Boeing 747":["D-ABYA","Lufthansa"],"Boeing 757":["TF-FIA","Icelandair"],"Boeing 767":["N676UA","United Airlines"],"Boeing 777":["A6-EGO","Emirates"],"Boeing 787":["G-ZBJA","British Airways"],"Airbus A220":["HB-JBA","Swiss"],"Airbus A320":["D-AIZA","Lufthansa"],"Airbus A330":["TC-JNA","Turkish Airlines"],"Airbus A350":["A7-ALA","Qatar Airways"],"Airbus A380":["A6-EDA","Emirates"],"McDonnell Douglas MD-11":["N601FE","FedEx"],"Concorde":["G-BOAC","British Airways"],"COMAC C919":["B-919A","China Eastern"],"Embraer E190":["PH-EZA","KLM Cityhopper"],"ATR 72":["ZK-MCA","Air New Zealand"],"Dash 8 Q400":["G-JECX","Flybe"],"Gulfstream G650":["N650GA","Gulfstream (private)"],"Antonov An-225":["UR-82060","Antonov Airlines"],"Airbus A400M":["ZM400","Royal Air Force"]};
+GAMES.find(g=>g.id==="plane").items.forEach(it=>{const r=PLANE_REGS[it.name];it.reg=r?r[0]:"";it.al=r?r[1]:"Military / other";});
+const photoCache={};
+async function loadPhoto(reg){
+  if(!reg)return null; if(reg in photoCache)return photoCache[reg];
+  try{const r=await fetch("https://api.planespotters.net/pub/photos/reg/"+encodeURIComponent(reg));const j=await r.json();const p=j.photos&&j.photos[0];photoCache[reg]=p?{src:p.thumbnail_large.src,by:p.photographer,link:p.link}:null;}catch(e){photoCache[reg]=undefined}
+  return photoCache[reg];
+}
+function showPhoto(t){
+  const box=document.getElementById("pphoto");if(!box)return;
+  if(!t.reg){box.innerHTML='<p class="meta">No photo for this one. Use the hints.</p>';return}
+  loadPhoto(t.reg).then(p=>{const b=document.getElementById("pphoto");if(!b)return;
+    if(p)b.innerHTML=`<img src="${esc(p.src)}" alt="Mystery aircraft" style="max-height:320px;border-radius:10px;display:block"><p class="meta" style="margin:6px 0 0">Photo © <a href="${esc(p.link)}" target="_blank" rel="noopener" style="color:inherit">${esc(p.by)}</a> via Planespotters.net</p>`;
+    else if(p===null)b.innerHTML='<p class="meta">Planespotters has no photo of this aircraft yet. Use the hints.</p>';
+    else b.innerHTML='<p class="meta">Photos load on the GitHub Pages site or the downloaded file. They can\'t load in this preview.</p>';});
+}
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const rand=a=>a[Math.floor(Math.random()*a.length)];
@@ -456,7 +473,7 @@ let cur=GAMES[0], mode="Classic", lastPick={};
 function pick(pool,key){let p;do{p=rand(pool)}while(pool.length>1&&p===lastPick[key]);lastPick[key]=p;return p}
 function state(){const key=cur.id+":"+mode;if(!S[key])S[key]=newRound();return S[key]}
 function newRound(){
-  if(mode==="Classic")return{target:pick(cur.items,cur.id+mode),guesses:[],done:false};
+  if(mode==="Classic")return{target:pick(cur.photos?cur.items.filter(x=>x.reg):cur.items,cur.id+mode),guesses:[],done:false};
   const pool=cur.clues[mode].items;return{target:pick(pool,cur.id+mode),guesses:[],done:false};
 }
 function fmt(a,val){return Array.isArray(val)?val[1]:String(val).replaceAll(";",", ")}
@@ -481,7 +498,7 @@ function render(){renderCarts();renderTabs();mode==="Character list"?renderList(
 
 function searchBar(placeholder){
   return `<div class="bar"><div class="search"><input id="guess" autocomplete="off" placeholder="${placeholder}" aria-label="Guess"><ul class="sugg" id="sugg" hidden></ul></div>
-  <button class="btn primary" id="shuffle">Shuffle new ${mode==="Classic"?"character":"one"}</button><button class="btn" id="giveup">Give up</button></div>`;
+  <button class="btn primary" id="shuffle">Shuffle new ${mode!=="Classic"?"one":cur.id==="plane"?"plane":"character"}</button><button class="btn" id="giveup">Give up</button></div>`;
 }
 function renderClassic(){
   const st=state(),t=st.target;
@@ -489,13 +506,14 @@ function renderClassic(){
   if(st.done)h+=`<div class="win ${st.won?"":"lose"}"><h3>${st.won?"Got it":"It was"}: ${esc(t.name)}</h3><span class="meta">${st.guesses.length} guess${st.guesses.length===1?"":"es"} · press Shuffle for another</span></div>`;
   else h+=searchBar("Type a "+(cur.id==="plane"?"plane":"character")+"…");
   if(st.done)h+=`<div class="bar"><button class="btn primary" id="shuffle">Shuffle new ${cur.id==="plane"?"plane":"character"}</button></div>`;
+  if(cur.photos)h+=`<div id="pphoto" style="margin-bottom:14px"><p class="meta">Loading photo…</p></div>`;
   if(cur.hints)h+=`<div class="bar">${cur.hints.map(([n,l,k])=>st.done||st.guesses.length>=n?`<span class="clue" style="margin:0;padding:10px 14px;font-size:14px;flex:1 1 220px"><span class="k">${l}</span>${esc(t[k]||"—")}</span>`:`<span class="btn" style="cursor:default;opacity:.6">${l} in ${n-st.guesses.length}</span>`).join("")}</div>`;
   h+=`<div class="gridwrap"><table class="g"><thead><tr><th style="text-align:left">${cur.id==="plane"?"Aircraft":"Character"}</th>${cur.attrs.map(a=>`<th>${a[0]}</th>`).join("")}</tr></thead><tbody>`;
   h+=st.guesses.slice().reverse().map(g=>`<tr><td class="name">${esc(g.name)}</td>${cur.attrs.map((a,i)=>{const[c,arr]=cmp(a,g.v[i],t.v[i]);return`<td class="${c}" style="animation-delay:${i*90}ms">${esc(fmt(a,g.v[i]))}${arr?`<span class="arr">${arr}</span>`:""}</td>`}).join("")}</tr>`).join("");
   h+=`</tbody></table></div>`;
   if(!st.guesses.length)h+=`<p class="meta">Make a guess. Each column turns green on a match, amber on a partial match, red on a miss. Arrows point toward the answer.</p>`;
   h+=`<div class="legend"><span><i style="background:var(--hit)"></i>Correct</span><span><i style="background:var(--near)"></i>Partial</span><span><i style="background:var(--miss)"></i>Wrong</span><span>↑ ↓ higher / later, lower / earlier</span></div>`;
-  $("#stage").innerHTML=h;wire(st,cur.items.map(x=>x.name),name=>{
+  $("#stage").innerHTML=h;if(cur.photos)showPhoto(t);wire(st,cur.items.map(x=>x.name),name=>{
     const g=cur.items.find(x=>x.name===name);st.guesses.push(g);if(g===t){st.done=true;st.won=true;bump(true)}render();focusGuess();
   },st.guesses.map(g=>g.name));
 }
@@ -522,11 +540,12 @@ function wire(st,names,onGuess,used){
 }
 let sortCol=0,sortDir=1,filter="";
 function renderList(){
-  const cols=[cur.id==="plane"?"Aircraft":"Character",...cur.attrs.map(a=>a[0])];
-  const rows=cur.items.map(x=>[x.name,...cur.attrs.map((a,i)=>fmt(a,x.v[i]))]);
-  const raw=cur.items.map(x=>[x.name,...x.v]);
+  const ex=cur.extra||[];
+  const cols=[cur.id==="plane"?"Model":"Character",...cur.attrs.map(a=>a[0]),...ex.map(e=>e[0])];
+  const rows=cur.items.map(x=>[x.name,...cur.attrs.map((a,i)=>fmt(a,x.v[i])),...ex.map(e=>x[e[1]]||"—")]);
+  const raw=cur.items.map(x=>[x.name,...x.v,...ex.map(e=>x[e[1]]||"")]);
   let idx=rows.map((_,i)=>i).filter(i=>rows[i].join(" ").toLowerCase().includes(filter.toLowerCase()));
-  const isNum=sortCol>0&&["num","ord"].includes(cur.attrs[sortCol-1][1]);
+  const isNum=sortCol>0&&sortCol<=cur.attrs.length&&["num","ord"].includes(cur.attrs[sortCol-1][1]);
   idx.sort((a,b)=>{const x=raw[a][sortCol],y=raw[b][sortCol];return(isNum?(x[0]-y[0]):String(x).localeCompare(String(y)))*sortDir});
   let h=`<div class="bar"><div class="search"><input id="filter" placeholder="Filter by any detail, e.g. Gryffindor, Espada, 2014" value="${esc(filter)}" aria-label="Filter"></div><span class="meta">${idx.length} of ${rows.length}</span></div>`;
   h+=`<div class="listwrap"><table class="list"><thead><tr>${cols.map((c,i)=>`<th data-c="${i}">${c}${i===sortCol?(sortDir>0?" ▲":" ▼"):""}</th>`).join("")}</tr></thead><tbody>`;
