@@ -291,7 +291,7 @@ const GAMES=[
  hints:[[4,"Appearances","m"],[7,"Quote","q"],[8,"Actor","a"]]},
 {id:"marvel",name:"Marveldle",tag:"MCU",c:"#e62429",src:"marveldle.com",
  attrs:[["Gender"],["Type"],["Specie(s)","multi"],["Power type(s)","multi"],["Origin"],["Affiliations","multi"],["Appearance type(s)","multi"]],items:MARVEL,
- hints:[[10,"Actor","a"],[13,"Name","nh"]]},
+ hints:[[5,"Quote","q"],[8,"Appearances","ap"],[12,"Actor","a"],[15,"Name","nh"]]},
 {id:"hp",name:"Harry Potterdle",tag:"5 modes",c:"#d3a625",src:"harrypotterdle.com",
  attrs:[["Gender"],["House"],["Species","multi"],["Blood status"],["Hair"],["First book","ord",["Philosopher's Stone","Chamber of Secrets","Prisoner of Azkaban","Goblet of Fire","Order of the Phoenix","Half-Blood Prince","Deathly Hallows","Fantastic Beasts"]]],
  rows:P(`Aberforth Dumbledore|Male|Unknown|Human|Half-blood|Grey|6
@@ -687,7 +687,7 @@ function searchBar(placeholder){
 function renderClassic(){
   const st=state(),t=st.target;
   let h=banner();
-  if(cur.hints)h+=`<div class="bar hintbox">${cur.hints.map(([n,l,k])=>st.done||st.guesses.length>=n?`<span class="clue" style="margin:0;padding:10px 14px;font-size:14px;flex:1 1 220px"><span class="k">${l}</span>${esc(t[k]||"—")}</span>`:`<span class="btn" style="cursor:default;opacity:.6">${l} in ${n-st.guesses.length}</span>`).join("")}</div>`;
+  if(cur.hints)h+=`<div class="bar hintbox">${cur.hints.map(([n,l,k])=>st.done||st.guesses.length>=n?`<span class="clue" style="margin:0;padding:10px 14px;font-size:14px;flex:1 1 220px"><span class="k">${l}</span>${esc(t[k]||"Not added yet")}</span>`:`<span class="btn" style="cursor:default;opacity:.6">${l} in ${n-st.guesses.length}</span>`).join("")}</div>`;
   if(st.done)h+=`<div class="win ${st.won?"":"lose"}">${cur.photos?"":av(t.img,1)}<div><h3>${st.won?"Got it":"It was"}: ${esc(t.name)}</h3><span class="meta">${st.guesses.length} guess${st.guesses.length===1?"":"es"} · press Shuffle for another</span></div></div>`;
   else h+=searchBar("Type a "+(cur.id==="plane"?"plane":"character")+"…");
   if(st.done)h+=`<div class="bar"><button class="btn primary" id="shuffle">Shuffle new ${cur.id==="plane"?"plane":"character"}</button></div>`;
