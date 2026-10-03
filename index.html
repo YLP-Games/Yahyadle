@@ -222,6 +222,29 @@ html[data-game="marvel"] .logo span{color:#fff;background:var(--accent);padding:
 .chip.ghost{background:var(--panel2);color:var(--fg);border:1px solid var(--line)}
 .chip svg{width:15px;height:15px}
 @media (max-width:700px){.logo{font-size:34px;margin-bottom:10px}.chip{font-size:12px;padding:5px 10px}}
+
+/* ---- Centred names + tile-sized character list ---- */
+table.g td.name .av{margin:0 auto}
+table.g td.name{text-align:center}
+table.g td.name .nm{text-align:center}
+@media (min-width:701px){
+  table.list{width:auto;margin:0 auto;border-collapse:separate;border-spacing:6px}
+  table.list th{text-align:center;border-bottom:0;padding:6px 4px;width:var(--tile);white-space:normal;line-height:1.2}
+  table.list td{width:var(--tile);min-width:var(--tile);max-width:var(--tile);height:var(--tile);background:var(--panel2);border:0;border-radius:9px;text-align:center;vertical-align:middle;font-weight:600;font-size:13px;line-height:1.25;padding:6px;box-shadow:inset 0 0 0 2px rgba(0,0,0,.18)}
+  table.list td .tv{max-height:calc(var(--tile) - 12px);overflow-y:auto;overflow-wrap:anywhere}
+  table.list td.name{background:transparent;box-shadow:none;padding:0;font-weight:400}
+  table.list td.name .av{width:var(--tile);height:var(--tile);margin:0 auto;display:block;border-radius:9px}
+  table.list td.name .nm{display:block;font:600 11px/1.2 var(--body);color:var(--muted);margin-top:4px}
+  table.list tr:hover td:not(.name){background:color-mix(in srgb,var(--accent) 22%,var(--panel2))}
+}
+@media (max-width:700px){
+  table.list tr{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:0 0 14px;border-bottom:0}
+  table.list td{background:var(--panel2);border-radius:7px;min-height:52px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-weight:600;font-size:12px}
+  table.list td::before{margin-bottom:2px;text-align:center}
+  table.list td.name{background:transparent;flex-direction:row;justify-content:flex-start;gap:12px;padding:0;min-height:0}
+  table.list td.name .av{width:64px;height:64px;margin:0}
+  table.list td.name .nm{font-size:16px;font-weight:600}
+}
 </style>
 </head>
 <body>
@@ -715,7 +738,7 @@ function renderList(){
   idx.sort((a,b)=>{const x=raw[a][sortCol],y=raw[b][sortCol];return(isNum?(x[0]-y[0]):String(x).localeCompare(String(y)))*sortDir});
   let h=`<div class="bar"><div class="search"><input id="filter" placeholder="Filter by any detail, e.g. Gryffindor, Espada, 2014" value="${esc(filter)}" aria-label="Filter"></div><span class="meta">${idx.length} of ${rows.length}</span><select class="sortsel m-only" id="sortsel" aria-label="Sort by">${cols.map((c,i)=>`<option value="${i}"${i===sortCol?" selected":""}>Sort by ${c}${i===sortCol?(sortDir>0?" ▲":" ▼"):""}</option>`).join("")}</select></div>`;
   h+=`<div class="listwrap"><table class="list"><thead><tr>${cols.map((c,i)=>`<th data-c="${i}">${c}${i===sortCol?(sortDir>0?" ▲":" ▼"):""}</th>`).join("")}</tr></thead><tbody>`;
-  h+=idx.map(i=>`<tr>${rows[i].map((v,c)=>`<td data-l="${esc(cols[c])}">${c===0?av(cur.items[i].img):""}${esc(v)}</td>`).join("")}</tr>`).join("");
+  h+=idx.map(i=>`<tr>${rows[i].map((v,c)=>`${c===0?`<td class="name" data-l="${esc(cols[c])}">${av(cur.items[i].img)}<span class="nm">${esc(v)}</span></td>`:`<td data-l="${esc(cols[c])}"><div class="tv">${esc(v)}</div></td>`}`).join("")}</tr>`).join("");
   h+=`</tbody></table></div>`;
   if(cur.clues){for(const [m,cfg] of Object.entries(cur.clues)){h+=`<h3 style="font-family:var(--display);font-weight:400;margin:22px 0 8px">${m}s</h3><div class="listwrap" style="max-height:340px"><table class="list"><tbody>${cfg.items.filter(r=>r.join(" ").toLowerCase().includes(filter.toLowerCase())).map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join("")}</tbody></table></div>`}}
   $("#stage").innerHTML=h;
