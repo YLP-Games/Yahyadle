@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Yahyadle</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Anton&family=Bebas+Neue&family=Cinzel:wght@700;900&family=Orbitron:wght@700;900&family=Bangers&family=IM+Fell+English+SC&family=Barlow+Condensed:wght@700&family=Rubik+Glitch&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=JetBrains+Mono:wght@500&display=swap">
 <style>
 /* Layout: arcade cabinet — a marquee row of game cartridges, one play surface below, with a character dossier table beside the game */
 :root{
@@ -35,7 +35,7 @@ h1 span{color:var(--accent);transition:color .3s}
 .cart .dot{width:22px;height:5px;border-radius:3px;background:var(--c)}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
 .tab{background:transparent;border:1px solid var(--line);color:var(--muted);padding:7px 13px;border-radius:999px;font:600 13px var(--body);cursor:pointer}
-.tab[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#1a1020}
+.tab[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent,#1a1020)}
 .stage{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
 .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
 .search{position:relative;flex:1 1 260px;min-width:0}
@@ -44,7 +44,7 @@ h1 span{color:var(--accent);transition:color .3s}
 .sugg li{padding:8px 10px;border-radius:6px;cursor:pointer}
 .sugg li.on,.sugg li:hover{background:color-mix(in srgb,var(--accent) 30%,transparent)}
 .btn{background:var(--panel2);border:1px solid var(--line);color:var(--fg);font:600 13px var(--body);padding:11px 14px;border-radius:9px;cursor:pointer;white-space:nowrap}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:#1a1020}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent,#1a1020)}
 .meta{font-family:var(--mono);font-size:12px;color:var(--muted)}
 .gridwrap{overflow-x:auto}
 table.g{border-collapse:separate;border-spacing:5px;min-width:100%}
@@ -191,6 +191,37 @@ table.list .av{width:52px;height:52px}
 .prev b{color:var(--fg)}
 table.g td .tv{max-height:calc(var(--tile) - 14px);overflow-y:auto;overflow-wrap:anywhere;scrollbar-width:thin;width:100%}
 @media (max-width:700px){table.g td .tv{max-height:none!important;overflow:visible}.bar .search{flex:1 1 calc(100% - 100px);min-width:0}.bar #go{flex:0 0 auto;padding-inline:16px}.bar #shuffle,.bar #giveup{flex:1 1 40%}}
+
+/* ---- Per-game themes (Marveldle-style banner + backdrop) ---- */
+html{--logo:var(--display);--logo-shadow:none;--deco:none;--tile-edge:rgba(0,0,0,.25)}
+body{background-color:var(--bg);background-image:var(--deco);background-attachment:fixed;transition:background-color .3s}
+.stage{background:color-mix(in srgb,var(--panel) 88%,transparent);backdrop-filter:blur(2px)}
+html[data-game="bleach"]{--bg:#0a0a0c;--panel:#141417;--panel2:#202026;--line:#34343c;--muted:#a3a3ad;--logo:"Bebas Neue",Impact,sans-serif;--logo-shadow:4px 4px 0 #000;
+ --deco:radial-gradient(70% 50% at 85% -5%,rgba(255,122,26,.20),transparent 60%),repeating-linear-gradient(115deg,transparent 0 46px,rgba(255,255,255,.03) 46px 48px)}
+html[data-game="jjk"]{--on-accent:#fff;--bg:#08081a;--panel:#11112a;--panel2:#1c1c3c;--line:#2e2e5a;--muted:#a3a6d6;--logo:"Rubik Glitch","Anton",sans-serif;--logo-shadow:0 0 18px rgba(110,90,255,.7);
+ --deco:radial-gradient(55% 45% at 12% 8%,rgba(70,90,255,.32),transparent 70%),radial-gradient(45% 40% at 92% 92%,rgba(190,60,230,.28),transparent 70%)}
+html[data-game="clover"]{--bg:#06110b;--panel:#0d1c14;--panel2:#16291e;--line:#24412f;--muted:#9cc0a8;--logo:"Cinzel",Georgia,serif;--logo-shadow:0 2px 0 #000,0 0 22px rgba(70,194,122,.45);
+ --deco:radial-gradient(60% 45% at 50% -15%,rgba(70,194,122,.26),transparent 70%),repeating-radial-gradient(circle at 0 0,transparent 0 22px,rgba(70,194,122,.045) 22px 23px)}
+html[data-game="hxh"]{--bg:#0b1310;--panel:#121d18;--panel2:#1b2a23;--line:#2c4237;--muted:#a9c4b6;--logo:"Bangers","Bungee",sans-serif;--logo-shadow:3px 3px 0 #0b3d22;
+ --deco:radial-gradient(50% 40% at 90% 0,rgba(255,170,40,.18),transparent 70%),radial-gradient(50% 50% at 0 100%,rgba(67,167,217,.18),transparent 70%)}
+html[data-game="sw"]{--bg:#020205;--panel:#0d0d14;--panel2:#181822;--line:#2a2a3a;--muted:#a7a7bd;--logo:"Orbitron",sans-serif;--logo-shadow:0 0 14px rgba(255,232,31,.45);
+ --deco:radial-gradient(1px 1px at 10% 20%,#fff 60%,transparent),radial-gradient(1px 1px at 70% 60%,#fff 60%,transparent),radial-gradient(1.5px 1.5px at 40% 80%,#fff 60%,transparent),radial-gradient(1px 1px at 85% 15%,#ddd 60%,transparent),radial-gradient(1px 1px at 25% 55%,#bbb 60%,transparent);--deco-size:1;}
+html[data-game="sw"] body{background-size:240px 240px,300px 300px,420px 420px,180px 180px,350px 350px}
+html[data-game="marvel"]{--on-accent:#fff;--bg:#0e0809;--panel:#181012;--panel2:#26181b;--line:#43262b;--muted:#c4a6aa;--logo:"Anton",Impact,sans-serif;--logo-shadow:3px 3px 0 #000;
+ --deco:radial-gradient(rgba(230,36,41,.20) 1.3px,transparent 1.8px),linear-gradient(180deg,#22070a,#0e0809 70%)}
+html[data-game="marvel"] body{background-size:11px 11px,100% 100%}
+html[data-game="hp"]{--bg:#110c08;--panel:#1b140e;--panel2:#291f16;--line:#4a3a28;--muted:#c9b48e;--logo:"IM Fell English SC",Georgia,serif;--logo-shadow:0 0 16px rgba(211,166,37,.45);
+ --deco:radial-gradient(70% 50% at 50% -10%,rgba(211,166,37,.20),transparent 70%),radial-gradient(40% 40% at 100% 100%,rgba(116,0,1,.25),transparent 70%)}
+html[data-game="plane"]{--bg:#09131f;--panel:#0f1b2a;--panel2:#18283b;--line:#284057;--muted:#9fb6cc;--logo:"Barlow Condensed",sans-serif;--logo-shadow:0 2px 0 #000;
+ --deco:linear-gradient(180deg,rgba(127,200,194,.12),transparent 40%),repeating-linear-gradient(90deg,transparent 0 120px,rgba(255,255,255,.025) 120px 122px)}
+.logo{text-align:center;font-family:var(--logo);font-size:clamp(34px,5.5vw,64px);line-height:1;letter-spacing:.03em;text-transform:uppercase;text-shadow:var(--logo-shadow);margin:2px 0 14px;font-weight:900}
+.logo span{color:var(--accent)}
+html[data-game="marvel"] .logo span{color:#fff;background:var(--accent);padding:0 .12em;margin-left:.04em}
+.chips{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:-4px 0 12px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:var(--on-accent,#140c0c);border-radius:999px;padding:6px 13px;font:700 13px var(--body)}
+.chip.ghost{background:var(--panel2);color:var(--fg);border:1px solid var(--line)}
+.chip svg{width:15px;height:15px}
+@media (max-width:700px){.logo{font-size:34px;margin-bottom:10px}.chip{font-size:12px;padding:5px 10px}}
 </style>
 </head>
 <body>
@@ -226,7 +257,7 @@ const P=s=>s.trim().split("\n").map(l=>l.split("|").map(x=>x.trim()));
 const GAMES=[
 {id:"bleach",name:"Bleachdle",tag:"Soul reapers",c:"#ff8a3d",src:"bleachdle.org",
  attrs:[["Gender"],["Race"],["Age","ord"],["Hair color"],["Height","num"],["Location"],["First appearance","ord"]],items:BLEACH},
-{id:"jjk",name:"Jujutsudle",tag:"Cursed energy",c:"#e0475b",src:"jujutsudle.com",
+{id:"jjk",name:"Jujutsudle",tag:"Cursed energy",c:"#7b6cff",src:"jujutsudle.com",
  attrs:[["Gender"],["Species"],["Grade","ord"],["Weapon"],["Age","ord"],["Hair color"],["Affiliation"],["Occupation"],["First appearance","ord"]],items:JJK},
 {id:"clover",name:"Cloverdle",tag:"Grimoires",c:"#4fb37a",src:"cloverdle.com",
  attrs:[["Gender"],["Age","num"],["Hair color"],["Height","num"],["Magic"],["Species"],["Occupation"],["Squad"],["Country"],["First appearance","ord"]],items:CLOVER},
@@ -235,10 +266,10 @@ const GAMES=[
 {id:"sw",name:"Starwarsdle",tag:"A galaxy far away",c:"#f2c94c",src:"fandomdle.com",
  attrs:[["Gender"],["Species"],["Affiliation"],["Origin"],["Appearances","multi"],["Weapon"]],items:SW,
  hints:[[4,"Appearances","m"],[7,"Quote","q"],[8,"Actor","a"]]},
-{id:"marvel",name:"Marveldle",tag:"MCU",c:"#d6455f",src:"marveldle.com",
+{id:"marvel",name:"Marveldle",tag:"MCU",c:"#e62429",src:"marveldle.com",
  attrs:[["Gender"],["Type"],["Specie(s)","multi"],["Power type(s)","multi"],["Origin"],["Affiliations","multi"],["Appearance type(s)","multi"]],items:MARVEL,
  hints:[[10,"Actor","a"],[13,"Name","nh"]]},
-{id:"hp",name:"Harry Potterdle",tag:"5 modes",c:"#b58cf0",src:"harrypotterdle.com",
+{id:"hp",name:"Harry Potterdle",tag:"5 modes",c:"#d3a625",src:"harrypotterdle.com",
  attrs:[["Gender"],["House"],["Species","multi"],["Blood status"],["Hair"],["First book","ord",["Philosopher's Stone","Chamber of Secrets","Prisoner of Azkaban","Goblet of Fire","Order of the Phoenix","Half-Blood Prince","Deathly Hallows","Fantastic Beasts"]]],
  rows:P(`Aberforth Dumbledore|Male|Unknown|Human|Half-blood|Grey|6
 Alastor Moody|Male|Unknown|Human|Unknown|Grey|3
@@ -608,11 +639,11 @@ function cmp(a,g,t){
   if(a[1]==="multi"){const A=g.split(";"),B=t.split(";");if(A.length===B.length&&A.every(x=>B.includes(x)))return["hit",""];return[A.some(x=>B.includes(x))?"near":"miss",""]}
   return[g===t?"hit":"miss",""];
 }
-function bump(win){const s=store[cur.id]||(store[cur.id]={w:0,streak:0});if(win){s.w++;s.streak++}else s.streak=0;save()}
+function bump(win){const s=store[cur.id]||(store[cur.id]={w:0,streak:0,best:0});if(win){s.w++;s.streak++;s.best=Math.max(s.best||0,s.streak)}else s.streak=0;save()}
 
 function renderCarts(){
   $("#carts").innerHTML=GAMES.map(g=>`<button class="cart" style="--c:${g.c}" aria-pressed="${g===cur}" data-id="${g.id}"><span class="dot"></span><b>${g.name}</b><small>${g.tag} · ${g.items.length}${g.src?" · official list":""}</small></button>`).join("");
-  document.documentElement.style.setProperty("--accent",cur.c);
+  document.documentElement.style.setProperty("--accent",cur.c);document.documentElement.dataset.game=cur.id;
   const on=document.querySelector('.cart[aria-pressed="true"]');if(on&&on.scrollIntoView&&matchMedia("(max-width:700px)").matches)on.scrollIntoView({block:"nearest",inline:"center"});
   const s=store[cur.id]||{w:0,streak:0};
   $("#score").innerHTML=`<span class="gname">${cur.name.toUpperCase()}<br></span>wins ${s.w} · streak ${s.streak}`;
@@ -621,6 +652,9 @@ function renderTabs(){
   const modes=["Classic",...Object.keys(cur.clues||{}),"Character list"];
   $("#tabs").innerHTML=modes.map(m=>`<button class="tab" aria-pressed="${m===mode}" data-m="${m}">${m}</button>`).join("");
 }
+const FLAME='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c1 3.5-1.5 5-1.5 7.5 0 1.4 1 2.5 2.3 2.5 1.5 0 2.4-1.2 2.2-3 2.6 1.9 4 4.6 4 7.5A7 7 0 0 1 5 16.5c0-4.6 4.2-7.2 7-14.5z"/></svg>';
+function banner(){const m=/dle$/i.test(cur.name)?[cur.name.slice(0,-3),"dle"]:[cur.name.slice(0,-3),cur.name.slice(-3)];const n=m[0];const s=store[cur.id]||{w:0,streak:0,best:0};
+  return `<div class="logo">${esc(n)}<span>${esc(m[1])}</span></div><div class="chips"><span class="chip" title="Current win streak">${FLAME}Streak ${s.streak}</span><span class="chip ghost">Best ${s.best||0}</span><span class="chip ghost">Wins ${s.w}</span></div>`}
 function render(){renderCarts();renderTabs();mode==="Character list"?renderList():mode==="Classic"?renderClassic():renderClue()}
 
 function searchBar(placeholder){
@@ -629,7 +663,7 @@ function searchBar(placeholder){
 }
 function renderClassic(){
   const st=state(),t=st.target;
-  let h="";
+  let h=banner();
   if(cur.hints)h+=`<div class="bar hintbox">${cur.hints.map(([n,l,k])=>st.done||st.guesses.length>=n?`<span class="clue" style="margin:0;padding:10px 14px;font-size:14px;flex:1 1 220px"><span class="k">${l}</span>${esc(t[k]||"—")}</span>`:`<span class="btn" style="cursor:default;opacity:.6">${l} in ${n-st.guesses.length}</span>`).join("")}</div>`;
   if(st.done)h+=`<div class="win ${st.won?"":"lose"}">${cur.photos?"":av(t.img,1)}<div><h3>${st.won?"Got it":"It was"}: ${esc(t.name)}</h3><span class="meta">${st.guesses.length} guess${st.guesses.length===1?"":"es"} · press Shuffle for another</span></div></div>`;
   else h+=searchBar("Type a "+(cur.id==="plane"?"plane":"character")+"…");
@@ -649,7 +683,7 @@ function renderClassic(){
 function renderClue(){
   const st=state(),t=st.target,cfg=cur.clues[mode];
   const answers=[...new Set(cfg.items.map(x=>x[0]).concat(mode==="Quote"||mode==="Description"?cur.items.map(x=>x.name):[]))].sort();
-  let h=`<div class="clue"><span class="k">${cfg.k}</span>${esc(t[1])}`;
+  let h=banner()+`<div class="clue"><span class="k">${cfg.k}</span>${esc(t[1])}`;
   if(!st.done&&st.guesses.length>=3)h+=`<div class="hint">Hint: starts with “${esc(t[0][0])}”, ${t[0].length} characters.</div>`;
   h+=`</div>`;
   if(st.done)h+=`<div class="win ${st.won?"":"lose"}">${av(imgOf(t[0]),1)}<div><h3>${st.won?"Got it":"It was"}: ${esc(t[0])}</h3><span class="meta">${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span></div></div><div class="bar"><button class="btn primary" id="shuffle">Shuffle new one</button></div>`;
