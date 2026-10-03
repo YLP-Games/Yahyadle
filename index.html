@@ -331,7 +331,7 @@ html[data-game="song"]{--bg:#0a0f0c;--panel:#111a14;--panel2:#1a271e;--line:#2a3
 .sg-own.both{background:var(--accent);border-color:var(--accent);color:var(--on-accent,#0b1a10)}
 .sg-row span.wide{flex:1}
 .sg-row small{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.06em;opacity:.8}
-.sg-row .hit{background:var(--hit)}.sg-row .miss{background:var(--miss)}
+.sg-row .hit{background:var(--hit)}.sg-row .near{background:var(--near)}.sg-row .miss{background:var(--miss)}
 .sg-import{max-width:720px;margin:16px auto 0;color:var(--muted)}
 .sg-import summary{cursor:pointer;font-weight:600}
 @media (prefers-reduced-motion:reduce){.sg-play.playing{animation:none}}
@@ -810,12 +810,19 @@ try{const l=JSON.parse(localStorage.getItem("songpl")||"{}");if(l.layla)PLAY.lay
 const CLIPS=[0.1,0.5,2,8,15];
 const ERAS=[["All",0,9999],["Classic",0,1999],["2000s",2000,2009],["2010s",2010,2019],["2020s",2020,9999]];
 // Earliest release years found on iTunes, so compilations/remasters in playlist exports don't show the wrong year
-let YEARFIX={};try{YEARFIX=JSON.parse(localStorage.getItem("songyears")||"{}")}catch(e){}
+let YEARFIX={};try{localStorage.removeItem("songyears");YEARFIX=JSON.parse(localStorage.getItem("songyears2")||"{}")}catch(e){}
 const mkSong=(t,a,y,g,src)=>{const f=YEARFIX[t+"|"+a];y=+y||0;if(f&&(!y||f<y))y=f;return{name:t,v:[a,[y,y?String(y):"?"],g||"—"],src}};
-function applyYear(song,info){const y=info&&info.year;if(!y)return false;const cy=song.v[1][0];if(cy&&cy<=y)return false;song.v[1]=[y,String(y)];YEARFIX[song.name+"|"+song.v[0]]=y;try{localStorage.setItem("songyears",JSON.stringify(YEARFIX))}catch(e){}return true}
+function applyYear(song,info){const y=info&&info.year;if(!y)return false;const cy=song.v[1][0];if(cy&&cy<=y)return false;song.v[1]=[y,String(y)];YEARFIX[song.name+"|"+song.v[0]]=y;try{localStorage.setItem("songyears2",JSON.stringify(YEARFIX))}catch(e){}return true}
 // Same song on both playlists? Match on title + main artist, ignoring feat. credits, remaster/edit tags, accents and punctuation
 // (so Apple Music's "Dave & Central Cee" matches a Spotify export's "Dave"). Remixes, live and sped-up versions stay separate.
 const mainArtist=a=>String(a).normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase().split(/\s*(?:&|,|;|\bx\b|\bfeat\.?|\bft\.?|\bwith\b|\band\b)\s*/)[0].replace(/^the\s+/,"").replace(/[^a-z0-9]+/g," ").trim();
+// Everyone credited on a song: the artist field plus any "feat." names in the title
+const artistSet=(a,t)=>{const n=x=>String(x||"").normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+  const ft=(n(t).match(/[(\[]\s*(?:feat|ft|with)\.?\s+([^)\]]+)[)\]]/)||[])[1]||"";
+  return new Set((n(a)+(ft?", "+ft:"")).split(/\s*(?:&|,|;|\bx\b|\bfeat\.?|\bft\.?|\bwith\b|\band\b)\s*/).map(x=>x.replace(/^the\s+/,"").replace(/[^a-z0-9$]+/g," ").trim()).filter(Boolean))};
+// Artist box: green = exactly the same artists, orange = at least one artist in common, red = none
+function artistMatch(g,t){const A=artistSet(g.v[0],g.name),B=artistSet(t.v[0],t.name),common=[...A].filter(x=>B.has(x)).length;
+  return common&&common===A.size&&A.size===B.size?"hit":common?"near":"miss"}
 const songKey=(t,a)=>{const n=x=>String(x).normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase(),k=x=>x.replace(/[^a-z0-9]+/g," ").trim();
   const title=n(t).replace(/\s*[(\[][^)\]]*\b(feat|ft|with|remaster(ed)?|explicit|clean|radio edit|single version|album version)\b[^)\]]*[)\]]/g,"")
     .replace(/\s+-\s+.*\b(remaster(ed)?|radio edit|single version|album version|explicit)\b.*$/,"").replace(/\s+(feat|ft)\.?\s.*$/,"");
@@ -831,12 +838,14 @@ function bothSongs(){
     if(String(r.a).length>String(o.a).length){o.t=r.t;o.a=r.a}   // keep the fuller artist credit
     if(+r.y&&(!+o.y||+r.y<+o.y))o.y=r.y;if(!o.g&&r.g)o.g=r.g}
   const out=[...m.values()];bothCache={l:PLAY.layla,y:PLAY.yahya,out,shared:out.filter(x=>x.who.length>1).length};return out}
+// Every song from the chosen source; the genre/era filters only decide which songs get picked as answers
+function songSource(){
+  if(SONG.src==="charts")return CHARTS.map(r=>mkSong(r[0],r[1],r[2],r[3],"Charts"));
+  if(SONG.src==="both")return bothSongs().map(r=>{const x=mkSong(r.t,r.a,r.y,r.g,r.who.length>1?"Both":r.who[0]);x.who=r.who;return x});
+  return PLAY[SONG.src].map(r=>mkSong(r.t,r.a,r.y,r.g,SONG.src==="layla"?"Layla":"Yahya"));
+}
 function songPool(){
-  let p;
-  if(SONG.src==="charts")p=CHARTS.map(r=>mkSong(r[0],r[1],r[2],r[3],"Charts"));
-  else if(SONG.src==="both")p=bothSongs().map(r=>{const x=mkSong(r.t,r.a,r.y,r.g,r.who.length>1?"Both":r.who[0]);x.who=r.who;return x});
-  else p=PLAY[SONG.src].map(r=>mkSong(r.t,r.a,r.y,r.g,SONG.src==="layla"?"Layla":"Yahya"));
-  const e=ERAS.find(x=>x[0]===SONG.era)||ERAS[0];
+  const p=songSource(),e=ERAS.find(x=>x[0]===SONG.era)||ERAS[0];
   return p.filter(x=>(SONG.genre==="All"||x.v[2]===SONG.genre)&&(e[0]==="All"||(x.v[1][0]>=e[1]&&x.v[1][0]<=e[2])));
 }
 GAMES.push({id:"song",name:"Songdle",tag:"Guess the song",c:"#1ed760",modes:["Song"],listName:"Song list",
@@ -849,15 +858,18 @@ const prevCache={};
 function jsonp(url){return new Promise((res,rej)=>{const cb="__jp"+Math.random().toString(36).slice(2);const sc=document.createElement("script");const t=setTimeout(()=>{cleanup();rej(new Error("timeout"))},9000);
   function cleanup(){clearTimeout(t);delete window[cb];sc.remove()}window[cb]=d=>{cleanup();res(d)};sc.src=url+(url.includes("?")?"&":"?")+"callback="+cb;sc.onerror=()=>{cleanup();rej(new Error("blocked"))};document.head.appendChild(sc)})}
 const clean=s=>String(s).toLowerCase().replace(/\(.*?\)|\[.*?\]|feat\..*$/g,"").replace(/[^a-z0-9]+/g," ").trim();
+// Versions that are a different recording from the song itself (unless the song's own title says it is one)
+const VARIANT=/\b(remix|edit|mix|version|slowed|sped|nightcore|live|acoustic|instrumental|cover|karaoke|rework|bootleg|vip|flip|mashup)\b/i;
 async function findPreview(song){
   const key=song.name+"|"+song.v[0];if(key in prevCache)return prevCache[key];
+  const own=VARIANT.test(song.name),variant=n=>!own&&VARIANT.test(n);
   const t=clean(song.name),a=clean(song.v[0]).split(" ")[0];let best=null,yrs=[];
   // Plenty of UK tracks are missing from the US store, so try the UK store when the US one has no match
   for(const country of ["US","GB"]){
     const d=await jsonp("https://itunes.apple.com/search?media=music&entity=song&limit=25&country="+country+"&term="+encodeURIComponent(song.v[0]+" "+song.name));
     const all=d.results||[],r=all.filter(x=>x.previewUrl);
     // Earliest release year of this song (playlist exports often carry a compilation or remaster date)
-    yrs.push(...all.filter(x=>(clean(x.trackName)===t||clean(x.trackName).startsWith(t+" "))&&clean(x.artistName).includes(a)&&x.releaseDate).map(x=>+String(x.releaseDate).slice(0,4)).filter(y=>y>1900));
+    yrs.push(...all.filter(x=>(clean(x.trackName)===t||clean(x.trackName).startsWith(t+" "))&&clean(x.artistName).includes(a)&&x.releaseDate&&!variant(x.trackName)).map(x=>+String(x.releaseDate).slice(0,4)).filter(y=>y>1900));
     best=r.find(x=>clean(x.trackName)===t&&clean(x.artistName).includes(a))||r.find(x=>clean(x.trackName).startsWith(t)&&clean(x.artistName).includes(a))||r.find(x=>clean(x.trackName).includes(t))||null;
     if(best)break;
   }
@@ -892,9 +904,9 @@ function renderSong(){
     <p class="meta" style="text-align:center">${CLIPS.length-st.guesses.length} guess${CLIPS.length-st.guesses.length===1?"":"es"} left</p>`;
   h+=`<div class="sg-rows">`+st.guesses.slice().reverse().map(g=>{if(g.skip)return`<div class="sg-row"><span class="miss wide">Skipped</span></div>`;
     const yr=g.v[1][0],ty=t.v[1][0],ya=!yr||!ty||yr===ty?"":ty>yr?"↑":"↓";
-    const cells=artistMode?[["Artist",g.v[0],mainArtist(g.v[0])===mainArtist(t.v[0])]]:[["Song",g.name,g.name===t.name&&g.v[0]===t.v[0]],["Artist",g.v[0],mainArtist(g.v[0])===mainArtist(t.v[0])]];
+    const cells=artistMode?[["Artist",g.v[0],artistMatch(g,t)]]:[["Song",g.name,g.name===t.name&&g.v[0]===t.v[0]],["Artist",g.v[0],artistMatch(g,t)]];
     cells.push(["Year",(g.v[1][1]||"?")+(ya?" "+ya:""),yr&&yr===ty]);
-    return`<div class="sg-row">${cells.map(([l,v,ok])=>`<span class="${ok?"hit":"miss"}"><small>${l}</small>${esc(v)}</span>`).join("")}</div>`}).join("")+`</div>`;
+    return`<div class="sg-row">${cells.map(([l,v,ok])=>`<span class="${typeof ok==="string"?ok:ok?"hit":"miss"}"><small>${l}</small>${esc(v)}</span>`).join("")}</div>`}).join("")+`</div>`;
   if(lastAns[cur.id+mode])h+=`<p class="prev">Previous song was <b>${esc(lastAns[cur.id+mode])}</b></p>`;
   h+=songImport();
   $("#stage").innerHTML=h;wireSongFilters();
@@ -911,7 +923,8 @@ function renderSong(){
   play.onclick=()=>{if(songAudio&&!songAudio.paused){songStop();play.setAttribute("aria-label","Play")}else if(st.done&&songAudio&&songAudio.currentTime>0&&!songAudio.ended){const q=songAudio.play();if(q&&q.catch)q.catch(()=>{});play.classList.add("playing");play.setAttribute("aria-label","Pause")}else{playClip(len,play);play.setAttribute("aria-label","Pause")}};
   const sh=$("#shuffle");if(sh)sh.onclick=()=>{songStop();lastAns[cur.id+mode]=t.name+" — "+t.v[0];S[cur.id+":"+mode]=newRound();render()};
   if(st.done)return;
-  const pool=songPool();
+  // Guess from the whole playlist, and always include this round's answer (a year correction can move it out of the era filter)
+  const pool=songSource();if(!pool.some(x=>x.name===t.name&&x.v[0]===t.v[0]))pool.push(t);
   const names=artistMode?[...new Set(pool.map(x=>x.v[0]))].sort():pool.map(x=>x.name+" — "+x.v[0]);
   const used=st.guesses.filter(g=>!g.skip).map(g=>artistMode?g.v[0]:g.name+" — "+g.v[0]);
   const after=()=>{if(st.guesses.length>=CLIPS.length&&!st.done){st.done=true;st.won=false;bump(false)}songStop();render();focusGuess()};
@@ -1043,7 +1056,14 @@ function wire(st,names,onGuess,used){
   const shb=$("#shuffle");if(shb)shb.onclick=()=>{const t=st.target;lastAns[cur.id+mode]=Array.isArray(t)?t[0]:t.name;S[cur.id+":"+mode]=newRound();render();focusGuess()};
   const gu=$("#giveup");if(gu)gu.onclick=()=>{st.done=true;st.won=false;bump(false);render()};
   const inp=$("#guess"),ul=$("#sugg");if(!inp)return;let sel=0,opts=[];
-  const draw=()=>{const q=inp.value.trim().toLowerCase();opts=q?names.filter(n=>!used.includes(n)&&n.toLowerCase().includes(q)).sort((a,b)=>a.toLowerCase().indexOf(q)-b.toLowerCase().indexOf(q)).slice(0,8):[];sel=0;ul.hidden=!opts.length;ul.innerHTML=opts.map((n,i)=>`<li data-n="${esc(n)}" class="${i===sel?"on":""}">${av(imgOf(n))}${esc(n)}</li>`).join("")};
+  // Rank: exact match (or exact song title) first, then names starting with the text, then anywhere; several words can match
+  // across title and artist ("home drake"). Without this, short titles like "Run" or "i" could never reach the top 8.
+  const draw=()=>{const q=inp.value.trim().toLowerCase(),words=q.split(/\s+/);opts=[];
+    if(q){const hits=[];for(const n of names){if(used.includes(n))continue;const l=n.toLowerCase(),i=l.indexOf(q);let r;
+      if(i>=0)r=l===q||l.startsWith(q+" — ")?0:i===0?1:2+i/1000;else if(words.length>1&&words.every(w=>l.includes(w)))r=3;else continue;
+      hits.push([r,l.length,n])}
+      opts=hits.sort((a,b)=>a[0]-b[0]||a[1]-b[1]).slice(0,8).map(h=>h[2])}
+    sel=0;ul.hidden=!opts.length;ul.innerHTML=opts.map((n,i)=>`<li data-n="${esc(n)}" class="${i===sel?"on":""}">${av(imgOf(n))}${esc(n)}</li>`).join("")};
   inp.oninput=()=>{inp.removeAttribute("aria-invalid");draw()};
   inp.onblur=()=>{ul.hidden=true};inp.onfocus=()=>{if(inp.value.trim())draw()};
   const submit=()=>{const q=inp.value.trim().toLowerCase();if(!q)return;const ex=names.find(n=>n.toLowerCase()===q&&!used.includes(n));if(ex)return onGuess(ex);if(!opts.length)draw();if(opts.length)onGuess(opts[sel]||opts[0]);else inp.setAttribute("aria-invalid","true");};
