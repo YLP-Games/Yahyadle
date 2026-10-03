@@ -31,5 +31,6 @@ then open http://localhost:8765. Opening `index.html` straight from disk also wo
 Unofficial fan project, not affiliated with any of the original sites or rights holders.
 
 ## Songdle
-- Audio comes from free 30-second iTunes previews, looked up by song and artist.
+- Audio comes from free 30-second iTunes previews, looked up by song and artist (US store first, then the UK store). If a song has no preview, a new one is dealt automatically.
 - Built-in chart pool with genre and era filters, or play your own playlists: export from Spotify (exportify.app) or Apple Music (tunemymusic.com) as CSV and import it in the Songdle tab, or add a shared `playlists.json` to the repo.
+- `playlists.json` holds Yahya's Apple Music library (1,475 songs: music videos, a digital booklet and untagged local files removed, duplicates merged).
