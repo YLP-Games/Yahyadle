@@ -321,9 +321,17 @@ html[data-game="song"]{--bg:#0a0f0c;--panel:#111a14;--panel2:#1a271e;--line:#2a3
 .sg-play.playing{animation:pulse 1s ease-in-out infinite}
 .sg-play .i-pause{display:none}.sg-play.playing .i-pause{display:block}.sg-play.playing .i-play{display:none}.sg-play .i-pause{margin-left:0}
 @keyframes pulse{50%{box-shadow:0 0 0 14px color-mix(in srgb,var(--accent) 10%,transparent)}}
-.sg-meter{display:flex;gap:4px;width:min(560px,100%)}
-.sg-meter span{flex:1;background:var(--panel2);border-radius:6px;text-align:center;font:600 11px var(--mono);padding:6px 0;color:var(--muted);min-width:0}
-.sg-meter span.on{background:var(--accent);color:#06240f}
+.sg-scrub{position:relative;width:min(560px,100%);padding:12px 0 30px;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;--open:0%;--pos:0%}
+.sg-scrub:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:8px}
+.sg-track{position:relative;height:12px;border-radius:999px;background:var(--panel2);box-shadow:inset 0 0 0 1px var(--line)}
+.sg-open{position:absolute;left:0;top:0;bottom:0;width:var(--open);min-width:6px;border-radius:999px;background:color-mix(in srgb,var(--accent) 30%,transparent)}
+.sg-fill{position:absolute;left:0;top:0;bottom:0;width:var(--pos);border-radius:999px;background:var(--accent)}
+.sg-track i{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;border-radius:1px;background:var(--line)}
+.sg-knob{position:absolute;top:50%;left:var(--pos);width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.5);transition:transform .12s}
+.sg-scrub:hover .sg-knob,.sg-scrub:active .sg-knob{transform:scale(1.15)}
+.sg-tip{position:absolute;top:30px;left:clamp(18px,var(--pos),calc(100% - 18px));transform:translateX(-50%);font:700 12px var(--mono);color:var(--accent);white-space:nowrap;pointer-events:none}
+.sg-tip::before{content:"\25B2";display:block;text-align:center;font-size:8px;line-height:1.1}
+.sg-end{position:absolute;right:0;top:32px;font:600 11px var(--mono);color:var(--muted);pointer-events:none}
 .sg-rows{display:flex;flex-direction:column;gap:6px;max-width:720px;margin:10px auto 0}
 .sg-row{display:flex;gap:6px}
 .sg-row span{flex:1;min-width:0;border-radius:8px;padding:8px;text-align:center;font-weight:600;font-size:14px;overflow-wrap:anywhere;animation:flip .35s both}
@@ -854,7 +862,24 @@ GAMES.push({id:"song",name:"Songdle",tag:"Guess the song",c:"#1ed760",modes:["So
 if(store.last==="song"){cur=GAMES.find(g=>g.id==="song");mode="Song"}
 function songRound(){const pool=songPool();return{target:pool.length?pick(pool,"song"):null,guesses:[],done:false,step:0}}
 let songAudio=null,songTimer=null;let songVol=0.8;try{const v=parseFloat(localStorage.getItem("songvol"));if(v>=0&&v<=1)songVol=v}catch(e){}
-function songStop(){if(songTimer){clearTimeout(songTimer);songTimer=null}if(songAudio){songAudio.pause()}document.querySelectorAll(".sg-play").forEach(b=>{b.classList.remove("playing");b.setAttribute("aria-label","Play")})}
+// The clip plays from the scrubber position (st.pos) up to the unlocked length (limit); total is the bar's full scale
+let songCtx=null,songRaf=0;
+function songStop(){if(songTimer){clearTimeout(songTimer);songTimer=null}cancelAnimationFrame(songRaf);
+  if(songAudio&&!songAudio.paused&&songCtx)songCtx.st.pos=Math.min(songAudio.currentTime,songCtx.limit);
+  if(songAudio)songAudio.pause();document.querySelectorAll(".sg-play").forEach(b=>{b.classList.remove("playing");b.setAttribute("aria-label","Play")});songDraw()}
+function songDraw(){const sc=$("#sg-scrub");if(!sc||!songCtx)return;const {st,limit,total}=songCtx;
+  const t=songAudio&&!songAudio.paused?Math.min(songAudio.currentTime,limit):st.pos||0;
+  sc.style.setProperty("--open",limit/total*100+"%");sc.style.setProperty("--pos",t/total*100+"%");
+  $("#sg-pos").textContent=t.toFixed(1)+"s";sc.setAttribute("aria-valuemax",limit.toFixed(1));sc.setAttribute("aria-valuenow",t.toFixed(1));sc.setAttribute("aria-valuetext",t.toFixed(1)+" of "+(+limit.toFixed(1))+" seconds")}
+function songPlay(){if(!songAudio||!songCtx)return;songStop();const ctx=songCtx,st=ctx.st;
+  if((st.pos||0)>=ctx.limit-0.02)st.pos=0;try{songAudio.currentTime=st.pos||0}catch(e){}
+  const btn=$("#sg-play");if(btn){btn.classList.add("playing");btn.setAttribute("aria-label","Pause")}
+  const end=()=>{if(songCtx!==ctx)return;cancelAnimationFrame(songRaf);if(songTimer){clearTimeout(songTimer);songTimer=null}if(songAudio)songAudio.pause();st.pos=ctx.limit;songStop()};
+  const tick=()=>{if(!songAudio||songAudio.paused||songCtx!==ctx)return;if(songAudio.currentTime>=ctx.limit)return end();songDraw();songRaf=requestAnimationFrame(tick)};
+  songAudio.onended=end;
+  const p=songAudio.play();
+  // Time the stop from when sound actually starts, so a 0.1s clip really is 0.1s
+  Promise.resolve(p).then(()=>{if(songCtx!==ctx||songAudio.paused)return;songTimer=setTimeout(end,Math.max(0,(ctx.limit-songAudio.currentTime)*1000));songRaf=requestAnimationFrame(tick)}).catch(()=>{songStop()})}
 const prevCache={};
 function jsonp(url){return new Promise((res,rej)=>{const cb="__jp"+Math.random().toString(36).slice(2);const sc=document.createElement("script");const t=setTimeout(()=>{cleanup();rej(new Error("timeout"))},9000);
   function cleanup(){clearTimeout(t);delete window[cb];sc.remove()}window[cb]=d=>{cleanup();res(d)};sc.src=url+(url.includes("?")?"&":"?")+"callback="+cb;sc.onerror=()=>{cleanup();rej(new Error("blocked"))};document.head.appendChild(sc)})}
@@ -877,13 +902,6 @@ async function findPreview(song){
   const year=yrs.length?Math.min(...yrs):0;
   return prevCache[key]=best?{url:best.previewUrl,art:(best.artworkUrl100||"").replace("100x100","300x300"),link:best.trackViewUrl,year}:(year?{year,none:1}:null);
 }
-function playClip(sec,btn){
-  songStop();if(!songAudio)return;try{songAudio.currentTime=0}catch(e){}
-  const p=songAudio.play();if(p&&p.catch)p.catch(()=>{btn&&btn.classList.remove("playing")});btn&&(btn.classList.add("playing"),btn.setAttribute("aria-label","Pause"));
-  const off=()=>btn&&(btn.classList.remove("playing"),btn.setAttribute("aria-label","Play"));
-  if(sec)songTimer=setTimeout(()=>{songAudio.pause();off()},sec*1000);
-  else songAudio.onended=off;
-}
 function renderSong(){
   songStop();
   const st=state(),t=st.target,artistMode=mode==="Artist";
@@ -895,9 +913,16 @@ function renderSong(){
     <label>Era <select id="sg-era">${ERAS.map(e=>`<option${SONG.era===e[0]?" selected":""}>${e[0]}</option>`).join("")}</select></label></div>`;
   if(!t){h+=`<div class="clue"><span class="k">No songs here yet</span>${SONG.src==="charts"?"No chart songs match these filters. Try another genre or era.":"This playlist is empty. Import it below, or pick Charts."}</div>`+songImport();$("#stage").innerHTML=h;wireSongFilters();return}
   const step=Math.min(st.guesses.length,CLIPS.length-1),len=st.done?0:CLIPS[step];
+  // Scrubber: during a round the bar spans the longest clip and only the unlocked part can be played or dragged;
+  // once the round is over it spans the whole preview
+  const total=st.done?30:CLIPS[CLIPS.length-1],limit=st.done?30:len;
+  if(st.seen!==limit){st.seen=limit;st.pos=0}
+  songCtx={st,limit,total};
   h+=`<div class="sg-player"><div class="sg-controls">${st.done?`<span class="sg-side"></span>`:`<button class="btn sg-side" id="skip">Skip<small>+${CLIPS[Math.min(step+1,CLIPS.length-1)]}s</small></button>`}<button class="sg-play" id="sg-play" aria-label="Play"><svg class="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><svg class="i-pause" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></button>${st.done?`<button class="btn sg-side" id="shuffle">Next song</button>`:`<span class="sg-side"></span>`}</div>
     <label class="sg-vol" for="sg-vol"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z"/></svg><span class="sr">Volume</span><input type="range" id="sg-vol" min="0" max="100" step="1" value="${Math.round(songVol*100)}" aria-label="Volume"><output id="sg-vol-out">${Math.round(songVol*100)}%</output></label>
-    <div class="sg-meter">${CLIPS.map((c,i)=>`<span class="${i<=step||st.done?"on":""}" >${c}s</span>`).join("")}</div>
+    <div class="sg-scrub" id="sg-scrub" role="slider" tabindex="0" aria-label="Position in the clip" aria-valuemin="0" style="--open:${limit/total*100}%;--pos:0%">
+      <div class="sg-track"><div class="sg-open"></div><div class="sg-fill"></div>${st.done?"":CLIPS.slice(0,-1).map(c=>`<i style="left:${c/total*100}%"></i>`).join("")}<div class="sg-knob"></div></div>
+      <div class="sg-tip"><span id="sg-pos">0.0s</span></div><span class="sg-end">${st.done?"":limit+"s of "+total+"s"}</span></div>
     <p class="meta" id="sg-status">${st.done?"Full preview":"Clip: "+len+"s"} · loading…</p></div>`;
   if(st.done)h+=`<div class="win ${st.won?"":"lose"}"><img id="sg-art" class="av big" alt="" hidden><div><h3>${esc(t.name)}</h3><span class="meta">${esc(t.v[0])} · ${esc(t.v[1][1])}${t.v[2]!=="—"?" · "+esc(t.v[2]):""} · ${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span>${t.who?`<span class="sg-own${t.who.length>1?" both":""}">${t.who.length>1?"On both your playlists":"Only on "+esc(t.who[0])+"'s playlist"}</span>`:""}${st.won?(c=>`<span class="sg-got">Got it in ${c} second${c===1?"":"s"}</span>`)(CLIPS[Math.min(st.guesses.length-1,CLIPS.length-1)]):""}</div></div>`;
   else h+=`<div class="bar"><div class="search"><input id="guess" autocomplete="off" placeholder="${artistMode?"Type an artist…":"Type a song title…"}" aria-label="Guess"><ul class="sugg" id="sugg" hidden></ul></div>
@@ -917,11 +942,22 @@ function renderSong(){
     // No clip for this one (it happens for a few songs Apple's search can't find): quietly deal another before anyone has guessed
     if(!p){const k=cur.id+":"+mode;if(!st.done&&!st.guesses.length&&S[k]===st&&(st.auto||0)<5){const n=songRound();n.auto=(st.auto||0)+1;S[k]=n;render();return}
       status.textContent=st.done?"No preview found for this song.":"No preview found for this song. Press Give up to get another one.";return}
-    songAudio=new Audio(p.url);songAudio.preload="auto";songAudio.volume=songVol;status.textContent=(st.done?"Full preview":"Clip: "+len+"s")+" · press play";if(st.done&&st.won&&!st.autoplayed){st.autoplayed=true;status.textContent="Full preview · playing";playClip(0,$("#sg-play"))}
+    songAudio=new Audio(p.url);songAudio.preload="auto";songAudio.volume=songVol;status.textContent=(st.done?"Full preview":"Clip: "+len+"s")+" · press play";songAudio.onloadedmetadata=()=>{if(st.done&&songCtx&&songCtx.st===st&&isFinite(songAudio.duration)){songCtx.limit=songCtx.total=songAudio.duration;songDraw()}};
+    if(st.done&&st.won&&!st.autoplayed){st.autoplayed=true;status.textContent="Full preview · playing";st.pos=0;songPlay()}
     if(st.done){const a=$("#sg-art");if(a&&p.art){a.src=p.art;a.hidden=false}}
   }).catch(()=>{if(status)status.textContent="Couldn't reach the preview service. Song audio works on the GitHub Pages site."});
   const vol=$("#sg-vol");if(vol)vol.oninput=()=>{songVol=vol.value/100;if(songAudio)songAudio.volume=songVol;$("#sg-vol-out").textContent=vol.value+"%";try{localStorage.setItem("songvol",String(songVol))}catch(e){}};
-  play.onclick=()=>{if(songAudio&&!songAudio.paused){songStop();play.setAttribute("aria-label","Play")}else if(st.done&&songAudio&&songAudio.currentTime>0&&!songAudio.ended){const q=songAudio.play();if(q&&q.catch)q.catch(()=>{});play.classList.add("playing");play.setAttribute("aria-label","Pause")}else{playClip(len,play);play.setAttribute("aria-label","Pause")}};
+  play.onclick=()=>{if(songAudio&&!songAudio.paused)songStop();else songPlay()};
+  // Drag or tap the bar to move within the unlocked part; playback carries on from where you let go
+  const sc=$("#sg-scrub"),track=sc.querySelector(".sg-track");let drag=false,resume=false;
+  const at=e=>{const r=track.getBoundingClientRect();return Math.max(0,Math.min(songCtx.limit,(e.clientX-r.left)/r.width*songCtx.total))};
+  sc.onpointerdown=e=>{drag=true;resume=!!(songAudio&&!songAudio.paused);if(resume)songStop();try{sc.setPointerCapture(e.pointerId)}catch(_){}st.pos=at(e);songDraw();e.preventDefault()};
+  sc.onpointermove=e=>{if(!drag)return;st.pos=at(e);songDraw()};
+  sc.onpointerup=sc.onpointercancel=()=>{if(!drag)return;drag=false;if(resume)songPlay()};
+  sc.onkeydown=e=>{const d=st.done?1:Math.max(0.1,songCtx.limit/20),k=e.key;let p=st.pos||0;
+    if(k==="ArrowRight"||k==="ArrowUp")p+=d;else if(k==="ArrowLeft"||k==="ArrowDown")p-=d;else if(k==="Home")p=0;else if(k==="End")p=songCtx.limit;else if(k===" "||k==="Enter"){e.preventDefault();play.click();return}else return;
+    e.preventDefault();const was=!!(songAudio&&!songAudio.paused);if(was)songStop();st.pos=Math.max(0,Math.min(songCtx.limit,p));songDraw();if(was)songPlay()};
+  songDraw();
   const sh=$("#shuffle");if(sh)sh.onclick=()=>{songStop();lastAns[cur.id+mode]=t.name+" — "+t.v[0];S[cur.id+":"+mode]=newRound();render()};
   if(st.done)return;
   // Guess from the whole playlist, and always include this round's answer (a year correction can move it out of the era filter)
