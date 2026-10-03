@@ -825,6 +825,10 @@ function renderList(){
 $("#carts").onclick=e=>{const b=e.target.closest(".cart");if(!b)return;cur=GAMES.find(g=>g.id===b.dataset.id);if(mode!=="Character list"&&mode!=="Classic"&&!(cur.clues||{})[mode])mode="Classic";sortCol=0;filter="";render()};
 $("#tabs").onclick=e=>{const b=e.target.closest(".tab");if(!b)return;mode=b.dataset.m;sortCol=0;render()};
 render();
+// Optional quotes.json next to the page: {"marvel":{"Character name":"quote", ...}}
+fetch("quotes.json",{cache:"no-cache"}).then(r=>r.ok?r.json():null).then(q=>{if(!q||!q.marvel)return;
+  const g=GAMES.find(x=>x.id==="marvel");g.items.forEach(it=>{const t=q.marvel[it.name];if(typeof t==="string"&&t.trim())it.q=t.trim()});if(cur.id==="marvel")render();}).catch(()=>{});
+
 </script>
 
 </body>
