@@ -245,6 +245,24 @@ table.g td.name .nm{text-align:center}
   table.list td.name .av{width:64px;height:64px;margin:0}
   table.list td.name .nm{font-size:16px;font-weight:600}
 }
+
+/* ---- Planespottle zoom game ---- */
+.pl{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:18px;align-items:start}
+.plframe{aspect-ratio:3/2;max-width:100%;overflow:hidden;border-radius:10px;background:var(--panel2);display:flex;align-items:center;justify-content:center;text-align:center;padding:0}
+.plframe img{width:100%;height:100%;object-fit:cover;transform:scale(var(--z));transform-origin:var(--fx) var(--fy);transition:transform .6s ease;user-select:none}
+.plframe .meta{padding:16px}
+.plcredit{margin:6px 0 0}.plcredit a{color:inherit}
+.pltitle{color:var(--muted);font-size:20px;margin:0 0 10px;text-align:center}
+.plsel{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.plsel select{background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:11px 10px;font:600 15px var(--body);min-width:0}
+.plgo{width:100%;margin-top:10px;padding:14px;font-size:16px}
+.plrows{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.plrow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.plrow span{border-radius:8px;padding:8px 6px;text-align:center;font-weight:600;font-size:14px;animation:flip .35s both}
+.plrow small{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.06em;opacity:.8}
+.plrow .hit{background:var(--hit)}.plrow .miss{background:var(--miss)}
+@media (max-width:800px){.pl{grid-template-columns:1fr}.pltitle{font-size:16px}.plsel select{font-size:14px;padding:10px 6px}}
+@media (prefers-reduced-motion:reduce){.plframe img{transition:none}}
 </style>
 </head>
 <body>
@@ -678,7 +696,48 @@ function renderTabs(){
 const FLAME='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c1 3.5-1.5 5-1.5 7.5 0 1.4 1 2.5 2.3 2.5 1.5 0 2.4-1.2 2.2-3 2.6 1.9 4 4.6 4 7.5A7 7 0 0 1 5 16.5c0-4.6 4.2-7.2 7-14.5z"/></svg>';
 function banner(){const m=/dle$/i.test(cur.name)?[cur.name.slice(0,-3),"dle"]:[cur.name.slice(0,-3),cur.name.slice(-3)];const n=m[0];const s=store[cur.id]||{w:0,streak:0,best:0};
   return `<div class="logo">${esc(n)}<span>${esc(m[1])}</span></div><div class="chips"><span class="chip" title="Current win streak">${FLAME}Streak ${s.streak}</span><span class="chip ghost">Best ${s.best||0}</span><span class="chip ghost">Wins ${s.w}</span></div>`}
-function render(){renderCarts();renderTabs();mode==="Character list"?renderList():mode==="Classic"?renderClassic():renderClue()}
+function render(){renderCarts();renderTabs();mode==="Character list"?renderList():mode==="Classic"?(cur.id==="plane"?renderPlane():renderClassic()):renderClue()}
+const PZ=[5,3.6,2.6,1.9,1.4,1],PMAX=6;
+function renderPlane(){
+  const st=state(),t=st.target;
+  if(!st.f)st.f={x:20+Math.random()*60,y:25+Math.random()*50};
+  if(!st.sel)st.sel={mk:"",md:"",al:""};
+  const pool=cur.items.filter(x=>x.reg);
+  const makes=[...new Set(cur.items.map(x=>x.v[0]))].sort();
+  const airlines=[...new Set(pool.map(x=>x.al))].sort();
+  const z=st.done?1:PZ[Math.min(st.guesses.length,PZ.length-1)];
+  const left=PMAX-st.guesses.length;
+  let h=banner()+`<div class="pl"><div class="plimg"><div class="plframe" id="pframe" style="--z:${z};--fx:${st.f.x}%;--fy:${st.f.y}%"><p class="meta">Loading photo…</p></div><p class="meta plcredit" id="pcredit"></p></div><div class="plform">`;
+  if(!st.done){
+    const opt=(arr,v,ph)=>`<option value="">${ph}</option>`+arr.map(a=>`<option${a===v?" selected":""}>${esc(a)}</option>`).join("");
+    const models=cur.items.filter(x=>!st.sel.mk||x.v[0]===st.sel.mk).map(x=>x.name).sort();
+    h+=`<p class="pltitle">Select a make, model and airline</p><div class="plsel">
+      <select id="pmk" aria-label="Make">${opt(makes,st.sel.mk,"Make")}</select>
+      <select id="pmd" aria-label="Model">${opt(models,st.sel.md,"Model")}</select>
+      <select id="pal" aria-label="Airline">${opt(airlines,st.sel.al,"Airline")}</select></div>
+      <button class="btn primary plgo" id="pgo">Guess (${left} left)</button>
+      <div class="bar" style="margin-top:8px"><button class="btn" id="shuffle">Shuffle new plane</button><button class="btn" id="giveup">Give up</button></div>`;
+  }else{
+    h+=`<div class="win ${st.won?"":"lose"}"><div><h3>${st.won?"Got it":"It was"}: ${esc(t.v[0])} ${esc(t.name.replace(t.v[0]+" ",""))}</h3><span class="meta">${esc(t.al)} · ${esc(t.reg)} · ${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span></div></div>
+      <div class="bar"><button class="btn primary" id="shuffle">Shuffle new plane</button></div>`;
+  }
+  h+=`<div class="plrows">`+st.guesses.slice().reverse().map(g=>`<div class="plrow">${[["Make",g.mk,t.v[0]],["Model",g.md,t.name],["Airline",g.al,t.al]].map(([l,v,a])=>`<span class="${v===a?"hit":"miss"}"><small>${l}</small>${esc(v||"—")}</span>`).join("")}</div>`).join("")+`</div>`;
+  if(lastAns[cur.id+mode])h+=`<p class="prev">Previous plane was <b>${esc(lastAns[cur.id+mode])}</b></p>`;
+  h+=`</div></div>`;
+  $("#stage").innerHTML=h;
+  loadPhoto(t.reg).then(p=>{const f=$("#pframe"),c=$("#pcredit");if(!f)return;
+    if(p){f.innerHTML=`<img src="${esc(p.src)}" alt="Mystery aircraft" draggable="false">`;c.innerHTML=`Photo © <a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.by)}</a> via Planespotters.net`;}
+    else if(p===null)f.innerHTML='<p class="meta">Planespotters has no photo of this aircraft yet. Press Shuffle.</p>';
+    else f.innerHTML='<p class="meta">Photos load on the GitHub Pages site. They can\'t load in this preview.</p>';});
+  const sh=$("#shuffle");sh.onclick=()=>{lastAns[cur.id+mode]=t.name;S[cur.id+":"+mode]=newRound();render()};
+  const gu=$("#giveup");if(gu)gu.onclick=()=>{st.done=true;st.won=false;bump(false);render()};
+  const mk=$("#pmk");if(!mk)return;
+  mk.onchange=()=>{st.sel.mk=mk.value;const m=cur.items.find(x=>x.name===st.sel.md);if(m&&mk.value&&m.v[0]!==mk.value)st.sel.md="";render()};
+  $("#pmd").onchange=e=>{st.sel.md=e.target.value;const m=cur.items.find(x=>x.name===st.sel.md);if(m)st.sel.mk=m.v[0];render()};
+  $("#pal").onchange=e=>{st.sel.al=e.target.value};
+  $("#pgo").onclick=()=>{const g={mk:st.sel.mk,md:st.sel.md,al:st.sel.al};if(!g.mk||!g.md||!g.al){$("#pgo").textContent="Pick a make, model and airline";return}
+    st.guesses.push(g);if(g.md===t.name&&g.al===t.al&&g.mk===t.v[0]){st.done=true;st.won=true;bump(true)}else if(st.guesses.length>=PMAX){st.done=true;st.won=false;bump(false)}render()};
+}
 
 function searchBar(placeholder){
   return `<div class="bar"><div class="search"><input id="guess" autocomplete="off" placeholder="${placeholder}" aria-label="Guess"><ul class="sugg" id="sugg" hidden></ul></div>
