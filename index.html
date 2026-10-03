@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Yahyadle</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=JetBrains+Mono:wght@500&display=swap">
@@ -78,22 +78,93 @@ table.list tr:hover td{background:var(--panel2)}
 td.name{white-space:nowrap}
 .sugg li{display:flex;align-items:center}
 .sugg .av{width:28px;height:28px}
+
+/* ---- Layout v2: full-width desktop ---- */
+.wrap{max-width:1680px;padding-inline:clamp(12px,2vw,28px);padding-block:12px 32px}
+header{margin-bottom:10px;align-items:center}
+.brand{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;min-width:0}
+h1{font-size:clamp(24px,2.6vw,34px)}
+.sub{margin:0;font-size:13px}
+.streaks{white-space:nowrap}
+.carts{grid-template-columns:repeat(8,minmax(0,1fr));gap:6px;margin-bottom:8px}
+.cart{padding:7px 9px;min-width:0}
+.cart b,.cart small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cart b{font-size:13px}
+.tabs{margin-bottom:8px}
+.stage{padding:14px}
+table.g{width:100%;table-layout:fixed;border-spacing:4px}
+table.g th:first-child{width:clamp(150px,15%,230px)}
+table.g td{min-width:0;height:52px;padding:7px 5px;overflow-wrap:anywhere;animation:none}
+table.g tr.new td{animation:flip .35s both}
+.listwrap{max-height:calc(100vh - 230px);max-height:calc(100dvh - 230px)}
+.note{color:var(--muted);font-size:12px;margin-top:12px;max-width:80ch}
+.note summary{cursor:pointer}
+.m-only{display:none}
+@media (max-width:1000px){.carts{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
+/* ---- Mobile layout ---- */
+@media (max-width:700px){
+  body{font-size:14px}
+  .wrap{padding-inline:12px;padding-block:6px 28px}
+  header{margin-bottom:4px}
+  h1{font-size:22px}
+  .sub{display:none}
+  .streaks{font-size:11px}
+  .gname{display:none}
+  .dock{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;background:var(--bg);margin-inline:-12px;padding:6px 12px 8px;border-bottom:1px solid var(--line);margin-bottom:10px}
+  .carts{display:flex;overflow-x:auto;gap:6px;margin-bottom:6px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .carts::-webkit-scrollbar,.tabs::-webkit-scrollbar{display:none}
+  .cart{flex:0 0 auto;flex-direction:row;align-items:center;gap:7px;padding:7px 11px;border-radius:999px;border-width:1px}
+  .cart small{display:none}
+  .cart .dot{width:8px;height:8px;border-radius:50%}
+  .cart:hover{transform:none}
+  .tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0}
+  .tab{flex:none;padding:6px 12px}
+  .stage{padding:10px;border-radius:12px}
+  .bar{gap:6px;margin-bottom:10px}
+  .search{flex-basis:100%}
+  .bar .btn{flex:1;padding:10px}
+  .gridwrap{overflow:visible}
+  table.g,table.g tbody{display:block;border-spacing:0}
+  table.g thead{display:none}
+  table.g tr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-bottom:14px}
+  table.g td{height:auto;min-height:52px;padding:6px 4px;font-size:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:7px}
+  table.g td::before{content:attr(data-l);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;opacity:.8;margin-bottom:2px}
+  table.g td.name{grid-column:1/-1;min-height:0;flex-direction:row;justify-content:flex-start;padding:0;font-size:15px;white-space:normal}
+  table.g td.name::before{display:none}
+  td .arr{font-size:13px}
+  .win{padding:10px 12px;gap:12px}
+  .win h3{font-size:16px}
+  .av.big{width:72px;height:72px}
+  .clue{padding:12px;font-size:15px}
+  .legend{gap:8px;font-size:11px}
+  .m-only{display:block}
+  .listwrap{max-height:none;overflow:visible}
+  table.list,table.list tbody{display:block}
+  table.list thead{display:none}
+  table.list tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 12px;padding:10px 0;border-bottom:1px solid var(--line)}
+  table.list td{border:0;padding:0;font-size:12px;min-width:0;overflow-wrap:anywhere}
+  table.list td::before{content:attr(data-l);display:block;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+  table.list td:first-child{grid-column:1/-1;display:flex;align-items:center;font-size:15px}
+  table.list td:first-child::before{display:none}
+  table.list tr:hover td{background:none}
+  .sortsel{background:var(--panel2);border:1px solid var(--line);color:var(--fg);font:14px var(--body);padding:10px;border-radius:9px;width:100%}
+}
 </style>
 </head>
 <body>
 
 <div class="wrap">
   <header>
-    <div>
-      <h1>YAHYA<span>DLE</span></h1>
-      <p class="sub">Every dle in one cabinet. Random character each round, unlimited replays.</p>
-    </div>
+    <div class="brand"><h1>YAHYA<span>DLE</span></h1><p class="sub">Every dle in one place. Random character each round.</p></div>
     <div class="streaks" id="score"></div>
   </header>
-  <nav class="carts" id="carts" aria-label="Games"></nav>
-  <div class="tabs" id="tabs"></div>
+  <div class="dock">
+    <nav class="carts" id="carts" aria-label="Games"></nav>
+    <div class="tabs" id="tabs"></div>
+  </div>
   <section class="stage" id="stage"></section>
-  <p class="note">Bleachdle, Jujutsudle, Cloverdle, Hunterdle, Starwarsdle and Marveldle use the character databases from their sites. Jujutsudle and Hunterdle only include characters who have appeared in the anime so far (JJK through season 3, HxH through the Election arc). Harry Potterdle uses the site's character and spell lists, with details checked against the books. Planespottle uses a hand-compiled list, with aircraft photos from Planespotters.net (credited to each photographer). Quote mode uses paraphrased lines.</p>
+  <details class="note"><summary>About the data</summary><p>Bleachdle, Jujutsudle, Cloverdle, Hunterdle, Starwarsdle and Marveldle use the character databases from their sites. Jujutsudle and Hunterdle only include characters who have appeared in the anime so far (JJK through season 3, HxH through the Election arc). Harry Potterdle uses the site's character and spell lists, with details checked against the books. Planespottle uses a hand-compiled list, with aircraft photos from Planespotters.net (credited to each photographer). Quote mode uses paraphrased lines.</p></details>
 </div>
 
 <script>
@@ -497,8 +568,9 @@ function bump(win){const s=store[cur.id]||(store[cur.id]={w:0,streak:0});if(win)
 function renderCarts(){
   $("#carts").innerHTML=GAMES.map(g=>`<button class="cart" style="--c:${g.c}" aria-pressed="${g===cur}" data-id="${g.id}"><span class="dot"></span><b>${g.name}</b><small>${g.tag} · ${g.items.length}${g.src?" · official list":""}</small></button>`).join("");
   document.documentElement.style.setProperty("--accent",cur.c);
+  const on=document.querySelector('.cart[aria-pressed="true"]');if(on&&on.scrollIntoView&&matchMedia("(max-width:700px)").matches)on.scrollIntoView({block:"nearest",inline:"center"});
   const s=store[cur.id]||{w:0,streak:0};
-  $("#score").innerHTML=`${cur.name.toUpperCase()}<br>wins ${s.w} · streak ${s.streak}`;
+  $("#score").innerHTML=`<span class="gname">${cur.name.toUpperCase()}<br></span>wins ${s.w} · streak ${s.streak}`;
 }
 function renderTabs(){
   const modes=["Classic",...Object.keys(cur.clues||{}),"Character list"];
@@ -519,7 +591,7 @@ function renderClassic(){
   if(cur.photos)h+=`<div id="pphoto" style="margin-bottom:14px"><p class="meta">Loading photo…</p></div>`;
   if(cur.hints)h+=`<div class="bar">${cur.hints.map(([n,l,k])=>st.done||st.guesses.length>=n?`<span class="clue" style="margin:0;padding:10px 14px;font-size:14px;flex:1 1 220px"><span class="k">${l}</span>${esc(t[k]||"—")}</span>`:`<span class="btn" style="cursor:default;opacity:.6">${l} in ${n-st.guesses.length}</span>`).join("")}</div>`;
   h+=`<div class="gridwrap"><table class="g"><thead><tr><th style="text-align:left">${cur.id==="plane"?"Aircraft":"Character"}</th>${cur.attrs.map(a=>`<th>${a[0]}</th>`).join("")}</tr></thead><tbody>`;
-  h+=st.guesses.slice().reverse().map(g=>`<tr><td class="name">${av(g.img)}${esc(g.name)}</td>${cur.attrs.map((a,i)=>{const[c,arr]=cmp(a,g.v[i],t.v[i]);return`<td class="${c}" style="animation-delay:${i*90}ms">${esc(fmt(a,g.v[i]))}${arr?`<span class="arr">${arr}</span>`:""}</td>`}).join("")}</tr>`).join("");
+  h+=st.guesses.slice().reverse().map((g,gi)=>`<tr${gi===0&&!st.done?' class="new"':""}><td class="name">${av(g.img)}${esc(g.name)}</td>${cur.attrs.map((a,i)=>{const[c,arr]=cmp(a,g.v[i],t.v[i]);return`<td class="${c}" data-l="${a[0]}" style="animation-delay:${i*90}ms">${esc(fmt(a,g.v[i]))}${arr?`<span class="arr">${arr}</span>`:""}</td>`}).join("")}</tr>`).join("");
   h+=`</tbody></table></div>`;
   if(!st.guesses.length)h+=`<p class="meta">Make a guess. Each column turns green on a match, amber on a partial match, red on a miss. Arrows point toward the answer.</p>`;
   h+=`<div class="legend"><span><i style="background:var(--hit)"></i>Correct</span><span><i style="background:var(--near)"></i>Partial</span><span><i style="background:var(--miss)"></i>Wrong</span><span>↑ ↓ higher / later, lower / earlier</span></div>`;
@@ -557,13 +629,14 @@ function renderList(){
   let idx=rows.map((_,i)=>i).filter(i=>rows[i].join(" ").toLowerCase().includes(filter.toLowerCase()));
   const isNum=sortCol>0&&sortCol<=cur.attrs.length&&["num","ord"].includes(cur.attrs[sortCol-1][1]);
   idx.sort((a,b)=>{const x=raw[a][sortCol],y=raw[b][sortCol];return(isNum?(x[0]-y[0]):String(x).localeCompare(String(y)))*sortDir});
-  let h=`<div class="bar"><div class="search"><input id="filter" placeholder="Filter by any detail, e.g. Gryffindor, Espada, 2014" value="${esc(filter)}" aria-label="Filter"></div><span class="meta">${idx.length} of ${rows.length}</span></div>`;
+  let h=`<div class="bar"><div class="search"><input id="filter" placeholder="Filter by any detail, e.g. Gryffindor, Espada, 2014" value="${esc(filter)}" aria-label="Filter"></div><span class="meta">${idx.length} of ${rows.length}</span><select class="sortsel m-only" id="sortsel" aria-label="Sort by">${cols.map((c,i)=>`<option value="${i}"${i===sortCol?" selected":""}>Sort by ${c}${i===sortCol?(sortDir>0?" ▲":" ▼"):""}</option>`).join("")}</select></div>`;
   h+=`<div class="listwrap"><table class="list"><thead><tr>${cols.map((c,i)=>`<th data-c="${i}">${c}${i===sortCol?(sortDir>0?" ▲":" ▼"):""}</th>`).join("")}</tr></thead><tbody>`;
-  h+=idx.map(i=>`<tr>${rows[i].map((v,c)=>`<td>${c===0?av(cur.items[i].img):""}${esc(v)}</td>`).join("")}</tr>`).join("");
+  h+=idx.map(i=>`<tr>${rows[i].map((v,c)=>`<td data-l="${esc(cols[c])}">${c===0?av(cur.items[i].img):""}${esc(v)}</td>`).join("")}</tr>`).join("");
   h+=`</tbody></table></div>`;
   if(cur.clues){for(const [m,cfg] of Object.entries(cur.clues)){h+=`<h3 style="font-family:var(--display);font-weight:400;margin:22px 0 8px">${m}s</h3><div class="listwrap" style="max-height:340px"><table class="list"><tbody>${cfg.items.filter(r=>r.join(" ").toLowerCase().includes(filter.toLowerCase())).map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join("")}</tbody></table></div>`}}
   $("#stage").innerHTML=h;
   const f=$("#filter");f.oninput=()=>{filter=f.value;renderList();const n=$("#filter");n.focus();n.setSelectionRange(n.value.length,n.value.length)};
+  const ss=$("#sortsel");if(ss)ss.onchange=()=>{const c=+ss.value;if(c===sortCol)sortDir*=-1;else{sortCol=c;sortDir=1}renderList()};
   document.querySelectorAll("th[data-c]").forEach(th=>th.onclick=()=>{const c=+th.dataset.c;if(c===sortCol)sortDir*=-1;else{sortCol=c;sortDir=1}renderList()});
 }
 $("#carts").onclick=e=>{const b=e.target.closest(".cart");if(!b)return;cur=GAMES.find(g=>g.id===b.dataset.id);if(mode!=="Character list"&&mode!=="Classic"&&!(cur.clues||{})[mode])mode="Classic";sortCol=0;filter="";render()};
