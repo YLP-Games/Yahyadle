@@ -58,7 +58,8 @@ h1 span{color:var(--accent);transition:color .3s}
 .gridwrap{overflow-x:auto}
 table.g{border-collapse:separate;border-spacing:5px;min-width:100%}
 table.g th{font:600 11px var(--body);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:2px 4px;text-align:center}
-table.g td{background:var(--panel2);border-radius:8px;padding:10px 8px;text-align:center;font-size:13px;min-width:92px;height:58px;font-weight:600;animation:flip .35s both}
+table.g td{background:var(--panel2);border-radius:8px;padding:10px 8px;text-align:center;font-size:13px;min-width:92px;height:58px;font-weight:600}
+table.g tr.new td{animation:flip .4s both}
 table.g td.name{background:transparent;text-align:left;font-family:var(--display);font-weight:400;font-size:13px;min-width:130px}
 td.hit{background:var(--hit)!important} td.near{background:var(--near)!important} td.miss{background:var(--miss)!important}
 td.hit,td.near,td.miss,.plrow span,.wrongs span{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.45)}
@@ -66,7 +67,7 @@ td.hit,td.near,td.miss,.plrow span,.wrongs span{color:#fff;text-shadow:0 1px 2px
 html[data-cb]{--hit:#2b6cc4;--near:#b85f00;--miss:#4b4b57}
 td .arr{display:block;font-size:16px;line-height:1}
 @keyframes flip{from{transform:rotateX(90deg);opacity:.2}to{transform:none;opacity:1}}
-@media (prefers-reduced-motion:reduce){table.g td,.plrow span,.search input{animation:none!important}.cart{transition:none}}
+@media (prefers-reduced-motion:reduce){table.g td,.plrow span,.sg-row span,.wrongs span,.search input{animation:none!important}.cart{transition:none}}
 .win{border:2px solid var(--hit);border-radius:12px;padding:14px 16px;margin-bottom:14px;background:color-mix(in srgb,var(--hit) 14%,var(--panel))}
 .win.lose{border-color:var(--miss);background:color-mix(in srgb,var(--miss) 14%,var(--panel))}
 .win h3{margin:0 0 4px;font-family:var(--display);font-weight:400}
@@ -296,7 +297,9 @@ table.g td.name .nm{text-align:center}
 .plgo{width:100%;margin-top:10px;padding:14px;font-size:16px}
 .plrows{display:flex;flex-direction:column;gap:6px;margin-top:12px}
 .plrow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-.plrow span{border-radius:8px;padding:8px 6px;text-align:center;font-weight:600;font-size:14px;animation:flip .35s both}
+.plrow span{border-radius:8px;padding:8px 6px;text-align:center;font-weight:600;font-size:14px}
+.plrow.new span,.sg-row.new span{animation:flip .4s both}.plrow.new span:nth-child(2),.sg-row.new span:nth-child(2){animation-delay:.15s}.plrow.new span:nth-child(3),.sg-row.new span:nth-child(3){animation-delay:.3s}
+.wrongs span.new{animation:flip .4s both}
 .plrow small{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;opacity:.8}
 .plrow .hit{background:var(--hit)}.plrow .miss{background:var(--miss)}
 @media (max-width:800px){.pl{grid-template-columns:1fr}.pltitle{font-size:16px}.plsel select{font-size:14px;padding:10px 6px}}
@@ -345,7 +348,7 @@ html[data-game="song"]{--bg:#0a0f0c;--panel:#111a14;--panel2:#1a271e;--line:#2a3
 .sg-end{position:absolute;right:0;top:32px;font:600 11px var(--mono);color:var(--muted);pointer-events:none}
 .sg-rows{display:flex;flex-direction:column;gap:6px;max-width:720px;margin:10px auto 0}
 .sg-row{display:flex;gap:6px}
-.sg-row span{flex:1;min-width:0;border-radius:8px;padding:8px;text-align:center;font-weight:600;font-size:14px;overflow-wrap:anywhere;animation:flip .35s both}
+.sg-row span{flex:1;min-width:0;border-radius:8px;padding:8px;text-align:center;font-weight:600;font-size:14px;overflow-wrap:anywhere}
 .sg-own{display:block;width:fit-content;margin-top:8px;padding:4px 11px;border-radius:999px;font:700 12px var(--body);background:var(--panel2);border:1px solid var(--line);color:var(--fg)}
 .sg-own.both{background:var(--accent);border-color:var(--accent);color:var(--on-accent,#0b1a10)}
 .sg-got{display:block;margin-top:8px;font:700 15px var(--body);color:var(--fg)}
@@ -795,6 +798,8 @@ const S={}; // per game+mode state
 let cur=GAMES.find(g=>g.id===store.last)||GAMES[0], mode="Classic", lastPick={}, shownCart=null;
 if(store.cb)document.documentElement.dataset.cb="";
 
+// A guess row flips in once, the moment it is entered (not again on later re-renders)
+function freshGuess(st){const n=st.guesses.length;if(st.seen===undefined)st.seen=n;const f=n>st.seen;st.seen=n;return f}
 function pick(pool,key){let p;do{p=rand(pool)}while(pool.length>1&&p===lastPick[key]);lastPick[key]=p;return p}
 function state(){const key=cur.id+":"+mode;if(isDaily())return dailyState(key);if(!S[key])S[key]=newRound();return S[key]}
 
@@ -991,11 +996,11 @@ function renderSong(){
   else h+=`<div class="bar"><div class="search"><input id="guess" autocomplete="off" placeholder="${artistMode?"Type an artist…":"Type a song title…"}" aria-label="Guess"><ul class="sugg" id="sugg" hidden></ul></div>
     <button class="btn primary" id="go">Guess</button><button class="btn" id="giveup">Give up</button></div>
     <p class="meta" style="text-align:center">${CLIPS.length-st.guesses.length} guess${CLIPS.length-st.guesses.length===1?"":"es"} left</p>`;
-  h+=`<div class="sg-rows">`+st.guesses.slice().reverse().map(g=>{if(g.skip)return`<div class="sg-row"><span class="miss wide">Skipped</span></div>`;
+  const sfr=freshGuess(st);h+=`<div class="sg-rows">`+st.guesses.slice().reverse().map((g,gi)=>{const nw=gi===0&&sfr?" new":"";if(g.skip)return`<div class="sg-row${nw}"><span class="miss wide">Skipped</span></div>`;
     const yr=g.v[1][0],ty=t.v[1][0],ya=!yr||!ty||yr===ty?"":ty>yr?"↑":"↓";
     const cells=artistMode?[["Artist",g.v[0],artistMatch(g,t)]]:[["Song",g.name,g.name===t.name&&g.v[0]===t.v[0]],["Artist",g.v[0],artistMatch(g,t)]];
     cells.push(["Year",(g.v[1][1]||"?")+(ya?" "+ya:""),yr&&yr===ty]);
-    return`<div class="sg-row">${cells.map(([l,v,ok])=>`<span class="${typeof ok==="string"?ok:ok?"hit":"miss"}"><small>${l}</small>${esc(v)}</span>`).join("")}</div>`}).join("")+`</div>`;
+    return`<div class="sg-row${nw}">${cells.map(([l,v,ok])=>`<span class="${typeof ok==="string"?ok:ok?"hit":"miss"}"><small>${l}</small>${esc(v)}</span>`).join("")}</div>`}).join("")+`</div>`;
   if(lastAns[cur.id+mode])h+=`<p class="prev">Previous song was <b>${esc(lastAns[cur.id+mode])}</b></p>`;
   h+=songImport();
   $("#stage").innerHTML=h;wireSongFilters();
@@ -1095,7 +1100,7 @@ function renderPlane(){
     h+=`<div class="win ${st.won?"":"lose"}"><div><h3>${st.won?"Got it: ":""}${esc(t.v[0])} ${esc(t.v[1])}</h3><span class="meta">${esc(t.v[2])}${t.reg?" · "+esc(t.reg):""} · ${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span></div></div>
       ${isDaily()?dailyDone(st):`<div class="bar"><button class="btn primary" id="shuffle">Shuffle new plane</button></div>`}`;
   }
-  h+=`<div class="plrows">`+st.guesses.slice().reverse().map(g=>`<div class="plrow">${[["Make",g.mk,t.v[0]],["Model",g.md,t.v[1]],["Airline",g.al,t.v[2]]].map(([l,v,a])=>`<span class="${v===a?"hit":"miss"}"><small>${l}</small>${esc(v||"—")}</span>`).join("")}</div>`).join("")+`</div>`;
+  {const fr=freshGuess(st);h+=`<div class="plrows">`+st.guesses.slice().reverse().map((g,gi)=>`<div class="plrow${gi===0&&fr?" new":""}">${[["Make",g.mk,t.v[0]],["Model",g.md,t.v[1]],["Airline",g.al,t.v[2]]].map(([l,v,a])=>`<span class="${v===a?"hit":"miss"}"><small>${l}</small>${esc(v||"—")}</span>`).join("")}</div>`).join("")+`</div>`;}
   if(lastAns[cur.id+mode]&&!isDaily())h+=`<p class="prev">Previous plane was <b>${esc(lastAns[cur.id+mode])}</b></p>`;
   h+=`</div></div>`;
   $("#stage").innerHTML=h;
@@ -1128,7 +1133,7 @@ function renderClassic(){
   else h+=searchBar("Type a character…");
   if(st.done)h+=isDaily()?dailyDone(st):`<div class="bar"><button class="btn primary" id="shuffle">Shuffle new character</button></div>`;
   h+=`<div class="gridwrap"><table class="g"><thead><tr><th style="text-align:left">Character</th>${cur.attrs.map(a=>`<th>${a[0]}</th>`).join("")}</tr></thead><tbody>`;
-  h+=st.guesses.slice().reverse().map((g,gi)=>`<tr${gi===0&&!st.done?' class="new"':""}><td class="name${g.img?"":" noimg"}" title="${esc(g.name)}">${av(g.img)}<span class="nm">${esc(g.name)}</span></td>${cur.attrs.map((a,i)=>{const[c,arr]=cmp(a,g.v[i],t.v[i]);return`<td class="${c}" data-l="${a[0]}" style="animation-delay:${i*90}ms">${tv(fmt(a,g.v[i]))}${arr?`<span class="arr">${arr}</span>`:""}</td>`}).join("")}</tr>`).join("");
+  const fr=freshGuess(st);h+=st.guesses.slice().reverse().map((g,gi)=>`<tr${gi===0&&fr?' class="new"':""}><td class="name${g.img?"":" noimg"}" title="${esc(g.name)}">${av(g.img)}<span class="nm">${esc(g.name)}</span></td>${cur.attrs.map((a,i)=>{const[c,arr]=cmp(a,g.v[i],t.v[i]);return`<td class="${c}" data-l="${a[0]}" style="animation-delay:${i*90}ms">${tv(fmt(a,g.v[i]))}${arr?`<span class="arr">${arr}</span>`:""}</td>`}).join("")}</tr>`).join("");
   h+=`</tbody></table></div>`;
   if(st.guesses.length)h+=`<p class="meta" style="text-align:center">Guesses this round: ${st.guesses.length}</p>`;
   if(lastAns[cur.id+mode]&&!isDaily())h+=`<p class="prev">Previous character was <b>${esc(lastAns[cur.id+mode])}</b></p>`;
@@ -1148,7 +1153,7 @@ function renderClue(){
   if(st.done)h+=`<div class="win ${st.won?"":"lose"}">${av(imgOf(t[0]),1)}<div><h3>${st.won?"Got it: ":""}${esc(t[0])}</h3><span class="meta">${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span></div></div>${isDaily()?dailyDone(st):`<div class="bar"><button class="btn primary" id="shuffle">Shuffle new one</button></div>`}`;
   else h+=searchBar("Type your answer…");
   if(lastAns[cur.id+mode]&&!isDaily())h+=`<p class="prev">Previous answer was <b>${esc(lastAns[cur.id+mode])}</b></p>`;
-  h+=`<div class="wrongs">${st.guesses.filter(g=>g!==t[0]).map(g=>`<span>${esc(g)}</span>`).join("")}</div>`;
+  const cfr=freshGuess(st),lastG=st.guesses[st.guesses.length-1];h+=`<div class="wrongs">${st.guesses.filter(g=>g!==t[0]).map(g=>`<span${cfr&&g===lastG?' class="new"':""}>${esc(g)}</span>`).join("")}</div>`;
   $("#stage").innerHTML=h;wire(st,answers,name=>{st.guesses.push(name);if(name===t[0]){st.done=true;st.won=true;bump(true)}render();focusGuess()},st.guesses);
 }
 function focusGuess(){const i=$("#guess");if(i)i.focus()}
