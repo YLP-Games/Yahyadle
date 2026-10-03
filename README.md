@@ -17,6 +17,6 @@ Open `index.html` in any browser, or visit the GitHub Pages link for this repo.
 - Jujutsudle and Hunterdle only include characters already seen in the anime (JJK through season 3, HxH through the Election arc).
 - Harry Potterdle uses the site's character and spell lists, with details checked against the books. Quote mode uses paraphrased lines.
 - Character pictures load from each original dle site, including Marveldle (Harry Potter pictures from the links in Harry Potterdle's list).
-- Planespottle uses a hand-compiled list. Aircraft photos load live from the [Planespotters.net Photo API](https://planespotters.net/photo/api), credited to each photographer.
+- Planespottle uses Planespottle's 242-photo list (Wikimedia Commons photos, credited to each photographer) plus extra aircraft with photos from the [Planespotters.net Photo API](https://planespotters.net/photo/api).
 
 Unofficial fan project, not affiliated with any of the original sites or rights holders.
