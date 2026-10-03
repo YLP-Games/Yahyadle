@@ -1,6 +1,6 @@
 # Yahyadle
 
-Every "dle" guessing game Layla and Yahya play, in one page. Each game picks a random character every round (no daily limit), and each has a sortable, filterable character list.
+Every "dle" guessing game Layla and Yahya play, in one page. Every game except Songdle has a **Daily** puzzle (one a day, the same for both of you) and an **Unlimited** mode with a random character every round. Each game also has a sortable, filterable character list.
 
 **Games:** Songdle (guess the song from a growing audio clip) · Bleachdle · Jujutsudle · Cloverdle · Hunterdle · Starwarsdle · Marveldle · Harry Potterdle (classic, spell, location, quote, description) · Planespottle
 
@@ -15,8 +15,12 @@ then open http://localhost:8765. Opening `index.html` straight from disk also wo
 
 ## How it works
 - Guess a character; each column turns green (match), amber (partial match) or red (miss). Arrows show whether the answer is higher/later or lower/earlier.
-- **Shuffle new character** starts a fresh round.
-- Wins, streaks, the last game you played and the colour-blind setting are saved in your own browser.
+- **Daily / Unlimited** switch (next to the mode tabs, every game except Songdle):
+  - Daily gives one puzzle per game and mode each day, picked from the date, so everyone gets the same one. It works through the whole list before an answer repeats.
+  - Progress is saved, so reloading keeps your guesses. Once it's done, a countdown shows when the next one arrives.
+  - If a daily isn't finished by midnight, it carries over until you finish it (win or give up), then you move on to the current day's. Missed days are skipped, so it's always one a day.
+- In Unlimited, **Shuffle new character** starts a fresh random round.
+- Wins, streaks, daily progress, the last game you played, Daily/Unlimited and the colour-blind setting are saved in your own browser.
 - **Colour-blind colours** (under the guess grid) swaps green / amber / red for blue / orange / grey.
 
 ## Data

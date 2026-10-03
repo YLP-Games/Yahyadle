@@ -302,6 +302,17 @@ table.g td.name .nm{text-align:center}
 @media (max-width:800px){.pl{grid-template-columns:1fr}.pltitle{font-size:16px}.plsel select{font-size:14px;padding:10px 6px}}
 @media (prefers-reduced-motion:reduce){.plframe img{transition:none}}
 
+/* ---- Daily mode ---- */
+.tabs{align-items:center}
+.dtoggle{margin-left:auto;display:inline-flex;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px}
+.dtoggle button{background:transparent;border:0;color:var(--muted);font:700 13px var(--body);padding:6px 12px;border-radius:999px;cursor:pointer}
+.dtoggle button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent,#1a1020)}
+.dbar{display:flex;justify-content:center;align-items:center;gap:8px;margin:-4px 0 12px;font:600 13px var(--body);color:var(--muted)}
+.dbar .dtag{background:var(--accent);color:var(--on-accent,#1a1020);border-radius:999px;padding:2px 9px;font:800 11px var(--body);letter-spacing:.06em;text-transform:uppercase}
+.dbar.old{color:var(--fg)}.dbar.old .dtag{background:var(--near);color:#fff}
+.dnext{justify-content:center;gap:12px}
+.dcount{font:600 14px var(--body);color:var(--muted)}.dcount b{font-family:var(--mono);color:var(--fg)}
+@media (max-width:700px){.dtoggle{margin-left:0}.dtoggle button{padding:5px 10px}}
 .hintbtn{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:120px;padding:9px 14px;border-color:var(--accent);color:var(--fg)}
 .hintbtn small{font:500 12px var(--body);color:var(--muted)}
 .hintbtn.on{background:var(--accent);color:var(--on-accent,#140c0c)}.hintbtn.on small{color:inherit;opacity:.8}
@@ -785,7 +796,58 @@ let cur=GAMES.find(g=>g.id===store.last)||GAMES[0], mode="Classic", lastPick={},
 if(store.cb)document.documentElement.dataset.cb="";
 
 function pick(pool,key){let p;do{p=rand(pool)}while(pool.length>1&&p===lastPick[key]);lastPick[key]=p;return p}
-function state(){const key=cur.id+":"+mode;if(!S[key])S[key]=newRound();return S[key]}
+function state(){const key=cur.id+":"+mode;if(isDaily())return dailyState(key);if(!S[key])S[key]=newRound();return S[key]}
+
+/* ---- Daily mode (every game except Songdle) ----
+   One puzzle per game and mode per day, the same for everyone (picked from the date). Progress is saved.
+   An unfinished puzzle carries over past midnight until it's finished; after that you move on to the current day's,
+   so it stays one a day and missed days are skipped. */
+let daily=store.daily!==false;
+const isDaily=()=>daily&&cur.id!=="song"&&mode!=="Character list";
+const dayStr=(d=new Date())=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const dayNum=s=>{const [y,m,d]=s.split("-").map(Number);return Math.round(Date.UTC(y,m-1,d)/864e5)};
+const dayLabel=s=>{const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"})};
+const hash=str=>{let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0};
+function shuffledIdx(n,seed){let a=seed||1;const rnd=()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+  const o=[...Array(n).keys()];for(let i=n-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[o[i],o[j]]=[o[j],o[i]]}return o}
+let DLY={};try{DLY=JSON.parse(localStorage.getItem("yahyadle-daily")||"{}")}catch(e){}
+const DS={}; // live daily rounds by game:mode
+const dailyPool=()=>mode!=="Classic"?cur.clues[mode].items:cur.id==="plane"?cur.items.filter(x=>x.img):cur.items;
+const dailyKey=x=>Array.isArray(x)?x[0]+"|"+x[1]:cur.id==="plane"?x.img||x.reg:x.name;
+function makeDaily(day){
+  // Walk a fixed shuffled order one step per day, so answers don't repeat until the whole list has come up
+  const pool=[...dailyPool()].sort((a,b)=>dailyKey(a)<dailyKey(b)?-1:dailyKey(a)>dailyKey(b)?1:0);
+  const order=shuffledIdx(pool.length,hash(cur.id+"|"+mode)),n=pool.length;
+  return{date:day,target:pool[order[((dayNum(day)%n)+n)%n]],guesses:[],done:false,won:false,rev:{}}}
+function restoreDaily(o){
+  let target,guesses=o.g||[];
+  if(mode!=="Classic")target=o.t;
+  else if(cur.id==="plane")target=cur.items.find(x=>(x.img||x.reg)===o.t);
+  else{target=cur.items.find(x=>x.name===o.t);guesses=guesses.map(n=>cur.items.find(x=>x.name===n)).filter(Boolean)}
+  return target?{date:o.date,target,guesses,done:!!o.done,won:!!o.won,rev:o.rev||{},sel:o.sel,f:o.f,wasDone:!!o.done}:null}
+function dailyState(key){
+  const today=dayStr();let st=DS[key];
+  if(st&&st.date!==today&&st.done&&!st.doneHere)st=null;      // an older day that's finished: on to today's
+  if(!st){const o=DLY[key];if(o&&(o.date===today||!o.done))st=restoreDaily(o);if(!st)st=makeDaily(today)}
+  return DS[key]=st}
+function saveDaily(){
+  const key=cur.id+":"+mode,st=DS[key];if(!st)return;const t=st.target;
+  if(st.done&&!st.wasDone)st.doneHere=st.wasDone=true;          // finished during this visit: keep showing it until they move on
+  DLY[key]=mode!=="Classic"?{date:st.date,t,g:st.guesses,done:st.done,won:st.won}
+    :cur.id==="plane"?{date:st.date,t:t.img||t.reg,g:st.guesses,done:st.done,won:st.won,sel:st.sel,f:st.f}
+    :{date:st.date,t:t.name,g:st.guesses.map(g=>g.name),done:st.done,won:st.won,rev:st.rev};
+  try{localStorage.setItem("yahyadle-daily",JSON.stringify(DLY))}catch(e){}}
+const untilMidnight=()=>{const n=new Date(),m=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1);return m-n};
+const hms=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return[Math.floor(s/3600),Math.floor(s/60)%60,s%60].map(x=>String(x).padStart(2,"0")).join(":")};
+function dailyBar(st){const today=dayStr(),old=st.date!==today;
+  return`<div class="dbar${old&&!st.done?" old":""}"><span class="dtag">Daily</span>${esc(dayLabel(st.date))}${old&&!st.done?" · finish it to unlock today's":""}</div>`}
+function dailyDone(st){
+  if(st.date!==dayStr())return`<div class="bar dnext"><button class="btn primary" id="dnext">Play today's daily</button></div>`;
+  return`<div class="bar dnext"><span class="dcount">Next daily in <b id="dcount">${hms(untilMidnight())}</b></span><button class="btn" id="dunl">Play unlimited</button></div>`}
+function wireDaily(){
+  const n=$("#dnext");if(n)n.onclick=()=>{DS[cur.id+":"+mode]=null;render()};
+  const u=$("#dunl");if(u)u.onclick=()=>{daily=false;store.daily=false;save();render()}}
+setInterval(()=>{const c=$("#dcount");if(!c)return;const ms=untilMidnight();c.textContent=hms(ms);if(ms<1000)setTimeout(render,1200)},1000);
 function newRound(){
   if(cur.id==="song")return songRound();
   if(mode==="Classic")return{target:pick(cur.photos?cur.items.filter(x=>x.reg||x.img):cur.items,cur.id+mode),guesses:[],done:false};
@@ -808,7 +870,8 @@ function renderCarts(){
 }
 function renderTabs(){
   const modes=cur.modes?[...cur.modes,"Character list"]:["Classic",...Object.keys(cur.clues||{}),"Character list"];
-  $("#tabs").innerHTML=modes.map(m=>`<button class="tab" aria-pressed="${m===mode}" data-m="${m}">${m==="Character list"&&cur.listName?cur.listName:m}</button>`).join("");
+  $("#tabs").innerHTML=modes.map(m=>`<button class="tab" aria-pressed="${m===mode}" data-m="${m}">${m==="Character list"&&cur.listName?cur.listName:m}</button>`).join("")
+    +(cur.id!=="song"&&mode!=="Character list"?`<span class="dtoggle" role="group" aria-label="Play mode"><button data-daily="1" aria-pressed="${daily}">Daily</button><button data-daily="0" aria-pressed="${!daily}">Unlimited</button></span>`:"");
 }
 
 /* ================= Songdle ================= */
@@ -1005,8 +1068,8 @@ const FLAME='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><pa
 // Franchise logos from Wikimedia Commons (public-domain text logos): [file, width, height, "dle" text]
 const LOGOS={bleach:["bleach.webp",822,180,"DLE"],jjk:["jjk.svg",1261,278,"DLE"],clover:["clover.webp",1027,180,"dle"],hxh:["hxh.webp",416,180,"DLE"],sw:["sw.svg",636,290,"DLE"],marvel:["marvel.svg",149,67,"DLE"],hp:["hp.svg",1730,579,"dle"]};
 function banner(){const m=/dle$/i.test(cur.name)?[cur.name.slice(0,-3),"dle"]:[cur.name.slice(0,-3),cur.name.slice(-3)];const n=m[0];const s=store[cur.id]||{w:0,streak:0,best:0};const L=LOGOS[cur.id];
-  return (L?`<div class="logo img" role="img" aria-label="${esc(cur.name)}"><img src="logos/${L[0]}" width="${L[1]}" height="${L[2]}" alt="" fetchpriority="high"><span>${L[3]}</span></div>`:`<div class="logo">${esc(n)}<span>${esc(m[1])}</span></div>`)+`<div class="chips"><span class="chip" title="Current win streak">${FLAME}Streak ${s.streak}</span><span class="chip ghost">Best ${s.best||0}</span><span class="chip ghost">Wins ${s.w}</span></div>`}
-function render(){renderCarts();renderTabs();if(cur.id!=="song")songStop();mode==="Character list"?renderList():cur.id==="song"?renderSong():mode==="Classic"?(cur.id==="plane"?renderPlane():renderClassic()):renderClue()}
+  return (L?`<div class="logo img" role="img" aria-label="${esc(cur.name)}"><img src="logos/${L[0]}" width="${L[1]}" height="${L[2]}" alt="" fetchpriority="high"><span>${L[3]}</span></div>`:`<div class="logo">${esc(n)}<span>${esc(m[1])}</span></div>`)+`<div class="chips"><span class="chip" title="Current win streak">${FLAME}Streak ${s.streak}</span><span class="chip ghost">Best ${s.best||0}</span><span class="chip ghost">Wins ${s.w}</span></div>`+(isDaily()?dailyBar(state()):"")}
+function render(){if(isDaily())saveDaily();renderCarts();renderTabs();if(cur.id!=="song")songStop();mode==="Character list"?renderList():cur.id==="song"?renderSong():mode==="Classic"?(cur.id==="plane"?renderPlane():renderClassic()):renderClue();if(isDaily()){saveDaily();wireDaily()}}
 const PZ=[3,2.3,1.75,1.35,1.1],PMAX=5;
 function renderPlane(){
   const st=state(),t=st.target;
@@ -1027,20 +1090,20 @@ function renderPlane(){
       <select id="pmd" aria-label="Model"${st.sel.mk?"":" disabled"}>${opt(models,st.sel.md,st.sel.mk?"Model":"Pick a make first",a=>bad.md.has(st.sel.mk+"|"+a))}</select>
       <select id="pal" aria-label="Airline">${opt(airlines,st.sel.al,"Airline",a=>bad.al.has(a))}</select></div>
       <button class="btn primary plgo" id="pgo">Guess (${left} left)</button>
-      <div class="bar" style="margin-top:8px"><button class="btn" id="shuffle">Shuffle new plane</button><button class="btn" id="giveup">Give up</button></div>`;
+      <div class="bar" style="margin-top:8px">${isDaily()?"":`<button class="btn" id="shuffle">Shuffle new plane</button>`}<button class="btn" id="giveup">Give up</button></div>`;
   }else{
     h+=`<div class="win ${st.won?"":"lose"}"><div><h3>${st.won?"Got it: ":""}${esc(t.v[0])} ${esc(t.v[1])}</h3><span class="meta">${esc(t.v[2])}${t.reg?" · "+esc(t.reg):""} · ${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span></div></div>
-      <div class="bar"><button class="btn primary" id="shuffle">Shuffle new plane</button></div>`;
+      ${isDaily()?dailyDone(st):`<div class="bar"><button class="btn primary" id="shuffle">Shuffle new plane</button></div>`}`;
   }
   h+=`<div class="plrows">`+st.guesses.slice().reverse().map(g=>`<div class="plrow">${[["Make",g.mk,t.v[0]],["Model",g.md,t.v[1]],["Airline",g.al,t.v[2]]].map(([l,v,a])=>`<span class="${v===a?"hit":"miss"}"><small>${l}</small>${esc(v||"—")}</span>`).join("")}</div>`).join("")+`</div>`;
-  if(lastAns[cur.id+mode])h+=`<p class="prev">Previous plane was <b>${esc(lastAns[cur.id+mode])}</b></p>`;
+  if(lastAns[cur.id+mode]&&!isDaily())h+=`<p class="prev">Previous plane was <b>${esc(lastAns[cur.id+mode])}</b></p>`;
   h+=`</div></div>`;
   $("#stage").innerHTML=h;
   (t.img?Promise.resolve({src:t.img,by:t.credit,link:t.clink,ps:1}):loadPhoto(t.reg)).then(p=>{const f=$("#pframe"),c=$("#pcredit");if(!f)return;
     if(p){const prev=st.pz||{z:PZ[0],fx:st.f.x,fy:st.f.y};f.style.setProperty('--z',prev.z);f.style.setProperty('--fx',prev.fx+'%');f.style.setProperty('--fy',prev.fy+'%');f.innerHTML=`<img src="${esc(p.src)}" alt="Mystery aircraft" draggable="false">`;requestAnimationFrame(()=>requestAnimationFrame(()=>{f.style.setProperty('--z',z);f.style.setProperty('--fx',fx+'%');f.style.setProperty('--fy',fy+'%');st.pz={z,fx,fy};}));c.innerHTML=p.ps?`Photo: ${p.link?`<a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.by||"Wikimedia Commons")}</a>`:esc(p.by)} · via Planespottle / Wikimedia Commons`:`Photo © <a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.by)}</a> via Planespotters.net`;}
     else if(p===null){if(!st.guesses.length&&S[cur.id+":"+mode]===st){S[cur.id+":"+mode]=newRound();render();return}f.innerHTML='<p class="meta">Planespotters has no photo of this aircraft yet. Press Shuffle.</p>';}
     else f.innerHTML='<p class="meta">Photos load on the GitHub Pages site. They can\'t load in this preview.</p>';});
-  const sh=$("#shuffle");sh.onclick=()=>{lastAns[cur.id+mode]=t.v[0]+" "+t.v[1]+" ("+t.v[2]+")";S[cur.id+":"+mode]=newRound();render()};
+  const sh=$("#shuffle");if(sh)sh.onclick=()=>{lastAns[cur.id+mode]=t.v[0]+" "+t.v[1]+" ("+t.v[2]+")";S[cur.id+":"+mode]=newRound();render()};
   const gu=$("#giveup");if(gu)gu.onclick=()=>{st.done=true;st.won=false;bump(false);render()};
   const mk=$("#pmk");if(!mk)return;
   mk.onchange=()=>{st.sel.mk=mk.value;if(!(cur.CAT[mk.value]||[]).includes(st.sel.md))st.sel.md="";render()};
@@ -1052,7 +1115,7 @@ function renderPlane(){
 
 function searchBar(placeholder){
   return `<div class="bar"><div class="search"><input id="guess" autocomplete="off" placeholder="${placeholder}" aria-label="Guess"><ul class="sugg" id="sugg" hidden></ul></div>
-  <button class="btn primary" id="go">Guess</button><button class="btn" id="shuffle">Shuffle new ${mode!=="Classic"?"one":"character"}</button><button class="btn" id="giveup">Give up</button></div>`;
+  <button class="btn primary" id="go">Guess</button>${isDaily()?"":`<button class="btn" id="shuffle">Shuffle new ${mode!=="Classic"?"one":"character"}</button>`}<button class="btn" id="giveup">Give up</button></div>`;
 }
 function renderClassic(){
   const st=state(),t=st.target;
@@ -1061,14 +1124,14 @@ function renderClassic(){
   if(cur.hints){const open=cur.hints.filter(([n,l])=>st.rev[l]&&(st.done||st.guesses.length>=n));
     h+=`<div class="bar hintbox">${cur.hints.map(([n,l])=>st.done||st.guesses.length>=n?`<button class="btn hintbtn${st.rev[l]?" on":""}" data-hint="${esc(l)}" aria-expanded="${!!st.rev[l]}">${l}<small>${st.rev[l]?"Hide":"Click to reveal"}</small></button>`:`<span class="btn hintbtn locked">${l}<small>in ${n-st.guesses.length} guess${n-st.guesses.length===1?"":"es"}</small></span>`).join("")}</div>`;
     if(open.length)h+=`<div class="hintshow">${open.map(([n,l,k])=>`<div class="clue"><span class="k">${l}</span>${esc(t[k]||"Not added yet")}</div>`).join("")}</div>`;}
-  if(st.done)h+=`<div class="win ${st.won?"":"lose"}">${av(t.img,1)}<div><h3>${st.won?"Got it: ":""}${esc(t.name)}</h3><span class="meta">${st.guesses.length} guess${st.guesses.length===1?"":"es"} · press Shuffle for another</span></div></div>`;
+  if(st.done)h+=`<div class="win ${st.won?"":"lose"}">${av(t.img,1)}<div><h3>${st.won?"Got it: ":""}${esc(t.name)}</h3><span class="meta">${st.guesses.length} guess${st.guesses.length===1?"":"es"}${isDaily()?"":" · press Shuffle for another"}</span></div></div>`;
   else h+=searchBar("Type a character…");
-  if(st.done)h+=`<div class="bar"><button class="btn primary" id="shuffle">Shuffle new character</button></div>`;
+  if(st.done)h+=isDaily()?dailyDone(st):`<div class="bar"><button class="btn primary" id="shuffle">Shuffle new character</button></div>`;
   h+=`<div class="gridwrap"><table class="g"><thead><tr><th style="text-align:left">Character</th>${cur.attrs.map(a=>`<th>${a[0]}</th>`).join("")}</tr></thead><tbody>`;
   h+=st.guesses.slice().reverse().map((g,gi)=>`<tr${gi===0&&!st.done?' class="new"':""}><td class="name${g.img?"":" noimg"}" title="${esc(g.name)}">${av(g.img)}<span class="nm">${esc(g.name)}</span></td>${cur.attrs.map((a,i)=>{const[c,arr]=cmp(a,g.v[i],t.v[i]);return`<td class="${c}" data-l="${a[0]}" style="animation-delay:${i*90}ms">${tv(fmt(a,g.v[i]))}${arr?`<span class="arr">${arr}</span>`:""}</td>`}).join("")}</tr>`).join("");
   h+=`</tbody></table></div>`;
   if(st.guesses.length)h+=`<p class="meta" style="text-align:center">Guesses this round: ${st.guesses.length}</p>`;
-  if(lastAns[cur.id+mode])h+=`<p class="prev">Previous character was <b>${esc(lastAns[cur.id+mode])}</b></p>`;
+  if(lastAns[cur.id+mode]&&!isDaily())h+=`<p class="prev">Previous character was <b>${esc(lastAns[cur.id+mode])}</b></p>`;
   h+=`<div class="legend"><span><i style="background:var(--hit)"></i>Correct</span><span><i style="background:var(--near)"></i>Partial</span><span><i style="background:var(--miss)"></i>Wrong</span><span>↑ ↓ higher / later, lower / earlier</span><button class="cbtoggle" id="cb" aria-pressed="${!!store.cb}">Colour-blind colours</button></div>`;
   $("#stage").innerHTML=h;
   $("#cb").onclick=()=>{store.cb=!store.cb;save();if(store.cb)document.documentElement.dataset.cb="";else delete document.documentElement.dataset.cb;$("#cb").setAttribute("aria-pressed",store.cb)};
@@ -1082,9 +1145,9 @@ function renderClue(){
   let h=banner()+`<div class="clue"><span class="k">${cfg.k}</span>${esc(t[1])}`;
   if(!st.done&&st.guesses.length>=3)h+=`<div class="hint">Hint: starts with “${esc(t[0][0])}”, ${t[0].length} characters.</div>`;
   h+=`</div>`;
-  if(st.done)h+=`<div class="win ${st.won?"":"lose"}">${av(imgOf(t[0]),1)}<div><h3>${st.won?"Got it: ":""}${esc(t[0])}</h3><span class="meta">${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span></div></div><div class="bar"><button class="btn primary" id="shuffle">Shuffle new one</button></div>`;
+  if(st.done)h+=`<div class="win ${st.won?"":"lose"}">${av(imgOf(t[0]),1)}<div><h3>${st.won?"Got it: ":""}${esc(t[0])}</h3><span class="meta">${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span></div></div>${isDaily()?dailyDone(st):`<div class="bar"><button class="btn primary" id="shuffle">Shuffle new one</button></div>`}`;
   else h+=searchBar("Type your answer…");
-  if(lastAns[cur.id+mode])h+=`<p class="prev">Previous answer was <b>${esc(lastAns[cur.id+mode])}</b></p>`;
+  if(lastAns[cur.id+mode]&&!isDaily())h+=`<p class="prev">Previous answer was <b>${esc(lastAns[cur.id+mode])}</b></p>`;
   h+=`<div class="wrongs">${st.guesses.filter(g=>g!==t[0]).map(g=>`<span>${esc(g)}</span>`).join("")}</div>`;
   $("#stage").innerHTML=h;wire(st,answers,name=>{st.guesses.push(name);if(name===t[0]){st.done=true;st.won=true;bump(true)}render();focusGuess()},st.guesses);
 }
@@ -1128,7 +1191,8 @@ function renderList(){
   document.querySelectorAll("th[data-c]").forEach(th=>th.onclick=()=>{const c=+th.dataset.c;if(c===sortCol)sortDir*=-1;else{sortCol=c;sortDir=1}renderList()});
 }
 $("#carts").onclick=e=>{const b=e.target.closest(".cart");if(!b)return;cur=GAMES.find(g=>g.id===b.dataset.id);store.last=cur.id;save();if(mode!=="Character list"&&mode!=="Classic"&&!(cur.clues||{})[mode]&&!(cur.modes||[]).includes(mode))mode="Classic";if(cur.modes&&mode==="Classic")mode=cur.modes[0];sortCol=0;songStop();filter="";render()};
-$("#tabs").onclick=e=>{const b=e.target.closest(".tab");if(!b)return;mode=b.dataset.m;sortCol=0;render()};
+$("#tabs").onclick=e=>{const d=e.target.closest("[data-daily]");if(d){daily=d.dataset.daily==="1";store.daily=daily;save();render();return}
+  const b=e.target.closest(".tab");if(!b)return;mode=b.dataset.m;sortCol=0;render()};
 render();
 // Warm the cache with the other logos once the page is idle, so switching games doesn't flash
 (window.requestIdleCallback||(f=>setTimeout(f,1500)))(()=>{Object.values(LOGOS).forEach(l=>{const i=new Image();i.src="logos/"+l[0]});
@@ -1141,7 +1205,7 @@ fetch("quotes.json",{cache:"no-cache"}).then(r=>r.ok?r.json():null).then(q=>{if(
   const rows=o=>Object.entries(o||{}).flatMap(([n,v])=>(Array.isArray(v)?v:[v]).filter(t=>typeof t==="string"&&t.trim()).map(t=>[n,t.trim()]));
   const qs=rows(q.hp_quotes),ds=rows(q.hp_descriptions);
   // Re-deal a round with the new text, unless someone has already started guessing in it
-  const fresh=k=>{if(!(S[k]&&S[k].guesses.length))delete S[k]};
+  const fresh=k=>{if(!(S[k]&&S[k].guesses.length))delete S[k];const o=DLY[k];if(o&&!o.done&&!(o.g||[]).length){delete DLY[k];delete DS[k]}};
   if(qs.length){hp.clues.Quote.items=qs;hp.clues.Quote.k="Who said it?";fresh("hp:Quote");}
   if(ds.length){hp.clues.Description.items=ds;fresh("hp:Description");}
   if(q.hp_locations){const L=hp.clues.Location.items;let ch=0;for(const [n,d] of Object.entries(q.hp_locations)){if(typeof d!=="string"||!d.trim())continue;const r=L.find(x=>x[0]===n);if(r)r[1]=d.trim();else L.push([n,d.trim()]);ch++}if(ch)fresh("hp:Location");}
