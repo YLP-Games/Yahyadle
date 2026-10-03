@@ -1091,13 +1091,16 @@ function wireSongFilters(){
   $("#sg-src").onchange=e=>{SONG.src=e.target.value;SONG.genre="All";ch()};
   $("#sg-genre").onchange=e=>{SONG.genre=e.target.value;ch()};
   $("#sg-era").onchange=e=>{SONG.era=e.target.value;ch()};
+  const un=$("#sg-unimport");if(un)un.onclick=()=>{try{localStorage.removeItem("songpl")}catch(e){}location.reload()};
   const f=$("#sg-file");if(f)f.onchange=()=>{const file=f.files[0];if(!file)return;const who=$("#sg-who").value;const r=new FileReader();
     r.onload=()=>{const rows=parseCSV(String(r.result));PLAY[who]=rows;try{localStorage.setItem("songpl",JSON.stringify(PLAY))}catch(e){}
       $("#sg-imp-msg").textContent=rows.length?`Imported ${rows.length} songs into ${who==="layla"?"Layla":"Yahya"}'s playlist on this device.`:"Couldn't find song titles and artists in that file.";
       if(rows.length){SONG.src=who;SONG.genre="All";ch()}};r.readAsText(file)};
 }
 function songImport(){return`<details class="sg-import"><summary>Import a playlist</summary><p class="meta">Export a Spotify playlist with Exportify (exportify.app) or an Apple Music playlist with TuneMyMusic (tunemymusic.com → export to file), then pick the CSV here. It's saved on this device only. To share it with Yahya, send the CSV to Claude to add to the site.</p>
-  <div class="bar"><select id="sg-who"><option value="layla">Layla's playlist</option><option value="yahya">Yahya's playlist</option></select><input type="file" id="sg-file" accept=".csv,text/csv"></div><p class="meta" id="sg-imp-msg"></p></details>`}
+  <div class="bar"><select id="sg-who"><option value="layla">Layla's playlist</option><option value="yahya">Yahya's playlist</option></select><input type="file" id="sg-file" accept=".csv,text/csv"></div><p class="meta" id="sg-imp-msg"></p>${(()=>{try{return localStorage.getItem("songpl")}catch(e){return null}})()?`<p class="meta">This device is using an imported playlist instead of the shared one. <button class="btn" id="sg-unimport">Use the shared playlists again</button></p>`:""}</details>`}
+// "Future;Juice WRLD" -> "Future & Juice WRLD" (keeps every credited artist; commas only split when there's no ";", so "Tyler, The Creator" survives)
+function joinArtists(s){const A=String(s).split(String(s).includes(";")?/\s*;\s*/:/\s*\|\s*/).map(x=>x.trim()).filter(Boolean);return A.length>1?A.slice(0,-1).join(", ")+" & "+A[A.length-1]:(A[0]||"")}
 function parseCSV(text){
   const rows=[];let row=[],f="",q=false;for(let i=0;i<text.length;i++){const c=text[i];
     if(q){if(c==='"'){if(text[i+1]==='"'){f+='"';i++}else q=false}else f+=c}
@@ -1107,7 +1110,7 @@ function parseCSV(text){
   const col=(...k)=>H.findIndex(h=>k.some(x=>h.includes(x)));
   const ti=col("track name","title","song","name"),ai=col("artist"),yi=col("release date","year","date"),gi=col("genre");
   if(ti<0||ai<0)return[];
-  return rows.slice(1).filter(r=>r[ti]&&r[ai]).map(r=>({t:r[ti].trim(),a:r[ai].split(/[;,]/)[0].trim(),y:yi>=0?parseInt(r[yi])||0:0,g:gi>=0&&r[gi]?r[gi].split(/[;,]/)[0].trim().replace(/\b\w/g,m=>m.toUpperCase()):""}));
+  return rows.slice(1).filter(r=>r[ti]&&r[ai]).map(r=>({t:r[ti].trim(),a:joinArtists(r[ai]),y:yi>=0?parseInt(r[yi])||0:0,g:gi>=0&&r[gi]?r[gi].split(/[;,]/)[0].trim().replace(/\b\w/g,m=>m.toUpperCase()):""}));
 }
 // Shared playlists committed to the repo (playlists.json: {"layla":[{t,a,y,g}], "yahya":[...]})
 fetch("playlists.json",{cache:"no-cache"}).then(r=>r.ok?r.json():null).then(p=>{if(!p)return;for(const w of ["layla","yahya"])if(Array.isArray(p[w])&&p[w].length&&!PLAY[w].length)PLAY[w]=p[w];
