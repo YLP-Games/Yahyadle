@@ -725,6 +725,7 @@ function renderPlane(){
   let h=banner()+`<div class="pl"><div class="plimg"><div class="plframe" id="pframe" style="--z:${z};--fx:${fx}%;--fy:${fy}%"><p class="meta">Loading photo…</p></div><p class="meta plcredit" id="pcredit"></p></div><div class="plform">`;
   if(!st.done){
     const bad={mk:new Set(st.guesses.filter(g=>g.mk!==t.v[0]).map(g=>g.mk)),md:new Set(st.guesses.filter(g=>g.md!==t.v[1]).map(g=>g.mk+"|"+g.md)),al:new Set(st.guesses.filter(g=>g.al!==t.v[2]).map(g=>g.al))};
+    if(st.sel.mk&&!st.sel.md){const f=(cur.CAT[st.sel.mk]||[]).find(m=>!bad.md.has(st.sel.mk+"|"+m));if(f)st.sel.md=f;}
     const opt=(arr,v,ph,isBad)=>`<option value="">${ph}</option>`+arr.map(a=>{const b=isBad(a);return`<option${a===v&&!b?" selected":""}${b?" disabled":""}>${esc(a)}${b?" ✗":""}</option>`}).join("");
     const models=(st.sel.mk?cur.CAT[st.sel.mk]:[]);
     h+=`<p class="pltitle">Select a make, model and airline</p><div class="plsel">
