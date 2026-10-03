@@ -33,5 +33,5 @@ Unofficial fan project, not affiliated with any of the original sites or rights 
 ## Songdle
 - Audio comes from free 30-second iTunes previews, looked up by song and artist (US store first, then the UK store). If a song has no preview, a new one is dealt automatically.
 - Built-in chart pool with genre and era filters, or play your own playlists: export from Spotify (exportify.app) or Apple Music (tunemymusic.com) as CSV and import it in the Songdle tab, or add a shared `playlists.json` to the repo.
-- `playlists.json` holds Yahya's Apple Music library (1,475 songs: music videos, a digital booklet and untagged local files removed, duplicates merged).
+- `playlists.json` holds both playlists. Layla's has 2,099 songs from her Spotify export. Yahya's is his Apple Music library: 1,488 songs, covering every song in the library plus songs that are only in his playlists. Untagged local files were identified from their file names; a digital booklet, a 20-second clip and one unidentifiable file with no local copy were left out, and duplicates were merged.
 - **Both playlists** merges songs you both have (same title and main artist, ignoring feat. credits, remaster/edit tags, accents and punctuation), so shared songs aren't picked twice as often. After each round it shows whether the song is on both playlists or only one.
