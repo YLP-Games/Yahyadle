@@ -792,7 +792,7 @@ function songPool(){
   const e=ERAS.find(x=>x[0]===SONG.era)||ERAS[0];
   return p.filter(x=>(SONG.genre==="All"||x.v[2]===SONG.genre)&&(e[0]==="All"||(x.v[1][0]>=e[1]&&x.v[1][0]<=e[2])));
 }
-GAMES.push({id:"song",name:"Songdle",tag:"Guess the song",c:"#1ed760",modes:["Song","Artist"],listName:"Song list",
+GAMES.push({id:"song",name:"Songdle",tag:"Guess the song",c:"#1ed760",modes:["Song"],listName:"Song list",
   attrs:[["Artist"],["Year","num"],["Genre"],["From"]],get items(){return songPool().map(x=>({name:x.name,v:[x.v[0],x.v[1],x.v[2],x.src]}))}});
 if(store.last==="song"){cur=GAMES.find(g=>g.id==="song");mode="Song"}
 function songRound(){const pool=songPool();return{target:pool.length?pick(pool,"song"):null,guesses:[],done:false,step:0}}
