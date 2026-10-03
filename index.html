@@ -847,6 +847,7 @@ fetch("quotes.json",{cache:"no-cache"}).then(r=>r.ok?r.json():null).then(q=>{if(
   const qs=rows(q.hp_quotes),ds=rows(q.hp_descriptions);
   if(qs.length){hp.clues.Quote.items=qs;hp.clues.Quote.k="Who said it?";delete S["hp:Quote"];}
   if(ds.length){hp.clues.Description.items=ds;delete S["hp:Description"];}
+  if(q.hp_locations){const L=hp.clues.Location.items;let ch=0;for(const [n,d] of Object.entries(q.hp_locations)){if(typeof d!=="string"||!d.trim())continue;const r=L.find(x=>x[0]===n);if(r)r[1]=d.trim();else L.push([n,d.trim()]);ch++}if(ch)delete S["hp:Location"];}
   render();}).catch(()=>{});
 
 </script>
