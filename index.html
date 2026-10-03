@@ -100,7 +100,7 @@ header{margin-bottom:10px;align-items:center}
 h1{font-size:clamp(24px,2.6vw,34px)}
 .sub{margin:0;font-size:13px}
 .streaks{white-space:nowrap}
-.carts{grid-template-columns:repeat(8,minmax(0,1fr));gap:6px;margin-bottom:8px}
+.carts{grid-template-columns:repeat(9,minmax(0,1fr));gap:6px;margin-bottom:8px}
 .cart{padding:7px 9px;min-width:0}
 .cart b,.cart small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cart b{font-size:13px}
@@ -114,7 +114,7 @@ table.g tr.new td{animation:flip .35s both}
 .note{color:var(--muted);font-size:13px;margin-top:12px;max-width:80ch}
 .note summary{cursor:pointer}
 .m-only{display:none}
-@media (max-width:1000px){.carts{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:1100px){.carts{grid-template-columns:repeat(5,minmax(0,1fr))}}
 
 /* ---- Mobile layout ---- */
 @media (max-width:700px){
@@ -308,6 +308,30 @@ table.g td.name .nm{text-align:center}
 .hintbtn.locked{border-color:var(--line);opacity:.6;cursor:default}
 .hintshow{display:flex;flex-direction:column;gap:8px;align-items:center;margin-bottom:12px}
 .hintshow .clue{margin:0;width:100%;max-width:70ch;text-align:center;font-size:16px;padding:12px 16px}
+
+/* ---- Songdle ---- */
+html[data-game="song"]{--bg:#0a0f0c;--panel:#111a14;--panel2:#1a271e;--line:#2a3e30;--muted:#9fbaa7;--logo:"Bungee",sans-serif;--logo-shadow:0 0 18px rgba(30,215,96,.45);
+ --deco:repeating-radial-gradient(circle at 50% 120%,transparent 0 18px,rgba(30,215,96,.05) 18px 20px)}
+.sg-filters{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:14px}
+.sg-filters label{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:13px}
+.sg-filters select,.sg-import select{background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:600 14px var(--body)}
+.sg-player{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:14px}
+.sg-play{width:76px;height:76px;border-radius:50%;border:0;background:var(--accent);color:#06240f;cursor:pointer;display:grid;place-items:center;box-shadow:0 0 0 6px color-mix(in srgb,var(--accent) 22%,transparent)}
+.sg-play svg{width:34px;height:34px;margin-left:4px}
+.sg-play.playing{animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 14px color-mix(in srgb,var(--accent) 10%,transparent)}}
+.sg-meter{display:flex;gap:4px;width:min(560px,100%)}
+.sg-meter span{flex:1;background:var(--panel2);border-radius:6px;text-align:center;font:600 11px var(--mono);padding:6px 0;color:var(--muted);min-width:0}
+.sg-meter span.on{background:var(--accent);color:#06240f}
+.sg-rows{display:flex;flex-direction:column;gap:6px;max-width:720px;margin:10px auto 0}
+.sg-row{display:flex;gap:6px}
+.sg-row span{flex:1;min-width:0;border-radius:8px;padding:8px;text-align:center;font-weight:600;font-size:14px;overflow-wrap:anywhere;animation:flip .35s both}
+.sg-row span.wide{flex:1}
+.sg-row small{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.06em;opacity:.8}
+.sg-row .hit{background:var(--hit)}.sg-row .miss{background:var(--miss)}
+.sg-import{max-width:720px;margin:16px auto 0;color:var(--muted)}
+.sg-import summary{cursor:pointer;font-weight:600}
+@media (prefers-reduced-motion:reduce){.sg-play.playing{animation:none}}
 </style>
 </head>
 <body>
@@ -729,6 +753,7 @@ if(store.cb)document.documentElement.dataset.cb="";
 function pick(pool,key){let p;do{p=rand(pool)}while(pool.length>1&&p===lastPick[key]);lastPick[key]=p;return p}
 function state(){const key=cur.id+":"+mode;if(!S[key])S[key]=newRound();return S[key]}
 function newRound(){
+  if(cur.id==="song")return songRound();
   if(mode==="Classic")return{target:pick(cur.photos?cur.items.filter(x=>x.reg||x.img):cur.items,cur.id+mode),guesses:[],done:false};
   const pool=cur.clues[mode].items;return{target:pick(pool,cur.id+mode),guesses:[],done:false};
 }
@@ -748,15 +773,133 @@ function renderCarts(){
   $("#score").innerHTML=`<span class="gname">${cur.name.toUpperCase()}<br></span>wins ${s.w} · streak ${s.streak}`;
 }
 function renderTabs(){
-  const modes=["Classic",...Object.keys(cur.clues||{}),"Character list"];
-  $("#tabs").innerHTML=modes.map(m=>`<button class="tab" aria-pressed="${m===mode}" data-m="${m}">${m}</button>`).join("");
+  const modes=cur.modes?[...cur.modes,"Character list"]:["Classic",...Object.keys(cur.clues||{}),"Character list"];
+  $("#tabs").innerHTML=modes.map(m=>`<button class="tab" aria-pressed="${m===mode}" data-m="${m}">${m==="Character list"&&cur.listName?cur.listName:m}</button>`).join("");
 }
+
+/* ================= Songdle ================= */
+const CHARTS=[["Billie Jean","Michael Jackson",1982,"Pop"],["Like a Prayer","Madonna",1989,"Pop"],["Wannabe","Spice Girls",1996,"Pop"],["...Baby One More Time","Britney Spears",1998,"Pop"],["I Want It That Way","Backstreet Boys",1999,"Pop"],["Dancing Queen","ABBA",1976,"Pop"],["Take On Me","a-ha",1985,"Pop"],["Girls Just Want to Have Fun","Cyndi Lauper",1983,"Pop"],["I Wanna Dance with Somebody (Who Loves Me)","Whitney Houston",1987,"Pop"],["Toxic","Britney Spears",2003,"Pop"],["Crazy in Love","Beyoncé",2003,"R&B"],["Hey Ya!","OutKast",2003,"Hip-Hop"],["Since U Been Gone","Kelly Clarkson",2004,"Pop"],["Umbrella","Rihanna",2007,"Pop"],["Poker Face","Lady Gaga",2008,"Pop"],["Hot n Cold","Katy Perry",2008,"Pop"],["Single Ladies (Put a Ring on It)","Beyoncé",2008,"R&B"],["I Gotta Feeling","The Black Eyed Peas",2009,"Pop"],["TiK ToK","Kesha",2009,"Pop"],["Rolling in the Deep","Adele",2010,"Pop"],["Call Me Maybe","Carly Rae Jepsen",2011,"Pop"],["Somebody That I Used to Know","Gotye",2011,"Pop"],["Shake It Off","Taylor Swift",2014,"Pop"],["Uptown Funk","Mark Ronson",2014,"Pop"],["Shape of You","Ed Sheeran",2017,"Pop"],["Bad Guy","Billie Eilish",2019,"Pop"],["Blinding Lights","The Weeknd",2019,"Pop"],["Watermelon Sugar","Harry Styles",2019,"Pop"],["Levitating","Dua Lipa",2020,"Pop"],["drivers license","Olivia Rodrigo",2021,"Pop"],["As It Was","Harry Styles",2022,"Pop"],["Anti-Hero","Taylor Swift",2022,"Pop"],["Flowers","Miley Cyrus",2023,"Pop"],["Espresso","Sabrina Carpenter",2024,"Pop"],["Birds of a Feather","Billie Eilish",2024,"Pop"],["APT.","ROSÉ",2024,"K-Pop"],["Good Luck, Babe!","Chappell Roan",2024,"Pop"],["Die With A Smile","Lady Gaga",2024,"Pop"],["Juicy","The Notorious B.I.G.",1994,"Hip-Hop"],["California Love","2Pac",1995,"Hip-Hop"],["Gangsta's Paradise","Coolio",1995,"Hip-Hop"],["Nuthin' but a \"G\" Thang","Dr. Dre",1992,"Hip-Hop"],["Rapper's Delight","The Sugarhill Gang",1979,"Hip-Hop"],["Lose Yourself","Eminem",2002,"Hip-Hop"],["In Da Club","50 Cent",2003,"Hip-Hop"],["Gold Digger","Kanye West",2005,"Hip-Hop"],["Lollipop","Lil Wayne",2008,"Hip-Hop"],["Empire State of Mind","JAY-Z",2009,"Hip-Hop"],["Super Bass","Nicki Minaj",2011,"Hip-Hop"],["HUMBLE.","Kendrick Lamar",2017,"Hip-Hop"],["God's Plan","Drake",2018,"Hip-Hop"],["SICKO MODE","Travis Scott",2018,"Hip-Hop"],["Old Town Road","Lil Nas X",2019,"Hip-Hop"],["Sunflower","Post Malone",2018,"Hip-Hop"],["WAP","Cardi B",2020,"Hip-Hop"],["First Class","Jack Harlow",2022,"Hip-Hop"],["Not Like Us","Kendrick Lamar",2024,"Hip-Hop"],["Bohemian Rhapsody","Queen",1975,"Rock"],["Hotel California","Eagles",1976,"Rock"],["Sweet Child O' Mine","Guns N' Roses",1987,"Rock"],["Smells Like Teen Spirit","Nirvana",1991,"Rock"],["Wonderwall","Oasis",1995,"Rock"],["Livin' on a Prayer","Bon Jovi",1986,"Rock"],["Back in Black","AC/DC",1980,"Rock"],["Don't Stop Believin'","Journey",1981,"Rock"],["Stairway to Heaven","Led Zeppelin",1971,"Rock"],["Creep","Radiohead",1992,"Rock"],["Mr. Brightside","The Killers",2004,"Rock"],["Seven Nation Army","The White Stripes",2003,"Rock"],["In the End","Linkin Park",2000,"Rock"],["Boulevard of Broken Dreams","Green Day",2004,"Rock"],["Use Somebody","Kings of Leon",2008,"Rock"],["Viva la Vida","Coldplay",2008,"Rock"],["Do I Wanna Know?","Arctic Monkeys",2013,"Rock"],["Radioactive","Imagine Dragons",2012,"Rock"],["Believer","Imagine Dragons",2017,"Rock"],["Heat Waves","Glass Animals",2020,"Rock"],["Sweater Weather","The Neighbourhood",2012,"Rock"],["I Will Always Love You","Whitney Houston",1992,"R&B"],["No Scrubs","TLC",1999,"R&B"],["Waterfalls","TLC",1995,"R&B"],["Let's Stay Together","Al Green",1971,"R&B"],["What's Going On","Marvin Gaye",1971,"R&B"],["Yeah!","Usher",2004,"R&B"],["Irreplaceable","Beyoncé",2006,"R&B"],["We Belong Together","Mariah Carey",2005,"R&B"],["Thinking Bout You","Frank Ocean",2012,"R&B"],["Redbone","Childish Gambino",2016,"R&B"],["Kill Bill","SZA",2022,"R&B"],["Snooze","SZA",2022,"R&B"],["Leave The Door Open","Bruno Mars",2021,"R&B"],["Essence","Wizkid",2020,"R&B"],["Jolene","Dolly Parton",1973,"Country"],["9 to 5","Dolly Parton",1980,"Country"],["Friends in Low Places","Garth Brooks",1990,"Country"],["Man! I Feel Like a Woman!","Shania Twain",1997,"Country"],["Before He Cheats","Carrie Underwood",2005,"Country"],["Love Story","Taylor Swift",2008,"Country"],["Cruise","Florida Georgia Line",2012,"Country"],["Tennessee Whiskey","Chris Stapleton",2015,"Country"],["Last Night","Morgan Wallen",2023,"Country"],["Texas Hold 'Em","Beyoncé",2024,"Country"],["A Bar Song (Tipsy)","Shaboozey",2024,"Country"],["Take Me Home, Country Roads","John Denver",1971,"Country"],["Ho Hey","The Lumineers",2012,"Country"],["Gangnam Style","PSY",2012,"K-Pop"],["Dynamite","BTS",2020,"K-Pop"],["Butter","BTS",2021,"K-Pop"],["DDU-DU DDU-DU","BLACKPINK",2018,"K-Pop"],["How You Like That","BLACKPINK",2020,"K-Pop"],["Pink Venom","BLACKPINK",2022,"K-Pop"],["Super Shy","NewJeans",2023,"K-Pop"],["Ditto","NewJeans",2022,"K-Pop"],["FANCY","TWICE",2019,"K-Pop"],["Seven","Jung Kook",2023,"K-Pop"],["Spicy","aespa",2023,"K-Pop"],["Get Lucky","Daft Punk",2013,"Electronic"],["One More Time","Daft Punk",2000,"Electronic"],["Levels","Avicii",2011,"Electronic"],["Wake Me Up","Avicii",2013,"Electronic"],["Titanium","David Guetta",2011,"Electronic"],["Don't You Worry Child","Swedish House Mafia",2012,"Electronic"],["Lean On","Major Lazer",2015,"Electronic"],["Closer","The Chainsmokers",2016,"Electronic"],["Sandstorm","Darude",1999,"Electronic"],["Blue (Da Ba Dee)","Eiffel 65",1998,"Electronic"],["Animals","Martin Garrix",2013,"Electronic"],["Despacito","Luis Fonsi",2017,"Latin"],["Gasolina","Daddy Yankee",2004,"Latin"],["Hips Don't Lie","Shakira",2006,"Latin"],["Tití Me Preguntó","Bad Bunny",2022,"Latin"],["Macarena","Los Del Rio",1995,"Latin"],["Calm Down","Rema",2022,"Afrobeats"],["Jerusalema","Master KG",2019,"Afrobeats"],["Last Last","Burna Boy",2022,"Afrobeats"],["Water","Tyla",2023,"Afrobeats"]];
+const SONG={src:"charts",genre:"All",era:"All"};try{Object.assign(SONG,JSON.parse(localStorage.getItem("songcfg")||"{}"))}catch(e){}
+const PLAY={layla:[],yahya:[]};
+try{const l=JSON.parse(localStorage.getItem("songpl")||"{}");if(l.layla)PLAY.layla=l.layla;if(l.yahya)PLAY.yahya=l.yahya}catch(e){}
+const CLIPS=[0.1,0.5,2,8,15];
+const ERAS=[["All",0,9999],["Classic",0,1999],["2000s",2000,2009],["2010s",2010,2019],["2020s",2020,9999]];
+const mkSong=(t,a,y,g,src)=>({name:t,v:[a,[+y||0,y?String(y):"?"],g||"—"],src});
+function songPool(){
+  let p;
+  if(SONG.src==="charts")p=CHARTS.map(r=>mkSong(r[0],r[1],r[2],r[3],"Charts"));
+  else{const who=SONG.src==="both"?["layla","yahya"]:[SONG.src];p=who.flatMap(w=>PLAY[w].map(r=>mkSong(r.t,r.a,r.y,r.g,w==="layla"?"Layla":"Yahya")));}
+  const e=ERAS.find(x=>x[0]===SONG.era)||ERAS[0];
+  return p.filter(x=>(SONG.genre==="All"||x.v[2]===SONG.genre)&&(e[0]==="All"||(x.v[1][0]>=e[1]&&x.v[1][0]<=e[2])));
+}
+GAMES.push({id:"song",name:"Songdle",tag:"Guess the song",c:"#1ed760",modes:["Song","Artist"],listName:"Song list",
+  attrs:[["Artist"],["Year","num"],["Genre"],["From"]],get items(){return songPool().map(x=>({name:x.name,v:[x.v[0],x.v[1],x.v[2],x.src]}))}});
+function songRound(){const pool=songPool();return{target:pool.length?pick(pool,"song"):null,guesses:[],done:false,step:0}}
+let songAudio=null,songTimer=null;
+function songStop(){if(songTimer){clearTimeout(songTimer);songTimer=null}if(songAudio){songAudio.pause()}document.querySelectorAll(".sg-play").forEach(b=>b.classList.remove("playing"))}
+const prevCache={};
+function jsonp(url){return new Promise((res,rej)=>{const cb="__jp"+Math.random().toString(36).slice(2);const sc=document.createElement("script");const t=setTimeout(()=>{cleanup();rej(new Error("timeout"))},9000);
+  function cleanup(){clearTimeout(t);delete window[cb];sc.remove()}window[cb]=d=>{cleanup();res(d)};sc.src=url+(url.includes("?")?"&":"?")+"callback="+cb;sc.onerror=()=>{cleanup();rej(new Error("blocked"))};document.head.appendChild(sc)})}
+const clean=s=>String(s).toLowerCase().replace(/\(.*?\)|\[.*?\]|feat\..*$/g,"").replace(/[^a-z0-9]+/g," ").trim();
+async function findPreview(song){
+  const key=song.name+"|"+song.v[0];if(key in prevCache)return prevCache[key];
+  const d=await jsonp("https://itunes.apple.com/search?media=music&entity=song&limit=10&term="+encodeURIComponent(song.v[0]+" "+song.name));
+  const t=clean(song.name),a=clean(song.v[0]).split(" ")[0];
+  const r=(d.results||[]).filter(x=>x.previewUrl);
+  const best=r.find(x=>clean(x.trackName)===t&&clean(x.artistName).includes(a))||r.find(x=>clean(x.trackName).startsWith(t)&&clean(x.artistName).includes(a))||r.find(x=>clean(x.trackName).includes(t))||null;
+  return prevCache[key]=best?{url:best.previewUrl,art:(best.artworkUrl100||"").replace("100x100","300x300"),link:best.trackViewUrl}:null;
+}
+function playClip(sec,btn){
+  songStop();if(!songAudio)return;try{songAudio.currentTime=0}catch(e){}
+  const p=songAudio.play();if(p&&p.catch)p.catch(()=>{});btn&&btn.classList.add("playing");
+  if(sec)songTimer=setTimeout(()=>{songAudio.pause();btn&&btn.classList.remove("playing")},sec*1000);
+  else songAudio.onended=()=>btn&&btn.classList.remove("playing");
+}
+function renderSong(){
+  songStop();
+  const st=state(),t=st.target,artistMode=mode==="Artist";
+  const genres=["All",...new Set((SONG.src==="charts"?CHARTS.map(r=>r[3]):[...PLAY.layla,...PLAY.yahya].map(r=>r.g).filter(Boolean)))];
+  const srcs=[["charts","Charts"],["layla","Layla's playlist"],["yahya","Yahya's playlist"],["both","Both playlists"]];
+  let h=banner();
+  h+=`<div class="sg-filters"><label>Songs from <select id="sg-src">${srcs.map(([k,l])=>`<option value="${k}"${SONG.src===k?" selected":""}>${l}${k!=="charts"&&k!=="both"?` (${PLAY[k].length})`:k==="both"?` (${PLAY.layla.length+PLAY.yahya.length})`:""}</option>`).join("")}</select></label>
+    <label>Genre <select id="sg-genre">${genres.map(g=>`<option${SONG.genre===g?" selected":""}>${esc(g)}</option>`).join("")}</select></label>
+    <label>Era <select id="sg-era">${ERAS.map(e=>`<option${SONG.era===e[0]?" selected":""}>${e[0]}</option>`).join("")}</select></label></div>`;
+  if(!t){h+=`<div class="clue"><span class="k">No songs here yet</span>${SONG.src==="charts"?"No chart songs match these filters. Try another genre or era.":"This playlist is empty. Import it below, or pick Charts."}</div>`+songImport();$("#stage").innerHTML=h;wireSongFilters();return}
+  const step=Math.min(st.guesses.length,CLIPS.length-1),len=st.done?0:CLIPS[step];
+  h+=`<div class="sg-player"><button class="sg-play" id="sg-play" aria-label="Play clip"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+    <div class="sg-meter">${CLIPS.map((c,i)=>`<span class="${i<=step||st.done?"on":""}" >${c}s</span>`).join("")}</div>
+    <p class="meta" id="sg-status">${st.done?"Full preview":"Clip: "+len+"s"} · loading…</p></div>`;
+  if(st.done)h+=`<div class="win ${st.won?"":"lose"}"><img id="sg-art" class="av big" alt="" hidden><div><h3>${st.won?"Got it":"It was"}: ${esc(t.name)}</h3><span class="meta">${esc(t.v[0])} · ${esc(t.v[1][1])}${t.v[2]!=="—"?" · "+esc(t.v[2]):""} · ${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span></div></div><div class="bar"><button class="btn primary" id="shuffle">Next song</button></div>`;
+  else h+=`<div class="bar"><div class="search"><input id="guess" autocomplete="off" placeholder="${artistMode?"Type an artist…":"Type a song title…"}" aria-label="Guess"><ul class="sugg" id="sugg" hidden></ul></div>
+    <button class="btn primary" id="go">Guess</button><button class="btn" id="skip">Skip (+${CLIPS[Math.min(step+1,CLIPS.length-1)]}s)</button><button class="btn" id="shuffle">New song</button><button class="btn" id="giveup">Give up</button></div>
+    <p class="meta" style="text-align:center">${CLIPS.length-st.guesses.length} guess${CLIPS.length-st.guesses.length===1?"":"es"} left</p>`;
+  h+=`<div class="sg-rows">`+st.guesses.slice().reverse().map(g=>{if(g.skip)return`<div class="sg-row"><span class="miss wide">Skipped</span></div>`;
+    const yr=g.v[1][0],ty=t.v[1][0],ya=!yr||!ty||yr===ty?"":ty>yr?"↑":"↓";
+    const cells=artistMode?[["Artist",g.v[0],g.v[0]===t.v[0]]]:[["Song",g.name,g.name===t.name&&g.v[0]===t.v[0]],["Artist",g.v[0],g.v[0]===t.v[0]]];
+    cells.push(["Year",(g.v[1][1]||"?")+(ya?" "+ya:""),yr&&yr===ty]);
+    return`<div class="sg-row">${cells.map(([l,v,ok])=>`<span class="${ok?"hit":"miss"}"><small>${l}</small>${esc(v)}</span>`).join("")}</div>`}).join("")+`</div>`;
+  if(lastAns[cur.id+mode])h+=`<p class="prev">Previous song was <b>${esc(lastAns[cur.id+mode])}</b></p>`;
+  h+=songImport();
+  $("#stage").innerHTML=h;wireSongFilters();
+  // audio
+  const status=$("#sg-status"),play=$("#sg-play");songAudio=null;
+  findPreview(t).then(p=>{if(!$("#sg-play"))return;
+    if(!p){status.textContent="No preview found for this song. Press New song.";return}
+    songAudio=new Audio(p.url);songAudio.preload="auto";status.textContent=(st.done?"Full preview":"Clip: "+len+"s")+" · press play";
+    if(st.done){const a=$("#sg-art");if(a&&p.art){a.src=p.art;a.hidden=false}}
+  }).catch(()=>{if(status)status.textContent="Couldn't reach the preview service. Song audio works on the GitHub Pages site."});
+  play.onclick=()=>playClip(len,play);
+  const sh=$("#shuffle");sh.onclick=()=>{songStop();lastAns[cur.id+mode]=t.name+" — "+t.v[0];S[cur.id+":"+mode]=newRound();render()};
+  if(st.done)return;
+  const pool=songPool();
+  const names=artistMode?[...new Set(pool.map(x=>x.v[0]))].sort():pool.map(x=>x.name+" — "+x.v[0]);
+  const used=st.guesses.filter(g=>!g.skip).map(g=>artistMode?g.v[0]:g.name+" — "+g.v[0]);
+  const after=()=>{if(st.guesses.length>=CLIPS.length&&!st.done){st.done=true;st.won=false;bump(false)}songStop();render();focusGuess()};
+  wire(st,names,label=>{
+    let g;if(artistMode){const s0=pool.find(x=>x.v[0]===label);g={name:"",v:[label,s0?s0.v[1]:[0,"?"],""]};if(label===t.v[0]){st.done=true;st.won=true;bump(true)}}
+    else{g=pool.find(x=>x.name+" — "+x.v[0]===label);if(g.name===t.name&&g.v[0]===t.v[0]){st.done=true;st.won=true;bump(true)}}
+    st.guesses.push(g);after();
+  },used);
+  $("#skip").onclick=()=>{st.guesses.push({skip:1});after()};
+}
+function wireSongFilters(){
+  const ch=()=>{try{localStorage.setItem("songcfg",JSON.stringify(SONG))}catch(e){}songStop();for(const m of cur.modes)delete S[cur.id+":"+m];render()};
+  $("#sg-src").onchange=e=>{SONG.src=e.target.value;SONG.genre="All";ch()};
+  $("#sg-genre").onchange=e=>{SONG.genre=e.target.value;ch()};
+  $("#sg-era").onchange=e=>{SONG.era=e.target.value;ch()};
+  const f=$("#sg-file");if(f)f.onchange=()=>{const file=f.files[0];if(!file)return;const who=$("#sg-who").value;const r=new FileReader();
+    r.onload=()=>{const rows=parseCSV(String(r.result));PLAY[who]=rows;try{localStorage.setItem("songpl",JSON.stringify(PLAY))}catch(e){}
+      $("#sg-imp-msg").textContent=rows.length?`Imported ${rows.length} songs into ${who==="layla"?"Layla":"Yahya"}'s playlist on this device.`:"Couldn't find song titles and artists in that file.";
+      if(rows.length){SONG.src=who;SONG.genre="All";ch()}};r.readAsText(file)};
+}
+function songImport(){return`<details class="sg-import"><summary>Import a playlist</summary><p class="meta">Export a Spotify playlist with Exportify (exportify.app) or an Apple Music playlist with TuneMyMusic (tunemymusic.com → export to file), then pick the CSV here. It's saved on this device only. To share it with Yahya, send the CSV to Claude to add to the site.</p>
+  <div class="bar"><select id="sg-who"><option value="layla">Layla's playlist</option><option value="yahya">Yahya's playlist</option></select><input type="file" id="sg-file" accept=".csv,text/csv"></div><p class="meta" id="sg-imp-msg"></p></details>`}
+function parseCSV(text){
+  const rows=[];let row=[],f="",q=false;for(let i=0;i<text.length;i++){const c=text[i];
+    if(q){if(c==='"'){if(text[i+1]==='"'){f+='"';i++}else q=false}else f+=c}
+    else if(c==='"')q=true;else if(c===","){row.push(f);f=""}else if(c==="\n"||c==="\r"){if(c==="\r"&&text[i+1]==="\n")i++;row.push(f);rows.push(row);row=[];f=""}else f+=c}
+  if(f||row.length){row.push(f);rows.push(row)}
+  if(rows.length<2)return[];const H=rows[0].map(x=>x.toLowerCase().trim());
+  const col=(...k)=>H.findIndex(h=>k.some(x=>h.includes(x)));
+  const ti=col("track name","title","song","name"),ai=col("artist"),yi=col("release date","year","date"),gi=col("genre");
+  if(ti<0||ai<0)return[];
+  return rows.slice(1).filter(r=>r[ti]&&r[ai]).map(r=>({t:r[ti].trim(),a:r[ai].split(/[;,]/)[0].trim(),y:yi>=0?parseInt(r[yi])||0:0,g:gi>=0&&r[gi]?r[gi].split(/[;,]/)[0].trim().replace(/\b\w/g,m=>m.toUpperCase()):""}));
+}
+// Shared playlists committed to the repo (playlists.json: {"layla":[{t,a,y,g}], "yahya":[...]})
+fetch("playlists.json",{cache:"no-cache"}).then(r=>r.ok?r.json():null).then(p=>{if(!p)return;for(const w of ["layla","yahya"])if(Array.isArray(p[w])&&p[w].length&&!PLAY[w].length)PLAY[w]=p[w];if(cur.id==="song")render()}).catch(()=>{});
+
 const FLAME='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c1 3.5-1.5 5-1.5 7.5 0 1.4 1 2.5 2.3 2.5 1.5 0 2.4-1.2 2.2-3 2.6 1.9 4 4.6 4 7.5A7 7 0 0 1 5 16.5c0-4.6 4.2-7.2 7-14.5z"/></svg>';
+<<<<<<< Updated upstream
 // Franchise logos from Wikimedia Commons (public-domain text logos): [file, width, height, "dle" text]
 const LOGOS={bleach:["bleach.webp",822,180,"DLE"],jjk:["jjk.svg",1261,278,"DLE"],clover:["clover.webp",1027,180,"dle"],hxh:["hxh.webp",416,180,"DLE"],sw:["sw.svg",636,290,"DLE"],marvel:["marvel.svg",149,67,"DLE"],hp:["hp.svg",1730,579,"dle"]};
 function banner(){const m=/dle$/i.test(cur.name)?[cur.name.slice(0,-3),"dle"]:[cur.name.slice(0,-3),cur.name.slice(-3)];const n=m[0];const s=store[cur.id]||{w:0,streak:0,best:0};const L=LOGOS[cur.id];
   return (L?`<div class="logo img" role="img" aria-label="${esc(cur.name)}"><img src="logos/${L[0]}" width="${L[1]}" height="${L[2]}" alt="" fetchpriority="high"><span>${L[3]}</span></div>`:`<div class="logo">${esc(n)}<span>${esc(m[1])}</span></div>`)+`<div class="chips"><span class="chip" title="Current win streak">${FLAME}Streak ${s.streak}</span><span class="chip ghost">Best ${s.best||0}</span><span class="chip ghost">Wins ${s.w}</span></div>`}
 function render(){renderCarts();renderTabs();mode==="Character list"?renderList():mode==="Classic"?(cur.id==="plane"?renderPlane():renderClassic()):renderClue()}
+=======
+function banner(){const m=/dle$/i.test(cur.name)?[cur.name.slice(0,-3),"dle"]:[cur.name.slice(0,-3),cur.name.slice(-3)];const n=m[0];const s=store[cur.id]||{w:0,streak:0,best:0};
+  return `<div class="logo">${esc(n)}<span>${esc(m[1])}</span></div><div class="chips"><span class="chip" title="Current win streak">${FLAME}Streak ${s.streak}</span><span class="chip ghost">Best ${s.best||0}</span><span class="chip ghost">Wins ${s.w}</span></div>`}
+function render(){renderCarts();renderTabs();if(cur.id!=="song")songStop();mode==="Character list"?renderList():cur.id==="song"?renderSong():mode==="Classic"?(cur.id==="plane"?renderPlane():renderClassic()):renderClue()}
+>>>>>>> Stashed changes
 const PZ=[3,2.3,1.75,1.35,1.1],PMAX=5;
 function renderPlane(){
   const st=state(),t=st.target;
@@ -870,7 +1013,11 @@ function renderList(){
   const ss=$("#sortsel");if(ss)ss.onchange=()=>{const c=+ss.value;if(c===sortCol)sortDir*=-1;else{sortCol=c;sortDir=1}renderList()};
   document.querySelectorAll("th[data-c]").forEach(th=>th.onclick=()=>{const c=+th.dataset.c;if(c===sortCol)sortDir*=-1;else{sortCol=c;sortDir=1}renderList()});
 }
+<<<<<<< Updated upstream
 $("#carts").onclick=e=>{const b=e.target.closest(".cart");if(!b)return;cur=GAMES.find(g=>g.id===b.dataset.id);store.last=cur.id;save();if(mode!=="Character list"&&mode!=="Classic"&&!(cur.clues||{})[mode])mode="Classic";sortCol=0;filter="";render()};
+=======
+$("#carts").onclick=e=>{const b=e.target.closest(".cart");if(!b)return;cur=GAMES.find(g=>g.id===b.dataset.id);if(mode!=="Character list"&&mode!=="Classic"&&!(cur.clues||{})[mode]&&!(cur.modes||[]).includes(mode))mode="Classic";if(cur.modes&&mode==="Classic")mode=cur.modes[0];sortCol=0;songStop();filter="";render()};
+>>>>>>> Stashed changes
 $("#tabs").onclick=e=>{const b=e.target.closest(".tab");if(!b)return;mode=b.dataset.m;sortCol=0;render()};
 render();
 // Warm the cache with the other logos once the page is idle, so switching games doesn't flash
