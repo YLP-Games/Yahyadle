@@ -898,7 +898,7 @@ function renderSong(){
     <label class="sg-vol" for="sg-vol"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z"/></svg><span class="sr">Volume</span><input type="range" id="sg-vol" min="0" max="100" step="1" value="${Math.round(songVol*100)}" aria-label="Volume"><output id="sg-vol-out">${Math.round(songVol*100)}%</output></label>
     <div class="sg-meter">${CLIPS.map((c,i)=>`<span class="${i<=step||st.done?"on":""}" >${c}s</span>`).join("")}</div>
     <p class="meta" id="sg-status">${st.done?"Full preview":"Clip: "+len+"s"} · loading…</p></div>`;
-  if(st.done)h+=`<div class="win ${st.won?"":"lose"}"><img id="sg-art" class="av big" alt="" hidden><div><h3>${st.won?"Got it":"It was"}: ${esc(t.name)}</h3><span class="meta">${esc(t.v[0])} · ${esc(t.v[1][1])}${t.v[2]!=="—"?" · "+esc(t.v[2]):""} · ${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span>${t.who?`<span class="sg-own${t.who.length>1?" both":""}">${t.who.length>1?"On both your playlists":"Only on "+esc(t.who[0])+"'s playlist"}</span>`:""}</div></div>`;
+  if(st.done)h+=`<div class="win ${st.won?"":"lose"}"><img id="sg-art" class="av big" alt="" hidden><div><h3>${st.won?"Got it: ":""}${esc(t.name)}</h3><span class="meta">${esc(t.v[0])} · ${esc(t.v[1][1])}${t.v[2]!=="—"?" · "+esc(t.v[2]):""} · ${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span>${t.who?`<span class="sg-own${t.who.length>1?" both":""}">${t.who.length>1?"On both your playlists":"Only on "+esc(t.who[0])+"'s playlist"}</span>`:""}</div></div>`;
   else h+=`<div class="bar"><div class="search"><input id="guess" autocomplete="off" placeholder="${artistMode?"Type an artist…":"Type a song title…"}" aria-label="Guess"><ul class="sugg" id="sugg" hidden></ul></div>
     <button class="btn primary" id="go">Guess</button><button class="btn" id="giveup">Give up</button></div>
     <p class="meta" style="text-align:center">${CLIPS.length-st.guesses.length} guess${CLIPS.length-st.guesses.length===1?"":"es"} left</p>`;
@@ -992,7 +992,7 @@ function renderPlane(){
       <button class="btn primary plgo" id="pgo">Guess (${left} left)</button>
       <div class="bar" style="margin-top:8px"><button class="btn" id="shuffle">Shuffle new plane</button><button class="btn" id="giveup">Give up</button></div>`;
   }else{
-    h+=`<div class="win ${st.won?"":"lose"}"><div><h3>${st.won?"Got it":"It was"}: ${esc(t.v[0])} ${esc(t.v[1])}</h3><span class="meta">${esc(t.v[2])}${t.reg?" · "+esc(t.reg):""} · ${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span></div></div>
+    h+=`<div class="win ${st.won?"":"lose"}"><div><h3>${st.won?"Got it: ":""}${esc(t.v[0])} ${esc(t.v[1])}</h3><span class="meta">${esc(t.v[2])}${t.reg?" · "+esc(t.reg):""} · ${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span></div></div>
       <div class="bar"><button class="btn primary" id="shuffle">Shuffle new plane</button></div>`;
   }
   h+=`<div class="plrows">`+st.guesses.slice().reverse().map(g=>`<div class="plrow">${[["Make",g.mk,t.v[0]],["Model",g.md,t.v[1]],["Airline",g.al,t.v[2]]].map(([l,v,a])=>`<span class="${v===a?"hit":"miss"}"><small>${l}</small>${esc(v||"—")}</span>`).join("")}</div>`).join("")+`</div>`;
@@ -1024,7 +1024,7 @@ function renderClassic(){
   if(cur.hints){const open=cur.hints.filter(([n,l])=>st.rev[l]&&(st.done||st.guesses.length>=n));
     h+=`<div class="bar hintbox">${cur.hints.map(([n,l])=>st.done||st.guesses.length>=n?`<button class="btn hintbtn${st.rev[l]?" on":""}" data-hint="${esc(l)}" aria-expanded="${!!st.rev[l]}">${l}<small>${st.rev[l]?"Hide":"Click to reveal"}</small></button>`:`<span class="btn hintbtn locked">${l}<small>in ${n-st.guesses.length} guess${n-st.guesses.length===1?"":"es"}</small></span>`).join("")}</div>`;
     if(open.length)h+=`<div class="hintshow">${open.map(([n,l,k])=>`<div class="clue"><span class="k">${l}</span>${esc(t[k]||"Not added yet")}</div>`).join("")}</div>`;}
-  if(st.done)h+=`<div class="win ${st.won?"":"lose"}">${av(t.img,1)}<div><h3>${st.won?"Got it":"It was"}: ${esc(t.name)}</h3><span class="meta">${st.guesses.length} guess${st.guesses.length===1?"":"es"} · press Shuffle for another</span></div></div>`;
+  if(st.done)h+=`<div class="win ${st.won?"":"lose"}">${av(t.img,1)}<div><h3>${st.won?"Got it: ":""}${esc(t.name)}</h3><span class="meta">${st.guesses.length} guess${st.guesses.length===1?"":"es"} · press Shuffle for another</span></div></div>`;
   else h+=searchBar("Type a character…");
   if(st.done)h+=`<div class="bar"><button class="btn primary" id="shuffle">Shuffle new character</button></div>`;
   h+=`<div class="gridwrap"><table class="g"><thead><tr><th style="text-align:left">Character</th>${cur.attrs.map(a=>`<th>${a[0]}</th>`).join("")}</tr></thead><tbody>`;
@@ -1045,7 +1045,7 @@ function renderClue(){
   let h=banner()+`<div class="clue"><span class="k">${cfg.k}</span>${esc(t[1])}`;
   if(!st.done&&st.guesses.length>=3)h+=`<div class="hint">Hint: starts with “${esc(t[0][0])}”, ${t[0].length} characters.</div>`;
   h+=`</div>`;
-  if(st.done)h+=`<div class="win ${st.won?"":"lose"}">${av(imgOf(t[0]),1)}<div><h3>${st.won?"Got it":"It was"}: ${esc(t[0])}</h3><span class="meta">${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span></div></div><div class="bar"><button class="btn primary" id="shuffle">Shuffle new one</button></div>`;
+  if(st.done)h+=`<div class="win ${st.won?"":"lose"}">${av(imgOf(t[0]),1)}<div><h3>${st.won?"Got it: ":""}${esc(t[0])}</h3><span class="meta">${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span></div></div><div class="bar"><button class="btn primary" id="shuffle">Shuffle new one</button></div>`;
   else h+=searchBar("Type your answer…");
   if(lastAns[cur.id+mode])h+=`<p class="prev">Previous answer was <b>${esc(lastAns[cur.id+mode])}</b></p>`;
   h+=`<div class="wrongs">${st.guesses.filter(g=>g!==t[0]).map(g=>`<span>${esc(g)}</span>`).join("")}</div>`;
