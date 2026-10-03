@@ -75,6 +75,8 @@ td .arr{display:block;font-size:16px;line-height:1}
 .clue{background:var(--panel2);border-radius:12px;padding:18px;margin-bottom:14px;font-size:17px;line-height:1.5;max-width:70ch}
 .clue .k{display:block;font:700 12px var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
 .hint{color:var(--muted);font-size:14px;margin-top:8px}
+svg.crest{display:block;width:36px;height:41px;margin:0 auto 3px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
+@media (max-width:700px){svg.crest{width:22px;height:25px;margin-bottom:2px}}
 /* Harry Potterdle: Description / Quote / Location printed on an old book page */
 .clue.page{--ink:#3a2812;position:relative;max-width:62ch;margin:6px auto 18px;padding:34px 40px 30px;border-radius:3px;color:var(--ink);
   font:400 20px/1.6 "IM Fell English",Georgia,serif;text-align:center;
@@ -452,128 +454,128 @@ const GAMES=[
  attrs:[["Gender"],["Type"],["Specie(s)","multi"],["Power type(s)","multi"],["Origin"],["Affiliations","multi"],["Appearance type(s)","multi"]],items:MARVEL,
  hints:[[5,"Quote","q"],[8,"Appearances","ap"],[12,"Actor","a"],[15,"Name","nh"]]},
 {id:"hp",name:"Harry Potterdle",tag:"5 modes",c:"#d3a625",src:"harrypotterdle.com",
- attrs:[["Gender"],["House"],["Species","multi"],["Blood status"],["Hair"],["Birth year","num"],["First book","ord",["Philosopher's Stone","Chamber of Secrets","Prisoner of Azkaban","Goblet of Fire","Order of the Phoenix","Half-Blood Prince","Deathly Hallows","Fantastic Beasts"]]],
- rows:P(`Aberforth Dumbledore|Male|Unknown|Human|Half-blood|Grey|1883|6
-Alastor Moody|Male|Unknown|Human|Unknown|Grey|Unknown|3
-Albus Percival Wulfric Brian Dumbledore|Male|Gryffindor|Human|Half-blood|Silver|1881|0
-Alecto Carrow|Female|Unknown|Human|Pure-blood|Unknown|Unknown|5
-Alice Longbottom|Female|Unknown|Human|Pure-blood|Brown|Unknown|4
-Amos Diggory|Male|Unknown|Human|Unknown|Brown|Unknown|3
-Amycus Carrow|Male|Unknown|Human|Pure-blood|Unknown|Unknown|5
-Andromeda Tonks|Female|Slytherin|Human|Pure-blood|Brown|Unknown|4
-Angelina Johnson|Female|Gryffindor|Human|Unknown|Black|1977|0
-Arabella Doreen Figg|Female|None|Human|Squib|Grey|Unknown|0
-Argus Filch|Male|None|Human|Squib|Grey|Unknown|0
-Ariana Dumbledore|Female|None|Human|Half-blood|Blonde|1885|6
-Arthur Weasley|Male|Gryffindor|Human|Pure-blood|Red|1950|1
-Aurora Sinistra|Female|Unknown|Human|Unknown|Black|Unknown|1
-Bartemius Crouch Junior|Male|Unknown|Human|Pure-blood|Blonde|1962|3
-Bartemius Crouch Senior|Male|Unknown|Human|Pure-blood|Grey|Unknown|3
-Bathilda Bagshot|Female|Unknown|Human|Unknown|White|Unknown|0
-Bellatrix Lestrange|Female|Slytherin|Human|Pure-blood|Black|1951|4
-Blaise Zabini|Male|Slytherin|Human|Pure-blood|Black|1980|0
-Cedric Diggory|Male|Hufflepuff|Human|Unknown|Brown|1977|2
-Charlie Weasley|Male|Gryffindor|Human|Pure-blood|Red|1972|0
-Cho Chang|Female|Ravenclaw|Human|Unknown|Black|1979|2
-Colin Creevey|Male|Gryffindor|Human|Muggle-born|Brown|1981|1
-Corban Yaxley|Male|Unknown|Human|Pure-blood|Blonde|Unknown|5
-Cormac McLaggen|Male|Gryffindor|Human|Unknown|Brown|1979|5
-Cornelius Oswald Fudge|Male|Unknown|Human|Unknown|Grey|Unknown|0
-Dean Thomas|Male|Gryffindor|Human|Half-blood|Black|1980|0
-Dedalus Diggle|Male|Unknown|Human|Unknown|Unknown|Unknown|0
-Dennis Creevey|Male|Gryffindor|Human|Muggle-born|Brown|1983|3
-Dobby|Male|None|House-elf|Unknown|None|Unknown|1
-Dolores Jane Umbridge|Female|Slytherin|Human|Half-blood|Brown|1965|4
-Draco Lucius Malfoy|Male|Slytherin|Human|Pure-blood|Blonde|1980|0
-Dudley Dursley|Male|None|Human|Muggle|Blonde|1980|0
-Ernie Macmillan|Male|Hufflepuff|Human|Pure-blood|Unknown|1980|1
-Fenrir Greyback|Male|None|Human;Werewolf|Unknown|Grey|Unknown|5
-Filius Flitwick|Male|Ravenclaw|Human;Goblin|Unknown|White|Unknown|0
-Firenze|Male|None|Centaur|Unknown|Blonde|Unknown|0
-Fleur Isabelle Delacour|Female|None|Human;Veela|Unknown|Silver|1977|3
-Florean Fortescue|Male|Unknown|Human|Unknown|Unknown|Unknown|2
-Frank Longbottom|Male|Unknown|Human|Pure-blood|Brown|Unknown|3
-Fred Weasley|Male|Gryffindor|Human|Pure-blood|Red|1978|0
-Garrick Ollivander|Male|Unknown|Human|Unknown|White|Unknown|0
-Gellert Grindelwald|Male|None|Human|Unknown|Blonde|1883|0
-George Weasley|Male|Gryffindor|Human|Pure-blood|Red|1978|0
-Gilderoy Lockhart|Male|Ravenclaw|Human|Half-blood|Blonde|1964|1
-Ginevra Molly Weasley|Female|Gryffindor|Human|Pure-blood|Red|1981|0
-Godric Gryffindor|Male|Gryffindor|Human|Unknown|Unknown|Unknown|1
-Gregory Goyle|Male|Slytherin|Human|Pure-blood|Black|1980|0
-Hannah Abbott|Female|Hufflepuff|Human|Half-blood|Blonde|1980|0
-Harry James Potter|Male|Gryffindor|Human|Half-blood|Black|1980|0
-Helena Ravenclaw|Female|Ravenclaw|Ghost|Unknown|Black|Unknown|0
-Helga Hufflepuff|Female|Hufflepuff|Human|Unknown|Unknown|Unknown|1
-Hepzibah Smith|Female|Unknown|Human|Unknown|Unknown|Unknown|5
-Hermione Jean Granger|Female|Gryffindor|Human|Muggle-born|Brown|1979|0
-Horace Eugene Flaccus Slughorn|Male|Slytherin|Human|Pure-blood|Blonde|Unknown|5
-Igor Karkaroff|Male|None|Human|Unknown|Grey|Unknown|3
-Irma Pince|Female|Unknown|Human|Unknown|Unknown|Unknown|0
-James Potter|Male|Gryffindor|Human|Pure-blood|Black|1960|0
-Justin Finch-Fletchley|Male|Hufflepuff|Human|Muggle-born|Brown|1980|1
-Katie Bell|Female|Gryffindor|Human|Unknown|Brown|1979|0
-Kingsley Shacklebolt|Male|Unknown|Human|Unknown|None|Unknown|4
-Kreacher|Male|None|House-elf|Unknown|White|Unknown|4
-Lavender Brown|Female|Gryffindor|Human|Unknown|Blonde|1980|0
-Lee Jordan|Male|Gryffindor|Human|Unknown|Black|1978|0
-Leta Lestrange|Female|Slytherin|Human|Pure-blood|Black|Unknown|7
-Lily J. Potter|Female|Gryffindor|Human|Muggle-born|Red|1960|0
-Lord Voldemort|Male|Slytherin|Human|Half-blood|None|1926|0
-Lucius Malfoy|Male|Slytherin|Human|Pure-blood|Blonde|1954|1
-Ludovic Bagman|Male|Unknown|Human|Unknown|Blonde|Unknown|3
-Luna Lovegood|Female|Ravenclaw|Human|Pure-blood|Blonde|1981|4
-Madam Hooch|Female|Unknown|Human|Unknown|Grey|Unknown|0
-Madame Rosmerta|Female|Unknown|Human|Unknown|Unknown|Unknown|2
-Marietta Edgecombe|Female|Ravenclaw|Human|Unknown|Unknown|1979|4
-Marvolo Gaunt|Male|Unknown|Human|Pure-blood|Unknown|Unknown|5
-Minerva McGonagall|Female|Gryffindor|Human|Half-blood|Black|1935|0
-Molly Weasley|Female|Gryffindor|Human|Pure-blood|Red|1949|0
-Mundungus Fletcher|Male|Unknown|Human|Unknown|Ginger|Unknown|1
-Myrtle Elizabeth Warren|Female|Ravenclaw|Ghost|Muggle-born|Black|1929|1
-Nagini|Female|None|Snake|Unknown|None|Unknown|3
-Narcissa Malfoy|Female|Slytherin|Human|Pure-blood|Blonde|1955|3
-Neville Longbottom|Male|Gryffindor|Human|Pure-blood|Brown|1980|0
-Newton Scamander|Male|Hufflepuff|Human|Unknown|Brown|1897|0
-Nicolas Flamel|Male|Unknown|Human|Unknown|Unknown|1327|0
-Nymphadora Tonks|Female|Hufflepuff|Human|Half-blood|Pink|1973|4
-Oliver Wood|Male|Gryffindor|Human|Unknown|Brown|1975|0
-Olympe Maxime|Female|None|Human;Giant|Unknown|Black|Unknown|3
-Padma Patil|Female|Ravenclaw|Human|Unknown|Black|1980|0
-Pansy Parkinson|Female|Slytherin|Human|Pure-blood|Black|1980|0
-Parvati Patil|Female|Gryffindor|Human|Unknown|Black|1980|0
-Peeves|Male|None|Poltergeist|Unknown|Unknown|Unknown|0
-Percy Ignatius Weasley|Male|Gryffindor|Human|Pure-blood|Red|1976|0
-Peter Pettigrew|Male|Gryffindor|Human|Unknown|Brown|1960|0
-Petunia Dursley|Female|None|Human|Muggle|Blonde|Unknown|0
-Phineas Nigellus Black|Male|Slytherin|Human|Pure-blood|Black|1847|4
-Pomona Sprout|Female|Hufflepuff|Human|Unknown|Grey|Unknown|0
-Poppy Pomfrey|Female|Unknown|Human|Unknown|Unknown|Unknown|0
-Porpentina Esther Goldstein|Female|None|Human|Unknown|Brown|Unknown|7
-Professor Binns|Male|Unknown|Ghost|Unknown|Unknown|Unknown|0
-Quirinus Quirrell|Male|Ravenclaw|Human|Unknown|Unknown|Unknown|0
-Regulus Black|Male|Slytherin|Human|Pure-blood|Black|1961|4
-Remus John Lupin|Male|Gryffindor|Human;Werewolf|Half-blood|Brown|1960|2
-Rita Skeeter|Female|Unknown|Human|Unknown|Blonde|Unknown|3
-Ronald Bilius Weasley|Male|Gryffindor|Human|Pure-blood|Red|1980|0
-Rowena Ravenclaw|Female|Ravenclaw|Human|Unknown|Black|Unknown|1
-Rubeus Hagrid|Male|Gryffindor|Human;Giant|Half-blood|Black|1928|0
-Rufus Scrimgeour|Male|Unknown|Human|Unknown|Ginger|Unknown|4
-Salazar Slytherin|Male|Slytherin|Human|Pure-blood|Unknown|Unknown|1
-Seamus Finnigan|Male|Gryffindor|Human|Half-blood|Blonde|1980|0
-Severus Snape|Male|Slytherin|Human|Half-blood|Black|1960|0
-Sir Nicholas de Mimsy-Porpington|Male|Gryffindor|Ghost|Unknown|Grey|Unknown|0
-Sirius Black|Male|Gryffindor|Human|Pure-blood|Black|1959|0
-Stanley Shunpike|Male|Unknown|Human|Unknown|Unknown|Unknown|2
-Sybill Patricia Trelawney|Female|Ravenclaw|Human|Half-blood|Unknown|Unknown|2
-Theodore Nott|Male|Slytherin|Human|Pure-blood|Unknown|1980|4
-Vernon Dursley|Male|None|Human|Muggle|Brown|Unknown|0
-Viktor Krum|Male|None|Human|Unknown|Black|1976|3
-Vincent Crabbe|Male|Slytherin|Human|Pure-blood|Brown|1980|0
-William Arthur Weasley|Male|Gryffindor|Human|Pure-blood|Red|1970|0
-Winky|Female|None|House-elf|Unknown|None|Unknown|3
-Xenophilius Lovegood|Male|Unknown|Human|Pure-blood|White|Unknown|6
-Zacharias Smith|Male|Hufflepuff|Human|Unknown|Blonde|1980|4`),
+ attrs:[["Gender"],["House"],["Affiliation","multi"],["Species","multi"],["Blood status"],["Hair"],["Birth year","num"],["First book","ord",["Philosopher's Stone","Chamber of Secrets","Prisoner of Azkaban","Goblet of Fire","Order of the Phoenix","Half-Blood Prince","Deathly Hallows","Fantastic Beasts"]]],
+ rows:P(`Aberforth Dumbledore|Male|Unknown|Order of the Phoenix|Human|Half-blood|Grey|1883|6
+Alastor Moody|Male|Unknown|Order of the Phoenix;Ministry of Magic|Human|Unknown|Grey|Unknown|3
+Albus Percival Wulfric Brian Dumbledore|Male|Gryffindor|Order of the Phoenix;Hogwarts staff|Human|Half-blood|Silver|1881|0
+Alecto Carrow|Female|Unknown|Death Eaters;Hogwarts staff|Human|Pure-blood|Unknown|Unknown|5
+Alice Longbottom|Female|Unknown|Order of the Phoenix;Ministry of Magic|Human|Pure-blood|Brown|Unknown|4
+Amos Diggory|Male|Unknown|Ministry of Magic|Human|Unknown|Brown|Unknown|3
+Amycus Carrow|Male|Unknown|Death Eaters;Hogwarts staff|Human|Pure-blood|Unknown|Unknown|5
+Andromeda Tonks|Female|Slytherin|None|Human|Pure-blood|Brown|Unknown|4
+Angelina Johnson|Female|Gryffindor|Dumbledore's Army|Human|Unknown|Black|1977|0
+Arabella Doreen Figg|Female|None|Order of the Phoenix|Human|Squib|Grey|Unknown|0
+Argus Filch|Male|None|Hogwarts staff|Human|Squib|Grey|Unknown|0
+Ariana Dumbledore|Female|None|None|Human|Half-blood|Blonde|1885|6
+Arthur Weasley|Male|Gryffindor|Order of the Phoenix;Ministry of Magic|Human|Pure-blood|Red|1950|1
+Aurora Sinistra|Female|Unknown|Hogwarts staff|Human|Unknown|Black|Unknown|1
+Bartemius Crouch Junior|Male|Unknown|Death Eaters|Human|Pure-blood|Blonde|1962|3
+Bartemius Crouch Senior|Male|Unknown|Ministry of Magic|Human|Pure-blood|Grey|Unknown|3
+Bathilda Bagshot|Female|Unknown|None|Human|Unknown|White|Unknown|0
+Bellatrix Lestrange|Female|Slytherin|Death Eaters|Human|Pure-blood|Black|1951|4
+Blaise Zabini|Male|Slytherin|Slug Club|Human|Pure-blood|Black|1980|0
+Cedric Diggory|Male|Hufflepuff|None|Human|Unknown|Brown|1977|2
+Charlie Weasley|Male|Gryffindor|Order of the Phoenix|Human|Pure-blood|Red|1972|0
+Cho Chang|Female|Ravenclaw|Dumbledore's Army|Human|Unknown|Black|1979|2
+Colin Creevey|Male|Gryffindor|Dumbledore's Army|Human|Muggle-born|Brown|1981|1
+Corban Yaxley|Male|Unknown|Death Eaters;Ministry of Magic|Human|Pure-blood|Blonde|Unknown|5
+Cormac McLaggen|Male|Gryffindor|Slug Club|Human|Unknown|Brown|1979|5
+Cornelius Oswald Fudge|Male|Unknown|Ministry of Magic|Human|Unknown|Grey|Unknown|0
+Dean Thomas|Male|Gryffindor|Dumbledore's Army|Human|Half-blood|Black|1980|0
+Dedalus Diggle|Male|Unknown|Order of the Phoenix|Human|Unknown|Unknown|Unknown|0
+Dennis Creevey|Male|Gryffindor|Dumbledore's Army|Human|Muggle-born|Brown|1983|3
+Dobby|Male|None|Hogwarts staff|House-elf|Unknown|None|Unknown|1
+Dolores Jane Umbridge|Female|Slytherin|Ministry of Magic;Hogwarts staff|Human|Half-blood|Brown|1965|4
+Draco Lucius Malfoy|Male|Slytherin|Death Eaters;Inquisitorial Squad|Human|Pure-blood|Blonde|1980|0
+Dudley Dursley|Male|None|Muggles|Human|Muggle|Blonde|1980|0
+Ernie Macmillan|Male|Hufflepuff|Dumbledore's Army|Human|Pure-blood|Unknown|1980|1
+Fenrir Greyback|Male|None|Death Eaters|Human;Werewolf|Unknown|Grey|Unknown|5
+Filius Flitwick|Male|Ravenclaw|Hogwarts staff|Human;Goblin|Unknown|White|Unknown|0
+Firenze|Male|None|Hogwarts staff|Centaur|Unknown|Blonde|Unknown|0
+Fleur Isabelle Delacour|Female|None|Order of the Phoenix;Beauxbatons;Gringotts|Human;Veela|Unknown|Silver|1977|3
+Florean Fortescue|Male|Unknown|None|Human|Unknown|Unknown|Unknown|2
+Frank Longbottom|Male|Unknown|Order of the Phoenix;Ministry of Magic|Human|Pure-blood|Brown|Unknown|3
+Fred Weasley|Male|Gryffindor|Order of the Phoenix;Dumbledore's Army|Human|Pure-blood|Red|1978|0
+Garrick Ollivander|Male|Unknown|None|Human|Unknown|White|Unknown|0
+Gellert Grindelwald|Male|None|Grindelwald's acolytes;Durmstrang|Human|Unknown|Blonde|1883|0
+George Weasley|Male|Gryffindor|Order of the Phoenix;Dumbledore's Army|Human|Pure-blood|Red|1978|0
+Gilderoy Lockhart|Male|Ravenclaw|Hogwarts staff|Human|Half-blood|Blonde|1964|1
+Ginevra Molly Weasley|Female|Gryffindor|Dumbledore's Army|Human|Pure-blood|Red|1981|0
+Godric Gryffindor|Male|Gryffindor|Hogwarts founders|Human|Unknown|Unknown|Unknown|1
+Gregory Goyle|Male|Slytherin|Inquisitorial Squad|Human|Pure-blood|Black|1980|0
+Hannah Abbott|Female|Hufflepuff|Dumbledore's Army|Human|Half-blood|Blonde|1980|0
+Harry James Potter|Male|Gryffindor|Dumbledore's Army;Order of the Phoenix|Human|Half-blood|Black|1980|0
+Helena Ravenclaw|Female|Ravenclaw|Hogwarts ghosts|Ghost|Unknown|Black|Unknown|0
+Helga Hufflepuff|Female|Hufflepuff|Hogwarts founders|Human|Unknown|Unknown|Unknown|1
+Hepzibah Smith|Female|Unknown|None|Human|Unknown|Unknown|Unknown|5
+Hermione Jean Granger|Female|Gryffindor|Dumbledore's Army;Order of the Phoenix|Human|Muggle-born|Brown|1979|0
+Horace Eugene Flaccus Slughorn|Male|Slytherin|Hogwarts staff;Slug Club|Human|Pure-blood|Blonde|Unknown|5
+Igor Karkaroff|Male|None|Death Eaters;Durmstrang|Human|Unknown|Grey|Unknown|3
+Irma Pince|Female|Unknown|Hogwarts staff|Human|Unknown|Unknown|Unknown|0
+James Potter|Male|Gryffindor|Order of the Phoenix|Human|Pure-blood|Black|1960|0
+Justin Finch-Fletchley|Male|Hufflepuff|Dumbledore's Army|Human|Muggle-born|Brown|1980|1
+Katie Bell|Female|Gryffindor|Dumbledore's Army|Human|Unknown|Brown|1979|0
+Kingsley Shacklebolt|Male|Unknown|Order of the Phoenix;Ministry of Magic|Human|Unknown|None|Unknown|4
+Kreacher|Male|None|None|House-elf|Unknown|White|Unknown|4
+Lavender Brown|Female|Gryffindor|Dumbledore's Army|Human|Unknown|Blonde|1980|0
+Lee Jordan|Male|Gryffindor|Dumbledore's Army|Human|Unknown|Black|1978|0
+Leta Lestrange|Female|Slytherin|Ministry of Magic|Human|Pure-blood|Black|Unknown|7
+Lily J. Potter|Female|Gryffindor|Order of the Phoenix;Slug Club|Human|Muggle-born|Red|1960|0
+Lord Voldemort|Male|Slytherin|Death Eaters|Human|Half-blood|None|1926|0
+Lucius Malfoy|Male|Slytherin|Death Eaters|Human|Pure-blood|Blonde|1954|1
+Ludovic Bagman|Male|Unknown|Ministry of Magic|Human|Unknown|Blonde|Unknown|3
+Luna Lovegood|Female|Ravenclaw|Dumbledore's Army|Human|Pure-blood|Blonde|1981|4
+Madam Hooch|Female|Unknown|Hogwarts staff|Human|Unknown|Grey|Unknown|0
+Madame Rosmerta|Female|Unknown|None|Human|Unknown|Unknown|Unknown|2
+Marietta Edgecombe|Female|Ravenclaw|Dumbledore's Army|Human|Unknown|Unknown|1979|4
+Marvolo Gaunt|Male|Unknown|None|Human|Pure-blood|Unknown|Unknown|5
+Minerva McGonagall|Female|Gryffindor|Order of the Phoenix;Hogwarts staff|Human|Half-blood|Black|1935|0
+Molly Weasley|Female|Gryffindor|Order of the Phoenix|Human|Pure-blood|Red|1949|0
+Mundungus Fletcher|Male|Unknown|Order of the Phoenix|Human|Unknown|Ginger|Unknown|1
+Myrtle Elizabeth Warren|Female|Ravenclaw|Hogwarts ghosts|Ghost|Muggle-born|Black|1929|1
+Nagini|Female|None|None|Snake|Unknown|None|Unknown|3
+Narcissa Malfoy|Female|Slytherin|None|Human|Pure-blood|Blonde|1955|3
+Neville Longbottom|Male|Gryffindor|Dumbledore's Army|Human|Pure-blood|Brown|1980|0
+Newton Scamander|Male|Hufflepuff|Ministry of Magic|Human|Unknown|Brown|1897|0
+Nicolas Flamel|Male|Unknown|None|Human|Unknown|Unknown|1327|0
+Nymphadora Tonks|Female|Hufflepuff|Order of the Phoenix;Ministry of Magic|Human|Half-blood|Pink|1973|4
+Oliver Wood|Male|Gryffindor|Quidditch|Human|Unknown|Brown|1975|0
+Olympe Maxime|Female|None|Beauxbatons|Human;Giant|Unknown|Black|Unknown|3
+Padma Patil|Female|Ravenclaw|Dumbledore's Army|Human|Unknown|Black|1980|0
+Pansy Parkinson|Female|Slytherin|Inquisitorial Squad|Human|Pure-blood|Black|1980|0
+Parvati Patil|Female|Gryffindor|Dumbledore's Army|Human|Unknown|Black|1980|0
+Peeves|Male|None|Hogwarts ghosts|Poltergeist|Unknown|Unknown|Unknown|0
+Percy Ignatius Weasley|Male|Gryffindor|Ministry of Magic|Human|Pure-blood|Red|1976|0
+Peter Pettigrew|Male|Gryffindor|Death Eaters;Order of the Phoenix|Human|Unknown|Brown|1960|0
+Petunia Dursley|Female|None|Muggles|Human|Muggle|Blonde|Unknown|0
+Phineas Nigellus Black|Male|Slytherin|Hogwarts staff|Human|Pure-blood|Black|1847|4
+Pomona Sprout|Female|Hufflepuff|Hogwarts staff|Human|Unknown|Grey|Unknown|0
+Poppy Pomfrey|Female|Unknown|Hogwarts staff|Human|Unknown|Unknown|Unknown|0
+Porpentina Esther Goldstein|Female|None|MACUSA|Human|Unknown|Brown|Unknown|7
+Professor Binns|Male|Unknown|Hogwarts staff;Hogwarts ghosts|Ghost|Unknown|Unknown|Unknown|0
+Quirinus Quirrell|Male|Ravenclaw|Hogwarts staff|Human|Unknown|Unknown|Unknown|0
+Regulus Black|Male|Slytherin|Death Eaters|Human|Pure-blood|Black|1961|4
+Remus John Lupin|Male|Gryffindor|Order of the Phoenix;Hogwarts staff|Human;Werewolf|Half-blood|Brown|1960|2
+Rita Skeeter|Female|Unknown|Daily Prophet|Human|Unknown|Blonde|Unknown|3
+Ronald Bilius Weasley|Male|Gryffindor|Dumbledore's Army;Order of the Phoenix|Human|Pure-blood|Red|1980|0
+Rowena Ravenclaw|Female|Ravenclaw|Hogwarts founders|Human|Unknown|Black|Unknown|1
+Rubeus Hagrid|Male|Gryffindor|Order of the Phoenix;Hogwarts staff|Human;Giant|Half-blood|Black|1928|0
+Rufus Scrimgeour|Male|Unknown|Ministry of Magic|Human|Unknown|Ginger|Unknown|4
+Salazar Slytherin|Male|Slytherin|Hogwarts founders|Human|Pure-blood|Unknown|Unknown|1
+Seamus Finnigan|Male|Gryffindor|Dumbledore's Army|Human|Half-blood|Blonde|1980|0
+Severus Snape|Male|Slytherin|Death Eaters;Order of the Phoenix;Hogwarts staff|Human|Half-blood|Black|1960|0
+Sir Nicholas de Mimsy-Porpington|Male|Gryffindor|Hogwarts ghosts|Ghost|Unknown|Grey|Unknown|0
+Sirius Black|Male|Gryffindor|Order of the Phoenix|Human|Pure-blood|Black|1959|0
+Stanley Shunpike|Male|Unknown|Death Eaters|Human|Unknown|Unknown|Unknown|2
+Sybill Patricia Trelawney|Female|Ravenclaw|Hogwarts staff|Human|Half-blood|Unknown|Unknown|2
+Theodore Nott|Male|Slytherin|None|Human|Pure-blood|Unknown|1980|4
+Vernon Dursley|Male|None|Muggles|Human|Muggle|Brown|Unknown|0
+Viktor Krum|Male|None|Durmstrang;Quidditch|Human|Unknown|Black|1976|3
+Vincent Crabbe|Male|Slytherin|Inquisitorial Squad|Human|Pure-blood|Brown|1980|0
+William Arthur Weasley|Male|Gryffindor|Order of the Phoenix;Gringotts|Human|Pure-blood|Red|1970|0
+Winky|Female|None|Hogwarts staff|House-elf|Unknown|None|Unknown|3
+Xenophilius Lovegood|Male|Unknown|None|Human|Pure-blood|White|Unknown|6
+Zacharias Smith|Male|Hufflepuff|Dumbledore's Army|Human|Unknown|Blonde|1980|4`),
  clues:{
   Spell:{k:"What does it do?",items:P(`Accio|Summons an object towards the caster.
 Aguamenti|Shoots a jet of clean water from the wand.
@@ -820,6 +822,8 @@ const imgOf=n=>{const it=cur.items.find(x=>x.name===n);return it&&it.img};
 const av=(u,big)=>u?`<img class="av${big?" big":""}" src="${esc(u)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`:"";
 // Long values get a smaller font so they fit their tile instead of scrolling inside it
 const tv=v=>`<div class="tv${v.length>80?" xl":v.length>36?" l":""}">${esc(v)}</div>`;
+const CREST={Gryffindor:["#7f0909","#d3a625","\u{1F981}"],Slytherin:["#1a472a","#aab0b5","\u{1F40D}"],Ravenclaw:["#0e1a40","#946b2d","\u{1F985}"],Hufflepuff:["#ecb939","#2b2b2b","\u{1F9A1}"]};
+const crest=h=>{const c=CREST[h];if(!c)return"";return`<svg class="crest" viewBox="0 0 40 46" aria-hidden="true"><path d="M3 4h34v18c0 12-8 19-17 22C11 41 3 34 3 22z" fill="${c[0]}" stroke="${c[1]}" stroke-width="3"/><path d="M20 4v40" stroke="${c[1]}" stroke-width="2" opacity=".35"/><text x="20" y="28" text-anchor="middle" font-size="17">${c[2]}</text></svg>`};
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const rand=a=>a[Math.floor(Math.random()*a.length)];
@@ -1164,7 +1168,7 @@ function renderClassic(){
   else h+=searchBar("Type a character…");
   if(st.done)h+=isDaily()?dailyDone(st):`<div class="bar"><button class="btn primary" id="shuffle">Shuffle new character</button></div>`;
   h+=`<div class="gridwrap"><table class="g"><thead><tr><th style="text-align:left">Character</th>${cur.attrs.map(a=>`<th>${a[0]}</th>`).join("")}</tr></thead><tbody>`;
-  const fr=freshGuess(st);h+=st.guesses.slice().reverse().map((g,gi)=>`<tr${gi===0&&fr?' class="new"':""}><td class="name${g.img?"":" noimg"}" title="${esc(g.name)}">${av(g.img)}<span class="nm">${esc(g.name)}</span></td>${cur.attrs.map((a,i)=>{const[c,arr]=cmp(a,g.v[i],t.v[i]);return`<td class="${c}" data-l="${a[0]}" style="animation-delay:${i*90}ms">${tv(fmt(a,g.v[i]))}${arr?`<span class="arr">${arr}</span>`:""}</td>`}).join("")}</tr>`).join("");
+  const fr=freshGuess(st);h+=st.guesses.slice().reverse().map((g,gi)=>`<tr${gi===0&&fr?' class="new"':""}><td class="name${g.img?"":" noimg"}" title="${esc(g.name)}">${av(g.img)}<span class="nm">${esc(g.name)}</span></td>${cur.attrs.map((a,i)=>{const[c,arr]=cmp(a,g.v[i],t.v[i]);return`<td class="${c}" data-l="${a[0]}" style="animation-delay:${i*90}ms">${cur.id==="hp"&&a[0]==="House"?crest(g.v[i]):""}${tv(fmt(a,g.v[i]))}${arr?`<span class="arr">${arr}</span>`:""}</td>`}).join("")}</tr>`).join("");
   h+=`</tbody></table></div>`;
   if(st.guesses.length)h+=`<p class="meta" style="text-align:center">Guesses this round: ${st.guesses.length}</p>`;
   if(lastAns[cur.id+mode]&&!isDaily())h+=`<p class="prev">Previous character was <b>${esc(lastAns[cur.id+mode])}</b></p>`;
@@ -1220,7 +1224,7 @@ function renderList(){
   idx.sort((a,b)=>{const x=raw[a][sortCol],y=raw[b][sortCol];if(isNum){const u=isNaN(+x[0]),v=isNaN(+y[0]);if(u||v)return u&&v?0:u?1:-1}return(isNum?(x[0]-y[0]):String(x).localeCompare(String(y)))*sortDir});
   let h=`<div class="bar"><div class="search"><input id="filter" placeholder="Filter by any detail, e.g. Gryffindor, Espada, 2014" value="${esc(filter)}" aria-label="Filter"></div><span class="meta">${idx.length} of ${rows.length}</span><select class="sortsel m-only" id="sortsel" aria-label="Sort by">${cols.map((c,i)=>`<option value="${i}"${i===sortCol?" selected":""}>Sort by ${c}${i===sortCol?(sortDir>0?" ▲":" ▼"):""}</option>`).join("")}</select></div>`;
   h+=`<div class="listwrap"><table class="list${items.some(x=>x.img)?"":" compact"}"><thead><tr>${cols.map((c,i)=>`<th data-c="${i}">${c}${i===sortCol?(sortDir>0?" ▲":" ▼"):""}</th>`).join("")}</tr></thead><tbody>`;
-  h+=idx.map(i=>`<tr>${rows[i].map((v,c)=>`${c===0?`<td class="name${items[i].img?"":" noimg"}" data-l="${esc(cols[c])}">${av(items[i].img)}<span class="nm">${esc(v)}</span></td>`:`<td data-l="${esc(cols[c])}">${tv(v)}</td>`}`).join("")}</tr>`).join("");
+  h+=idx.map(i=>`<tr>${rows[i].map((v,c)=>`${c===0?`<td class="name${items[i].img?"":" noimg"}" data-l="${esc(cols[c])}">${av(items[i].img)}<span class="nm">${esc(v)}</span></td>`:`<td data-l="${esc(cols[c])}">${cur.id==="hp"&&cols[c]==="House"?crest(v):""}${tv(v)}</td>`}`).join("")}</tr>`).join("");
   h+=`</tbody></table></div>`;
   $("#stage").innerHTML=h;
   const f=$("#filter");f.oninput=()=>{filter=f.value;renderList();const n=$("#filter");n.focus();n.setSelectionRange(n.value.length,n.value.length)};
