@@ -343,6 +343,12 @@ table.list td.name .nm{overflow-wrap:anywhere}
   table.list.compact td{height:auto;min-height:0;padding:12px 8px}
   table.list.compact td .tv{max-height:none}
 }
+
+.sg-controls{display:flex;align-items:center;justify-content:center;gap:18px}
+.sg-side{min-width:112px;min-height:54px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:10px 14px}
+span.sg-side{visibility:hidden}
+.sg-side small{font:600 11px var(--mono);color:var(--muted)}
+@media (max-width:700px){.sg-controls{gap:10px}.sg-side{min-width:0;flex:1;padding:10px 8px}}
 </style>
 </head>
 <body>
@@ -839,12 +845,12 @@ function renderSong(){
     <label>Era <select id="sg-era">${ERAS.map(e=>`<option${SONG.era===e[0]?" selected":""}>${e[0]}</option>`).join("")}</select></label></div>`;
   if(!t){h+=`<div class="clue"><span class="k">No songs here yet</span>${SONG.src==="charts"?"No chart songs match these filters. Try another genre or era.":"This playlist is empty. Import it below, or pick Charts."}</div>`+songImport();$("#stage").innerHTML=h;wireSongFilters();return}
   const step=Math.min(st.guesses.length,CLIPS.length-1),len=st.done?0:CLIPS[step];
-  h+=`<div class="sg-player"><button class="sg-play" id="sg-play" aria-label="Play"><svg class="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><svg class="i-pause" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></button>
+  h+=`<div class="sg-player"><div class="sg-controls">${st.done?`<span class="sg-side"></span>`:`<button class="btn sg-side" id="skip">Skip<small>+${CLIPS[Math.min(step+1,CLIPS.length-1)]}s</small></button>`}<button class="sg-play" id="sg-play" aria-label="Play"><svg class="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><svg class="i-pause" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></button><button class="btn sg-side" id="shuffle">${st.done?"Next song":"New song"}</button></div>
     <div class="sg-meter">${CLIPS.map((c,i)=>`<span class="${i<=step||st.done?"on":""}" >${c}s</span>`).join("")}</div>
     <p class="meta" id="sg-status">${st.done?"Full preview":"Clip: "+len+"s"} · loading…</p></div>`;
-  if(st.done)h+=`<div class="win ${st.won?"":"lose"}"><img id="sg-art" class="av big" alt="" hidden><div><h3>${st.won?"Got it":"It was"}: ${esc(t.name)}</h3><span class="meta">${esc(t.v[0])} · ${esc(t.v[1][1])}${t.v[2]!=="—"?" · "+esc(t.v[2]):""} · ${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span></div></div><div class="bar"><button class="btn primary" id="shuffle">Next song</button></div>`;
+  if(st.done)h+=`<div class="win ${st.won?"":"lose"}"><img id="sg-art" class="av big" alt="" hidden><div><h3>${st.won?"Got it":"It was"}: ${esc(t.name)}</h3><span class="meta">${esc(t.v[0])} · ${esc(t.v[1][1])}${t.v[2]!=="—"?" · "+esc(t.v[2]):""} · ${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span></div></div>`;
   else h+=`<div class="bar"><div class="search"><input id="guess" autocomplete="off" placeholder="${artistMode?"Type an artist…":"Type a song title…"}" aria-label="Guess"><ul class="sugg" id="sugg" hidden></ul></div>
-    <button class="btn primary" id="go">Guess</button><button class="btn" id="skip">Skip (+${CLIPS[Math.min(step+1,CLIPS.length-1)]}s)</button><button class="btn" id="shuffle">New song</button><button class="btn" id="giveup">Give up</button></div>
+    <button class="btn primary" id="go">Guess</button><button class="btn" id="giveup">Give up</button></div>
     <p class="meta" style="text-align:center">${CLIPS.length-st.guesses.length} guess${CLIPS.length-st.guesses.length===1?"":"es"} left</p>`;
   h+=`<div class="sg-rows">`+st.guesses.slice().reverse().map(g=>{if(g.skip)return`<div class="sg-row"><span class="miss wide">Skipped</span></div>`;
     const yr=g.v[1][0],ty=t.v[1][0],ya=!yr||!ty||yr===ty?"":ty>yr?"↑":"↓";
