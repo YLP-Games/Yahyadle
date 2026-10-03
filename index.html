@@ -799,6 +799,15 @@ const PS={"makes":[{"name":"Airbus","models":["A220","A310","A320","A330","A340"
   g.CAT=Object.fromEntries(Object.entries(CAT).map(([k,v])=>[k,[...v].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}))]));
   g.AIRLINES=[...ALS].sort((a,b)=>a.localeCompare(b));
 })();
+// Does a photo caption give away the make, model or airline? (e.g. "Qantas Boeing 747-400; VH-OJC")
+const creditLeaks=(t,txt)=>{const n=x=>String(x||"").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]/g,"");const T=n(txt);if(!T)return false;
+  const STOP=new Set(["air","airlines","airline","airways","lines","international","express","regional","group","aviation","the"]);
+  const ALIAS={iljuschin:"ilyushin",ilyushin:"iljuschin",tupolew:"tupolev",mcdonnelldouglas:"md"};
+  const terms=[];
+  for(const w of String(t.v[0]).split(/[\s-]+/)){const k=n(w);if(k.length>=3){terms.push(k);if(ALIAS[k])terms.push(ALIAS[k])}}
+  const md=n(t.v[1]);if(md.length>=3)terms.push(md);const dig=md.replace(/^[a-z]+/,"");if(dig.length>=3&&/\d/.test(dig))terms.push(dig);
+  for(const w of String(t.v[2]).split(/[\s\-\/]+/)){const k=n(w);if(k.length>=4&&!STOP.has(k))terms.push(k)}
+  return terms.some(k=>T.includes(k))};
 const photoCache={};
 async function loadPhoto(reg){
   if(!reg)return null; if(reg in photoCache)return photoCache[reg];
@@ -1127,7 +1136,7 @@ function renderPlane(){
   h+=`</div></div>`;
   $("#stage").innerHTML=h;
   (t.img?Promise.resolve({src:t.img,by:t.credit,link:t.clink,ps:1}):loadPhoto(t.reg)).then(p=>{const f=$("#pframe"),c=$("#pcredit");if(!f)return;
-    if(p){const prev=st.pz||{z:PZ[0],fx:st.f.x,fy:st.f.y};f.style.setProperty('--z',prev.z);f.style.setProperty('--fx',prev.fx+'%');f.style.setProperty('--fy',prev.fy+'%');f.innerHTML=`<img src="${esc(p.src)}" alt="Mystery aircraft" draggable="false">`;requestAnimationFrame(()=>requestAnimationFrame(()=>{f.style.setProperty('--z',z);f.style.setProperty('--fx',fx+'%');f.style.setProperty('--fy',fy+'%');st.pz={z,fx,fy};}));c.innerHTML=p.ps?`Photo: ${p.link?`<a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.by||"Wikimedia Commons")}</a>`:esc(p.by)} · via Planespottle / Wikimedia Commons`:`Photo © <a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.by)}</a> via Planespotters.net`;}
+    if(p){const prev=st.pz||{z:PZ[0],fx:st.f.x,fy:st.f.y};f.style.setProperty('--z',prev.z);f.style.setProperty('--fx',prev.fx+'%');f.style.setProperty('--fy',prev.fy+'%');f.innerHTML=`<img src="${esc(p.src)}" alt="Mystery aircraft" draggable="false">`;requestAnimationFrame(()=>requestAnimationFrame(()=>{f.style.setProperty('--z',z);f.style.setProperty('--fx',fx+'%');f.style.setProperty('--fy',fy+'%');st.pz={z,fx,fy};}));c.innerHTML=!st.done&&creditLeaks(t,(p.by||"")+" "+(p.link||""))?`Photo credit appears after this round (it names the plane).`:p.ps?`Photo: ${p.link?`<a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.by||"Wikimedia Commons")}</a>`:esc(p.by)} · via Planespottle / Wikimedia Commons`:`Photo © <a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.by)}</a> via Planespotters.net`;}
     else if(p===null){if(!st.guesses.length&&S[cur.id+":"+mode]===st){S[cur.id+":"+mode]=newRound();render();return}f.innerHTML='<p class="meta">Planespotters has no photo of this aircraft yet. Press Shuffle.</p>';}
     else f.innerHTML='<p class="meta">Photos load on the GitHub Pages site. They can\'t load in this preview.</p>';});
   const sh=$("#shuffle");if(sh)sh.onclick=()=>{lastAns[cur.id+mode]=t.v[0]+" "+t.v[1]+" ("+t.v[2]+")";S[cur.id+":"+mode]=newRound();render()};
