@@ -807,7 +807,10 @@ const PLAY={layla:[],yahya:[]};
 try{const l=JSON.parse(localStorage.getItem("songpl")||"{}");if(l.layla)PLAY.layla=l.layla;if(l.yahya)PLAY.yahya=l.yahya}catch(e){}
 const CLIPS=[0.1,0.5,2,8,15];
 const ERAS=[["All",0,9999],["Classic",0,1999],["2000s",2000,2009],["2010s",2010,2019],["2020s",2020,9999]];
-const mkSong=(t,a,y,g,src)=>({name:t,v:[a,[+y||0,y?String(y):"?"],g||"—"],src});
+// Earliest release years found on iTunes, so compilations/remasters in playlist exports don't show the wrong year
+let YEARFIX={};try{YEARFIX=JSON.parse(localStorage.getItem("songyears")||"{}")}catch(e){}
+const mkSong=(t,a,y,g,src)=>{const f=YEARFIX[t+"|"+a];y=+y||0;if(f&&(!y||f<y))y=f;return{name:t,v:[a,[y,y?String(y):"?"],g||"—"],src}};
+function applyYear(song,info){const y=info&&info.year;if(!y)return false;const cy=song.v[1][0];if(cy&&cy<=y)return false;song.v[1]=[y,String(y)];YEARFIX[song.name+"|"+song.v[0]]=y;try{localStorage.setItem("songyears",JSON.stringify(YEARFIX))}catch(e){}return true}
 function songPool(){
   let p;
   if(SONG.src==="charts")p=CHARTS.map(r=>mkSong(r[0],r[1],r[2],r[3],"Charts"));
@@ -827,15 +830,18 @@ function jsonp(url){return new Promise((res,rej)=>{const cb="__jp"+Math.random()
 const clean=s=>String(s).toLowerCase().replace(/\(.*?\)|\[.*?\]|feat\..*$/g,"").replace(/[^a-z0-9]+/g," ").trim();
 async function findPreview(song){
   const key=song.name+"|"+song.v[0];if(key in prevCache)return prevCache[key];
-  const t=clean(song.name),a=clean(song.v[0]).split(" ")[0];let best=null;
+  const t=clean(song.name),a=clean(song.v[0]).split(" ")[0];let best=null,yrs=[];
   // Plenty of UK tracks are missing from the US store, so try the UK store when the US one has no match
   for(const country of ["US","GB"]){
-    const d=await jsonp("https://itunes.apple.com/search?media=music&entity=song&limit=10&country="+country+"&term="+encodeURIComponent(song.v[0]+" "+song.name));
-    const r=(d.results||[]).filter(x=>x.previewUrl);
+    const d=await jsonp("https://itunes.apple.com/search?media=music&entity=song&limit=25&country="+country+"&term="+encodeURIComponent(song.v[0]+" "+song.name));
+    const all=d.results||[],r=all.filter(x=>x.previewUrl);
+    // Earliest release year of this song (playlist exports often carry a compilation or remaster date)
+    yrs.push(...all.filter(x=>(clean(x.trackName)===t||clean(x.trackName).startsWith(t+" "))&&clean(x.artistName).includes(a)&&x.releaseDate).map(x=>+String(x.releaseDate).slice(0,4)).filter(y=>y>1900));
     best=r.find(x=>clean(x.trackName)===t&&clean(x.artistName).includes(a))||r.find(x=>clean(x.trackName).startsWith(t)&&clean(x.artistName).includes(a))||r.find(x=>clean(x.trackName).includes(t))||null;
     if(best)break;
   }
-  return prevCache[key]=best?{url:best.previewUrl,art:(best.artworkUrl100||"").replace("100x100","300x300"),link:best.trackViewUrl}:null;
+  const year=yrs.length?Math.min(...yrs):0;
+  return prevCache[key]=best?{url:best.previewUrl,art:(best.artworkUrl100||"").replace("100x100","300x300"),link:best.trackViewUrl,year}:(year?{year,none:1}:null);
 }
 function playClip(sec,btn){
   songStop();if(!songAudio)return;try{songAudio.currentTime=0}catch(e){}
@@ -873,7 +879,7 @@ function renderSong(){
   $("#stage").innerHTML=h;wireSongFilters();
   // audio
   const status=$("#sg-status"),play=$("#sg-play");songAudio=null;
-  findPreview(t).then(p=>{if(!$("#sg-play"))return;
+  findPreview(t).then(p=>{if(!$("#sg-play"))return;if(p&&applyYear(t,p)){render();return}if(p&&p.none)p=null;
     // No clip for this one (it happens for a few songs Apple's search can't find): quietly deal another before anyone has guessed
     if(!p){const k=cur.id+":"+mode;if(!st.done&&!st.guesses.length&&S[k]===st&&(st.auto||0)<5){const n=songRound();n.auto=(st.auto||0)+1;S[k]=n;render();return}
       status.textContent="No preview found for this song. Press New song.";return}
@@ -891,7 +897,7 @@ function renderSong(){
   wire(st,names,label=>{
     let g;if(artistMode){const s0=pool.find(x=>x.v[0]===label);g={name:"",v:[label,s0?s0.v[1]:[0,"?"],""]};if(label===t.v[0]){st.done=true;st.won=true;bump(true)}}
     else{g=pool.find(x=>x.name+" — "+x.v[0]===label);if(g.name===t.name&&g.v[0]===t.v[0]){st.done=true;st.won=true;bump(true)}}
-    st.guesses.push(g);after();
+    st.guesses.push(g);after();if(!artistMode&&g&&!g.skip)findPreview(g).then(info=>{if(applyYear(g,info)&&cur.id==="song")render()}).catch(()=>{});
   },used);
   $("#skip").onclick=()=>{st.guesses.push({skip:1});after()};
 }
