@@ -319,6 +319,7 @@ html[data-game="song"]{--bg:#0a0f0c;--panel:#111a14;--panel2:#1a271e;--line:#2a3
 .sg-play{width:76px;height:76px;border-radius:50%;border:0;background:var(--accent);color:#06240f;cursor:pointer;display:grid;place-items:center;box-shadow:0 0 0 6px color-mix(in srgb,var(--accent) 22%,transparent)}
 .sg-play svg{width:34px;height:34px;margin-left:4px}
 .sg-play.playing{animation:pulse 1s ease-in-out infinite}
+.sg-play .i-pause{display:none}.sg-play.playing .i-pause{display:block}.sg-play.playing .i-play{display:none}.sg-play .i-pause{margin-left:0}
 @keyframes pulse{50%{box-shadow:0 0 0 14px color-mix(in srgb,var(--accent) 10%,transparent)}}
 .sg-meter{display:flex;gap:4px;width:min(560px,100%)}
 .sg-meter span{flex:1;background:var(--panel2);border-radius:6px;text-align:center;font:600 11px var(--mono);padding:6px 0;color:var(--muted);min-width:0}
@@ -807,7 +808,7 @@ GAMES.push({id:"song",name:"Songdle",tag:"Guess the song",c:"#1ed760",modes:["So
 if(store.last==="song"){cur=GAMES.find(g=>g.id==="song");mode="Song"}
 function songRound(){const pool=songPool();return{target:pool.length?pick(pool,"song"):null,guesses:[],done:false,step:0}}
 let songAudio=null,songTimer=null;
-function songStop(){if(songTimer){clearTimeout(songTimer);songTimer=null}if(songAudio){songAudio.pause()}document.querySelectorAll(".sg-play").forEach(b=>b.classList.remove("playing"))}
+function songStop(){if(songTimer){clearTimeout(songTimer);songTimer=null}if(songAudio){songAudio.pause()}document.querySelectorAll(".sg-play").forEach(b=>{b.classList.remove("playing");b.setAttribute("aria-label","Play")})}
 const prevCache={};
 function jsonp(url){return new Promise((res,rej)=>{const cb="__jp"+Math.random().toString(36).slice(2);const sc=document.createElement("script");const t=setTimeout(()=>{cleanup();rej(new Error("timeout"))},9000);
   function cleanup(){clearTimeout(t);delete window[cb];sc.remove()}window[cb]=d=>{cleanup();res(d)};sc.src=url+(url.includes("?")?"&":"?")+"callback="+cb;sc.onerror=()=>{cleanup();rej(new Error("blocked"))};document.head.appendChild(sc)})}
@@ -822,9 +823,10 @@ async function findPreview(song){
 }
 function playClip(sec,btn){
   songStop();if(!songAudio)return;try{songAudio.currentTime=0}catch(e){}
-  const p=songAudio.play();if(p&&p.catch)p.catch(()=>{});btn&&btn.classList.add("playing");
-  if(sec)songTimer=setTimeout(()=>{songAudio.pause();btn&&btn.classList.remove("playing")},sec*1000);
-  else songAudio.onended=()=>btn&&btn.classList.remove("playing");
+  const p=songAudio.play();if(p&&p.catch)p.catch(()=>{btn&&btn.classList.remove("playing")});btn&&(btn.classList.add("playing"),btn.setAttribute("aria-label","Pause"));
+  const off=()=>btn&&(btn.classList.remove("playing"),btn.setAttribute("aria-label","Play"));
+  if(sec)songTimer=setTimeout(()=>{songAudio.pause();off()},sec*1000);
+  else songAudio.onended=off;
 }
 function renderSong(){
   songStop();
@@ -837,7 +839,7 @@ function renderSong(){
     <label>Era <select id="sg-era">${ERAS.map(e=>`<option${SONG.era===e[0]?" selected":""}>${e[0]}</option>`).join("")}</select></label></div>`;
   if(!t){h+=`<div class="clue"><span class="k">No songs here yet</span>${SONG.src==="charts"?"No chart songs match these filters. Try another genre or era.":"This playlist is empty. Import it below, or pick Charts."}</div>`+songImport();$("#stage").innerHTML=h;wireSongFilters();return}
   const step=Math.min(st.guesses.length,CLIPS.length-1),len=st.done?0:CLIPS[step];
-  h+=`<div class="sg-player"><button class="sg-play" id="sg-play" aria-label="Play clip"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+  h+=`<div class="sg-player"><button class="sg-play" id="sg-play" aria-label="Play"><svg class="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><svg class="i-pause" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></button>
     <div class="sg-meter">${CLIPS.map((c,i)=>`<span class="${i<=step||st.done?"on":""}" >${c}s</span>`).join("")}</div>
     <p class="meta" id="sg-status">${st.done?"Full preview":"Clip: "+len+"s"} · loading…</p></div>`;
   if(st.done)h+=`<div class="win ${st.won?"":"lose"}"><img id="sg-art" class="av big" alt="" hidden><div><h3>${st.won?"Got it":"It was"}: ${esc(t.name)}</h3><span class="meta">${esc(t.v[0])} · ${esc(t.v[1][1])}${t.v[2]!=="—"?" · "+esc(t.v[2]):""} · ${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span></div></div><div class="bar"><button class="btn primary" id="shuffle">Next song</button></div>`;
@@ -856,10 +858,10 @@ function renderSong(){
   const status=$("#sg-status"),play=$("#sg-play");songAudio=null;
   findPreview(t).then(p=>{if(!$("#sg-play"))return;
     if(!p){status.textContent="No preview found for this song. Press New song.";return}
-    songAudio=new Audio(p.url);songAudio.preload="auto";status.textContent=(st.done?"Full preview":"Clip: "+len+"s")+" · press play";
+    songAudio=new Audio(p.url);songAudio.preload="auto";status.textContent=(st.done?"Full preview":"Clip: "+len+"s")+" · press play";if(st.done&&st.won&&!st.autoplayed){st.autoplayed=true;status.textContent="Full preview · playing";playClip(0,$("#sg-play"))}
     if(st.done){const a=$("#sg-art");if(a&&p.art){a.src=p.art;a.hidden=false}}
   }).catch(()=>{if(status)status.textContent="Couldn't reach the preview service. Song audio works on the GitHub Pages site."});
-  play.onclick=()=>playClip(len,play);
+  play.onclick=()=>{if(songAudio&&!songAudio.paused){songStop();play.setAttribute("aria-label","Play")}else if(st.done&&songAudio&&songAudio.currentTime>0&&!songAudio.ended){const q=songAudio.play();if(q&&q.catch)q.catch(()=>{});play.classList.add("playing");play.setAttribute("aria-label","Pause")}else{playClip(len,play);play.setAttribute("aria-label","Pause")}};
   const sh=$("#shuffle");sh.onclick=()=>{songStop();lastAns[cur.id+mode]=t.name+" — "+t.v[0];S[cur.id+":"+mode]=newRound();render()};
   if(st.done)return;
   const pool=songPool();
