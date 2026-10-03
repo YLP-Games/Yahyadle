@@ -263,6 +263,13 @@ table.g td.name .nm{text-align:center}
 .plrow .hit{background:var(--hit)}.plrow .miss{background:var(--miss)}
 @media (max-width:800px){.pl{grid-template-columns:1fr}.pltitle{font-size:16px}.plsel select{font-size:14px;padding:10px 6px}}
 @media (prefers-reduced-motion:reduce){.plframe img{transition:none}}
+
+.hintbtn{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:120px;padding:9px 14px;border-color:var(--accent);color:var(--fg)}
+.hintbtn small{font:500 11px var(--body);color:var(--muted)}
+.hintbtn.on{background:var(--accent);color:var(--on-accent,#140c0c)}.hintbtn.on small{color:inherit;opacity:.8}
+.hintbtn.locked{border-color:var(--line);opacity:.6;cursor:default}
+.hintshow{display:flex;flex-direction:column;gap:8px;align-items:center;margin-bottom:12px}
+.hintshow .clue{margin:0;width:100%;max-width:70ch;text-align:center;font-size:16px;padding:12px 16px}
 </style>
 </head>
 <body>
@@ -765,7 +772,10 @@ function searchBar(placeholder){
 function renderClassic(){
   const st=state(),t=st.target;
   let h=banner();
-  if(cur.hints)h+=`<div class="bar hintbox">${cur.hints.map(([n,l,k])=>st.done||st.guesses.length>=n?`<span class="clue" style="margin:0;padding:10px 14px;font-size:14px;flex:1 1 220px"><span class="k">${l}</span>${esc(t[k]||"Not added yet")}</span>`:`<span class="btn" style="cursor:default;opacity:.6">${l} in ${n-st.guesses.length}</span>`).join("")}</div>`;
+  if(!st.rev)st.rev={};
+  if(cur.hints){const open=cur.hints.filter(([n,l])=>st.rev[l]&&(st.done||st.guesses.length>=n));
+    h+=`<div class="bar hintbox">${cur.hints.map(([n,l])=>st.done||st.guesses.length>=n?`<button class="btn hintbtn${st.rev[l]?" on":""}" data-hint="${esc(l)}" aria-expanded="${!!st.rev[l]}">${l}<small>${st.rev[l]?"Hide":"Click to reveal"}</small></button>`:`<span class="btn hintbtn locked">${l}<small>in ${n-st.guesses.length} guess${n-st.guesses.length===1?"":"es"}</small></span>`).join("")}</div>`;
+    if(open.length)h+=`<div class="hintshow">${open.map(([n,l,k])=>`<div class="clue"><span class="k">${l}</span>${esc(t[k]||"Not added yet")}</div>`).join("")}</div>`;}
   if(st.done)h+=`<div class="win ${st.won?"":"lose"}">${cur.photos?"":av(t.img,1)}<div><h3>${st.won?"Got it":"It was"}: ${esc(t.name)}</h3><span class="meta">${st.guesses.length} guess${st.guesses.length===1?"":"es"} · press Shuffle for another</span></div></div>`;
   else h+=searchBar("Type a "+(cur.id==="plane"?"plane":"character")+"…");
   if(st.done)h+=`<div class="bar"><button class="btn primary" id="shuffle">Shuffle new ${cur.id==="plane"?"plane":"character"}</button></div>`;
@@ -777,7 +787,8 @@ function renderClassic(){
   if(st.guesses.length)h+=`<p class="meta" style="text-align:center">Guesses this round: ${st.guesses.length}</p>`;
   if(lastAns[cur.id+mode])h+=`<p class="prev">Previous character was <b>${esc(lastAns[cur.id+mode])}</b></p>`;
   h+=`<div class="legend"><span><i style="background:var(--hit)"></i>Correct</span><span><i style="background:var(--near)"></i>Partial</span><span><i style="background:var(--miss)"></i>Wrong</span><span>↑ ↓ higher / later, lower / earlier</span></div>`;
-  $("#stage").innerHTML=h;if(cur.photos)showPhoto(t);wire(st,cur.items.map(x=>x.name),name=>{
+  $("#stage").innerHTML=h;if(cur.photos)showPhoto(t);
+  document.querySelectorAll(".hintbtn[data-hint]").forEach(b=>b.onclick=()=>{const l=b.dataset.hint;st.rev[l]=!st.rev[l];render();focusGuess()});wire(st,cur.items.map(x=>x.name),name=>{
     const g=cur.items.find(x=>x.name===name);st.guesses.push(g);if(g===t){st.done=true;st.won=true;bump(true)}render();focusGuess();
   },st.guesses.map(g=>g.name));
 }
