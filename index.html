@@ -861,7 +861,7 @@ function renderSong(){
     <label>Era <select id="sg-era">${ERAS.map(e=>`<option${SONG.era===e[0]?" selected":""}>${e[0]}</option>`).join("")}</select></label></div>`;
   if(!t){h+=`<div class="clue"><span class="k">No songs here yet</span>${SONG.src==="charts"?"No chart songs match these filters. Try another genre or era.":"This playlist is empty. Import it below, or pick Charts."}</div>`+songImport();$("#stage").innerHTML=h;wireSongFilters();return}
   const step=Math.min(st.guesses.length,CLIPS.length-1),len=st.done?0:CLIPS[step];
-  h+=`<div class="sg-player"><div class="sg-controls">${st.done?`<span class="sg-side"></span>`:`<button class="btn sg-side" id="skip">Skip<small>+${CLIPS[Math.min(step+1,CLIPS.length-1)]}s</small></button>`}<button class="sg-play" id="sg-play" aria-label="Play"><svg class="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><svg class="i-pause" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></button><button class="btn sg-side" id="shuffle">${st.done?"Next song":"New song"}</button></div>
+  h+=`<div class="sg-player"><div class="sg-controls">${st.done?`<span class="sg-side"></span>`:`<button class="btn sg-side" id="skip">Skip<small>+${CLIPS[Math.min(step+1,CLIPS.length-1)]}s</small></button>`}<button class="sg-play" id="sg-play" aria-label="Play"><svg class="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><svg class="i-pause" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></button>${st.done?`<button class="btn sg-side" id="shuffle">Next song</button>`:`<span class="sg-side"></span>`}</div>
     <label class="sg-vol" for="sg-vol"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z"/></svg><span class="sr">Volume</span><input type="range" id="sg-vol" min="0" max="100" step="1" value="${Math.round(songVol*100)}" aria-label="Volume"><output id="sg-vol-out">${Math.round(songVol*100)}%</output></label>
     <div class="sg-meter">${CLIPS.map((c,i)=>`<span class="${i<=step||st.done?"on":""}" >${c}s</span>`).join("")}</div>
     <p class="meta" id="sg-status">${st.done?"Full preview":"Clip: "+len+"s"} · loading…</p></div>`;
@@ -888,7 +888,7 @@ function renderSong(){
   }).catch(()=>{if(status)status.textContent="Couldn't reach the preview service. Song audio works on the GitHub Pages site."});
   const vol=$("#sg-vol");if(vol)vol.oninput=()=>{songVol=vol.value/100;if(songAudio)songAudio.volume=songVol;$("#sg-vol-out").textContent=vol.value+"%";try{localStorage.setItem("songvol",String(songVol))}catch(e){}};
   play.onclick=()=>{if(songAudio&&!songAudio.paused){songStop();play.setAttribute("aria-label","Play")}else if(st.done&&songAudio&&songAudio.currentTime>0&&!songAudio.ended){const q=songAudio.play();if(q&&q.catch)q.catch(()=>{});play.classList.add("playing");play.setAttribute("aria-label","Pause")}else{playClip(len,play);play.setAttribute("aria-label","Pause")}};
-  const sh=$("#shuffle");sh.onclick=()=>{songStop();lastAns[cur.id+mode]=t.name+" — "+t.v[0];S[cur.id+":"+mode]=newRound();render()};
+  const sh=$("#shuffle");if(sh)sh.onclick=()=>{songStop();lastAns[cur.id+mode]=t.name+" — "+t.v[0];S[cur.id+":"+mode]=newRound();render()};
   if(st.done)return;
   const pool=songPool();
   const names=artistMode?[...new Set(pool.map(x=>x.v[0]))].sort():pool.map(x=>x.name+" — "+x.v[0]);
@@ -1020,7 +1020,7 @@ function renderClue(){
 }
 function focusGuess(){const i=$("#guess");if(i)i.focus()}
 function wire(st,names,onGuess,used){
-  $("#shuffle").onclick=()=>{const t=st.target;lastAns[cur.id+mode]=Array.isArray(t)?t[0]:t.name;S[cur.id+":"+mode]=newRound();render();focusGuess()};
+  const shb=$("#shuffle");if(shb)shb.onclick=()=>{const t=st.target;lastAns[cur.id+mode]=Array.isArray(t)?t[0]:t.name;S[cur.id+":"+mode]=newRound();render();focusGuess()};
   const gu=$("#giveup");if(gu)gu.onclick=()=>{st.done=true;st.won=false;bump(false);render()};
   const inp=$("#guess"),ul=$("#sugg");if(!inp)return;let sel=0,opts=[];
   const draw=()=>{const q=inp.value.trim().toLowerCase();opts=q?names.filter(n=>!used.includes(n)&&n.toLowerCase().includes(q)).sort((a,b)=>a.toLowerCase().indexOf(q)-b.toLowerCase().indexOf(q)).slice(0,8):[];sel=0;ul.hidden=!opts.length;ul.innerHTML=opts.map((n,i)=>`<li data-n="${esc(n)}" class="${i===sel?"on":""}">${av(imgOf(n))}${esc(n)}</li>`).join("")};
