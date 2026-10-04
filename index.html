@@ -1276,7 +1276,7 @@ function parseCSV(text){
 }
 // Shared playlists committed to the repo (playlists.json: {"layla":[{t,a,y,g}], "yahya":[...]})
 /* ---- Spotify (one-tap "Add to Spotify"): sign-in with PKCE, no server needed. Tokens stay on this device. ---- */
-const SPOTIFY_ID="79efb6957611418b9d16a1c45c56fad1";   // Client ID from developer.spotify.com (redirect URI = this page's address)
+const SPOTIFY_ID="79efb6957611418b9d16a1c45c56fad1";const SP_VER="sp3";   // Client ID from developer.spotify.com (redirect URI = this page's address)
 const SP_REDIRECT=location.origin+location.pathname;
 let SP=(()=>{try{return JSON.parse(localStorage.getItem("spotify")||"null")}catch(e){return null}})();
 const spSave=()=>{try{SP?localStorage.setItem("spotify",JSON.stringify(SP)):localStorage.removeItem("spotify")}catch(e){}};
@@ -1321,7 +1321,7 @@ function spWire(b,t){const T=spTarget();b.textContent=T.id?"Add to "+T.name:"Add
   b.onclick=async()=>{set("Adding…",1);try{const id=b.dataset.id||((await spFind(t))||{}).id;if(!id){set("Not on Spotify",1);return}
     const uri="spotify:track:"+id;
     if(T.id){await spApi(`/playlists/${T.id}/items`,{method:"POST",body:JSON.stringify({uris:[uri]})}).catch(e=>e.status===404||e.status===403?spApi(`/playlists/${T.id}/tracks`,{method:"POST",body:JSON.stringify({uris:[uri]})}):Promise.reject(e));if(spHave[T.id])spHave[T.id].add(id);set("Added to "+T.name+" ✓",1)}
-    else{await spApi("/me/library?uris="+encodeURIComponent(uri),{method:"PUT"}).catch(e=>e.status===404||e.status===403?spApi("/me/tracks?ids="+id,{method:"PUT"}):Promise.reject(e));set("Added to Liked Songs ✓",1)}}catch(e){set("Couldn't add. Try again");b.disabled=false;b.title=e.message;
+    else{await spApi("/me/library?uris="+encodeURIComponent(uri),{method:"PUT"}).catch(e=>e.status===404||e.status===403?spApi("/me/tracks?ids="+id,{method:"PUT"}):Promise.reject(e));set("Added to Liked Songs ✓",1)}}catch(e){set("Couldn't add ("+(e.status||"?")+"). Try again");b.disabled=false;b.title=e.message;
       const m=b.parentNode.querySelector(".sp-err")||b.insertAdjacentElement("afterend",Object.assign(document.createElement("small"),{className:"sp-err"}));m.textContent=e.message}}}
 // Back from Spotify's sign-in page: swap the code for tokens, then tidy the address bar
 (async()=>{const q=new URLSearchParams(location.search);if(!SPOTIFY_ID||!(q.get("code")||q.get("error")))return;
