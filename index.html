@@ -439,6 +439,7 @@ span.sg-side{visibility:hidden}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .sg-links{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}.sg-links span{font-size:14px;color:var(--muted);width:100%}.sg-links .btn{text-decoration:none;display:inline-flex;align-items:center;min-height:44px;padding:8px 16px}
 .sp-to{display:flex;flex-direction:column;gap:6px;margin-top:8px;font:14px var(--body)}.sp-to select{font:14px var(--body);color:#e9e9ee;background:#1a1d27;border:1px solid #2c3040;border-radius:10px;padding:9px 10px}
+.sp-err{display:block;width:100%;font:12px var(--mono);color:var(--muted);margin-top:4px}
 </style>
 </head>
 <body>
@@ -1291,7 +1292,7 @@ async function spToken(body){const r=await fetch("https://accounts.spotify.com/a
 async function spAccess(){if(!spLinked())throw new Error("Not connected");if(Date.now()<SP.exp)return SP.access;
   try{return await spToken({grant_type:"refresh_token",refresh_token:SP.refresh})}catch(e){spDisconnect();throw new Error("Please connect Spotify again in Settings")}}
 async function spApi(path,opt={}){const tok=await spAccess();const r=await fetch("https://api.spotify.com/v1"+path,{...opt,headers:{Authorization:"Bearer "+tok,"Content-Type":"application/json"}});
-  if(!r.ok)throw new Error("Spotify error "+r.status);return r.status===204||r.headers.get("content-length")==="0"?null:r.json().catch(()=>null)}
+  if(!r.ok){let m="";try{const j=await r.json();m=j.error&&(j.error.message||j.error)||""}catch(e){}const err=new Error("Spotify "+r.status+(m?": "+m:""));err.status=r.status;throw err}return r.status===204||r.headers.get("content-length")==="0"?null:r.json().catch(()=>null)}
 // Find the real artist's original recording, like the iTunes matching
 async function spFind(t){const q=`track:${t.name.replace(/\s*[(\[].*?[)\]]/g,"")} artist:${mainArtist(t.v[0])}`;
   const d=await spApi("/search?type=track&limit=20&q="+encodeURIComponent(q));const who=[...artistSet(t.v[0],t.name)].map(clean);
@@ -1309,16 +1310,19 @@ async function spFillTargets(sel){try{
   sel.onchange=()=>{const o=sel.options[sel.selectedIndex];try{localStorage.setItem("spotify_target",JSON.stringify({id:sel.value,name:sel.value?o.textContent:"Liked Songs"}))}catch(e){}if(cur.id==="song")render()}
 }catch(e){sel.innerHTML=`<option>Couldn't load your playlists</option>`}}
 // Songs already in the chosen playlist (read once per visit, so the button can say "Already in …")
-async function spInPlaylist(pid){if(spHave[pid])return spHave[pid];const ids=new Set();let url=`/playlists/${pid}/tracks?fields=items(track(id)),next&limit=100`;let n=0;
-  while(url&&n++<20){const d=await spApi(url);for(const it of d.items||[])if(it.track&&it.track.id)ids.add(it.track.id);url=d.next?d.next.replace("https://api.spotify.com/v1",""):null}
+async function spInPlaylist(pid){if(spHave[pid])return spHave[pid];const ids=new Set();let url=`/playlists/${pid}/items?limit=100`;let n=0;
+  const first=await spApi(url).catch(e=>e.status===404||e.status===403?(url=`/playlists/${pid}/tracks?limit=100`,null):Promise.reject(e));
+  while(url&&n++<20){const d=n===1&&first?first:await spApi(url);for(const it of d.items||[]){const tr=it.track||it.item;if(tr&&tr.id)ids.add(tr.id)}url=d.next?d.next.replace("https://api.spotify.com/v1",""):null}
   return spHave[pid]=ids}
 function spWire(b,t){const T=spTarget();b.textContent=T.id?"Add to "+T.name:"Add to Spotify";const set=(txt,dis)=>{b.textContent=txt;b.disabled=!!dis};
   spFind(t).then(async x=>{if(!x){set("Not on Spotify",1);return}b.dataset.id=x.id;
     if(T.id){const have=await spInPlaylist(T.id).catch(()=>null);if(have&&have.has(x.id))set("Already in "+T.name+" ✓",1)}
     else{const has=await spApi("/me/tracks/contains?ids="+x.id).catch(()=>null);if(has&&has[0])set("In your Liked Songs ✓",1)}}).catch(()=>{});
   b.onclick=async()=>{set("Adding…",1);try{const id=b.dataset.id||((await spFind(t))||{}).id;if(!id){set("Not on Spotify",1);return}
-    if(T.id){await spApi(`/playlists/${T.id}/tracks`,{method:"POST",body:JSON.stringify({uris:["spotify:track:"+id]})});if(spHave[T.id])spHave[T.id].add(id);set("Added to "+T.name+" ✓",1)}
-    else{await spApi("/me/tracks?ids="+id,{method:"PUT"});set("Added to Liked Songs ✓",1)}}catch(e){set("Couldn't add. Try again");b.disabled=false;b.title=e.message}}}
+    const uri="spotify:track:"+id;
+    if(T.id){await spApi(`/playlists/${T.id}/items`,{method:"POST",body:JSON.stringify({uris:[uri]})}).catch(e=>e.status===404||e.status===403?spApi(`/playlists/${T.id}/tracks`,{method:"POST",body:JSON.stringify({uris:[uri]})}):Promise.reject(e));if(spHave[T.id])spHave[T.id].add(id);set("Added to "+T.name+" ✓",1)}
+    else{await spApi("/me/library?uris="+encodeURIComponent(uri),{method:"PUT"}).catch(e=>e.status===404||e.status===403?spApi("/me/tracks?ids="+id,{method:"PUT"}):Promise.reject(e));set("Added to Liked Songs ✓",1)}}catch(e){set("Couldn't add. Try again");b.disabled=false;b.title=e.message;
+      const m=b.parentNode.querySelector(".sp-err")||b.insertAdjacentElement("afterend",Object.assign(document.createElement("small"),{className:"sp-err"}));m.textContent=e.message}}}
 // Back from Spotify's sign-in page: swap the code for tokens, then tidy the address bar
 (async()=>{const q=new URLSearchParams(location.search);if(!SPOTIFY_ID||!(q.get("code")||q.get("error")))return;
   history.replaceState(null,"",SP_REDIRECT+location.hash);if(q.get("error"))return;
