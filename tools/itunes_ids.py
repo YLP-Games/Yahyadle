@@ -164,8 +164,8 @@ def search_song(t, a, hint):
         found = itunes({"term": f"{main_artist_raw(a)} {loose_title(t) or search_title(t)}", "media": "music", "entity": "song", "limit": 50, "country": country})
         res = candidates(found, t, a, hint=hint) or candidates(found, t, a, loose=True, hint=hint)
         pick = best(res, t, hint, a)
-        if pick:
-            return pick["trackId"], country, earliest(res, a)
+        if pick:   # earliest year only from the same artist (song search mixes in others who share the name)
+            return pick["trackId"], country, earliest([r for r in res if r.get("artistId") == pick.get("artistId")], a)
     return 0, None, 0
 
 def artist_catalogues(name, country):

@@ -266,6 +266,11 @@ def main():
         fill_genres(list(data.values()) + [charts])
         tidy_all()
         save(data, charts)
+        # 6. One-off check of every song's year against several sources (only while playlists/.check-years exists)
+        import years
+        years.check(data, charts, lambda: save(data, charts))
+        tidy_all()
+        save(data, charts)
 
     total = sum(len(v) for v in data.values()) + len(charts)
     have = sum(1 for v in list(data.values()) + [charts] for s in v if s.get("i"))
