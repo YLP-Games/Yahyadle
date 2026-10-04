@@ -1,6 +1,6 @@
 # Yahyadle
 
-**Play it here: https://layla310803.github.io/Yahyadle/**
+**Play it here: https://ylp-games.github.io/Yahyadle/**
 
 Every "dle" guessing game Layla and Yahya play, in one page. Each game has a **Daily** puzzle (the same one for both of you) and an **Unlimited** mode, a sortable, filterable list of every answer, and its own look and series logo.
 
