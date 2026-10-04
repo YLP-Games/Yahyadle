@@ -996,20 +996,27 @@ function jsonp(url){return new Promise((res,rej)=>{const cb="__jp"+Math.random()
 const clean=s=>String(s).toLowerCase().replace(/\(.*?\)|\[.*?\]|feat\..*$/g,"").replace(/[^\p{L}\p{N}]+/gu," ").trim();
 // Versions that are a different recording from the song itself (unless the song's own title says it is one)
 const VARIANT=/\b(remix|edit|mix|version|slowed|sped|nightcore|live|acoustic|instrumental|cover|karaoke|rework|bootleg|vip|flip|mashup)\b/i;
+const FAKE=/karaoke|tribute|made famous|in the style of|originally performed|backing track|lullaby|8[- ]bit|music box|cover version|covers?\b|vitamin string|rockabye baby|twinkle twinkle|piano version|sped up|slowed/i;
 async function findPreview(song){
   const key=song.name+"|"+song.v[0];if(key in prevCache)return prevCache[key];
   if(song.i){try{const d=await jsonp("https://itunes.apple.com/lookup?id="+song.i+"&country="+(song.c||"US"));const r=(d.results||[]).find(x=>x.previewUrl);
     // The year was already corrected when the ID was added, so no year search is needed
     if(r)return prevCache[key]={url:r.previewUrl,art:(r.artworkUrl100||"").replace("100x100","300x300"),link:r.trackViewUrl,year:0}}catch(e){}}
-  const own=VARIANT.test(song.name),variant=n=>!own&&VARIANT.test(n);
-  const t=clean(song.name),a=clean(song.v[0]).split(" ")[0];let best=null,yrs=[];
+  const own=VARIANT.test(song.name)||FAKE.test(song.name),variant=n=>!own&&VARIANT.test(n);
+  // Only accept the actual artist's recording: covers, karaoke and tribute versions share the title but not the artist
+  const who=[...artistSet(song.v[0],song.name)].map(clean).filter(x=>x.length>1);
+  const byArtist=x=>{const an=clean(x.artistName);return who.some(w=>an.includes(w)||(an.length>2&&w.includes(an)))};
+  const genuine=x=>own||!(variant(x.trackName)||FAKE.test(x.trackName+" | "+x.artistName+" | "+(x.collectionName||"")));
+  const oldest=L=>L.slice().sort((p,q)=>String(p.releaseDate||"9").localeCompare(String(q.releaseDate||"9")))[0]||null;
+  const t=clean(song.name);let best=null,yrs=[];
   // Plenty of UK tracks are missing from the US store, so try the UK store when the US one has no match
   for(const country of ["US","GB"]){
-    const d=await jsonp("https://itunes.apple.com/search?media=music&entity=song&limit=25&country="+country+"&term="+encodeURIComponent(song.v[0]+" "+song.name));
-    const all=d.results||[],r=all.filter(x=>x.previewUrl);
+    const d=await jsonp("https://itunes.apple.com/search?media=music&entity=song&limit=50&country="+country+"&term="+encodeURIComponent(song.v[0]+" "+song.name));
+    const all=(d.results||[]).filter(x=>byArtist(x)&&genuine(x)),r=all.filter(x=>x.previewUrl);
     // Earliest release year of this song (playlist exports often carry a compilation or remaster date)
-    yrs.push(...all.filter(x=>(clean(x.trackName)===t||clean(x.trackName).startsWith(t+" "))&&clean(x.artistName).includes(a)&&x.releaseDate&&!variant(x.trackName)).map(x=>+String(x.releaseDate).slice(0,4)).filter(y=>y>1900));
-    best=r.find(x=>clean(x.trackName)===t&&clean(x.artistName).includes(a))||r.find(x=>clean(x.trackName).startsWith(t)&&clean(x.artistName).includes(a))||r.find(x=>clean(x.trackName).includes(t))||null;
+    yrs.push(...all.filter(x=>(clean(x.trackName)===t||clean(x.trackName).startsWith(t+" "))&&x.releaseDate).map(x=>+String(x.releaseDate).slice(0,4)).filter(y=>y>1900));
+    // Prefer the exact title, and among equal matches the original (earliest) release
+    best=oldest(r.filter(x=>clean(x.trackName)===t))||oldest(r.filter(x=>clean(x.trackName).startsWith(t+" ")))||null;
     if(best)break;
   }
   const year=yrs.length?Math.min(...yrs):0;
