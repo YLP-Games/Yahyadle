@@ -28,7 +28,7 @@ Every "dle" guessing game Layla and Yahya play, in one page. Each game has a **D
   - The clip grows each guess: 0.1s, 0.5s, 2s, 8s, then 15s. Skip moves on to the next length.
   - Drag or tap the play bar (or use the arrow keys) to move around inside the part you've unlocked.
   - Each guess shows the song, artist and year. The artist box is green for exactly the same artists, orange when at least one artist matches and red otherwise.
-  - Genre and Era filters choose which songs come up.
+  - Genre and Era filters choose which songs come up. Genres are grouped into one shared set (Pop, Hip-Hop/Rap, R&B/Soul, Dance/Electronic, Rock/Alternative, K-Pop, J-Pop, Anime, Soundtrack, Latin, Afrobeats, Reggae, Country, World, Other), whether the song came from Apple Music, Spotify or the charts.
   - After a round you see which library the song is in, how many seconds of clip you needed, and optional Apple Music / Spotify buttons to save it.
 - **Colour-blind colours** (under the guess grid) swaps green / amber / red for blue / orange / grey.
 
@@ -69,7 +69,7 @@ python3 -m http.server 8765
 
 Then open http://localhost:8765. Opening `index.html` straight from disk also works, but `quotes.json` and `playlists.json` can't load that way, so Songdle libraries, Marveldle quote hints and the Harry Potterdle quote, description and location text are missing.
 
-Pushing to `main` deploys the site to GitHub Pages automatically (`.github/workflows/static.yml`).
+Pushing to `main` deploys the site to GitHub Pages automatically (`.github/workflows/static.yml`). When song data changes, the **Update Songdle songs** action (`.github/workflows/songs.yml`) also tidies the song lists, adds iTunes IDs, commits the result and redeploys.
 
 ## Files
 
@@ -79,7 +79,9 @@ Pushing to `main` deploys the site to GitHub Pages automatically (`.github/workf
 | `quotes.json` | Marveldle quotes, plus Harry Potterdle quotes, descriptions and locations (edit these without touching the code) |
 | `playlists.json` | Songdle libraries: `{"layla": [...], "yahya": [...]}`, each song `{"t": title, "a": artist, "y": year, "g": genre, "i": iTunes ID, "c": "GB" if UK-only}` |
 | `logos/` | Series logos used for each game's title |
-| `tools/itunes_ids.py` | Adds iTunes IDs to new songs in `playlists.json` |
+| `playlists/layla/`, `playlists/yahya/` | Drop playlist CSVs here to add them to Songdle (see [playlists/README.md](playlists/README.md)) |
+| `tools/songs.py` | Song pipeline: imports CSVs, groups genres, merges duplicates, adds iTunes IDs (run automatically by the action) |
+| `tools/itunes_ids.py` | The iTunes lookups `songs.py` uses |
 
 ## Songdle details
 
@@ -91,10 +93,15 @@ Pushing to `main` deploys the site to GitHub Pages automatically (`.github/workf
 - **Both libraries on:** songs you both have are merged into one. They match on title and main artist, ignoring feat. credits, remaster or edit tags, accents and punctuation. After the round you see whether it's on both libraries or only one.
 - **Libraries:** Layla's comes from her Spotify export. Yahya's is his Apple Music library, plus songs that are only in his playlists.
 - **Charts:** each year's Billboard top 10 since 1970, plus extra hits.
-- **Adding songs:**
-  - Add them to `playlists.json`, then run `python3 tools/itunes_ids.py`. It only looks up songs without an ID, using each artist's iTunes catalogue (more reliable than song search), and corrects years to the original release. Add `--retry-missing` to retry songs it couldn't find before.
-  - It paces itself to stay under Apple's request limits: a few new songs take seconds, the whole library about an hour.
-  - Anyone can also import a playlist CSV in Settings → Songdle. That copy is saved on their device only.
+- **Adding a playlist:** export it as a CSV (Spotify via Exportify, Apple Music via TuneMyMusic) and upload it to `playlists/layla/` or `playlists/yahya/` on GitHub (**Add file → Upload files**). The **Update Songdle songs** action then:
+  - adds the new songs to that person's library, skipping any already there, and moves the CSV to `imported/`;
+  - groups the genres into the shared categories;
+  - merges duplicates (same title and main artist, ignoring feat. credits and remaster/edit tags);
+  - looks up iTunes IDs and original release years, and fills in missing genres from Apple;
+  - commits the result and redeploys the site.
+- **How long it takes:** the lookups pace themselves to stay under Apple's request limits, so a few new songs take seconds and a whole new library about an hour. Progress is saved as it goes, so if a run hits its time limit the next one carries on.
+- **Running it yourself:** `python3 tools/songs.py` (add `--no-lookup` to only tidy, or `--retry-missing` to look again for songs iTunes didn't find before). You can also start it from the Actions tab, with a retry option.
+- **Device-only import:** a playlist CSV imported in Settings → Songdle is saved on that device only.
 
 ## Data and credits
 

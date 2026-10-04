@@ -1,0 +1,57 @@
+# Keeps Songdle's song lists tidy: imports playlist CSVs from playlists/layla/ and playlists/yahya/,
+# groups genres, merges duplicates and adds iTunes IDs (see tools/songs.py). Commits the result and redeploys the site.
+name: Update Songdle songs
+
+on:
+  push:
+    branches: ["main"]
+    paths: ["playlists.json", "playlists/**", "index.html", "tools/**"]
+  workflow_dispatch:
+    inputs:
+      retry_missing:
+        description: "Also look again for songs iTunes didn't find before"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write   # commit the updated song lists
+  actions: write    # start the Pages deploy afterwards
+
+# One run at a time; a push during a long lookup waits for it rather than cancelling it
+concurrency:
+  group: songs
+  cancel-in-progress: false
+
+jobs:
+  songs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Import playlists, tidy songs, add iTunes IDs
+        run: |
+          # Lookups pace themselves for Apple's limits, so a big new playlist can take a while.
+          # Progress is saved as it goes; if it runs out of time, the next run carries on.
+          set +e
+          timeout 170m python3 tools/songs.py ${{ inputs.retry_missing && '--retry-missing' || '' }}
+          status=$?
+          [ $status -eq 0 ] || [ $status -eq 124 ] || exit $status
+
+      - name: Commit and redeploy if anything changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git add -A playlists.json index.html playlists
+          if git diff --cached --quiet; then echo "Song lists already up to date"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Songdle: tidy song lists and add iTunes IDs (automatic)"
+          for attempt in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && break
+            sleep 10
+          done
+          # Pushes made by this workflow don't trigger other workflows, so start the deploy explicitly
+          gh workflow run static.yml --ref main
