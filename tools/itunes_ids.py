@@ -26,7 +26,11 @@ VARIANT = re.compile(r"\b(remix|edit|mix|version|slowed|sped|nightcore|live|acou
 SPLIT = r"\s*(?:&|,|;|\bx\b|\bfeat\.?|\bft\.?|\bwith\b|\band\b)\s*"
 # Versions that are a different recording (an acoustic or remix never gets the original's clip, and vice versa).
 # "edit" and "version" aren't here: a radio edit or "Single Version" is still the song people know.
-DISTINCT = re.compile(r"\b(remix|mix|slowed|sped|nightcore|live|acoustic|instrumental|cover|karaoke|rework|bootleg|vip|flip|mashup|demo|draft|piano|restrung|unplugged)\b", re.I)
+DISTINCT = re.compile(r"\b(remix|mix|slowed|sped|nightcore|live|acoustic|instrumental|cover|karaoke|rework|bootleg|vip|flip|mashup|demo|draft|piano|restrung|unplugged|taylor.?s version|re-?recorded)\b", re.I)
+
+def distinct(t):
+    """The version words in a title ("sped", "remix"...): two tracks are the same version only if these match."""
+    return {norm(w).replace("’", "'") for w in DISTINCT.findall(t or "")}
 
 def norm(x):
     x = unicodedata.normalize("NFKD", str(x or ""))
@@ -104,7 +108,7 @@ def candidates(results, t, a, loose=False, hint=None):
     key = loose_title if loose else title_key
     tk, ma = key(t), main_artist(a)
     own_variant = bool(VARIANT.search(t))
-    own_distinct = bool(DISTINCT.search(t))
+    own_distinct = distinct(t)
     secs = hint[1] if hint else 0
     out = []
     for r in results:
@@ -112,7 +116,7 @@ def candidates(results, t, a, loose=False, hint=None):
             continue
         if ma and ma not in artists(r.get("artistName", "")):
             continue
-        if own_distinct != bool(DISTINCT.search(r.get("trackName", ""))):
+        if own_distinct != distinct(r.get("trackName", "")):
             continue
         if loose and secs and r.get("trackTimeMillis") and abs(r["trackTimeMillis"] / 1000 - secs) > 15:
             continue

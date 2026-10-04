@@ -64,7 +64,7 @@ def lucene(x):
 def year_of(d):
     m = re.match(r"(\d{4})", d or "")
     y = int(m.group(1)) if m else 0
-    return y if 1900 <= y <= THIS_YEAR else 0
+    return y if 1900 < y <= THIS_YEAR else 0   # Apple uses 1900 as a "don't know" date
 
 def mb_years(s, isrc):
     """[(year, source)] from MusicBrainz recordings that are this song."""
@@ -77,12 +77,12 @@ def mb_years(s, isrc):
         if out:
             return out
     t, a = s["t"], s["a"]
-    lt, ma, distinct = T.loose_title(t), T.main_artist(a), bool(T.DISTINCT.search(t))
+    lt, ma, distinct = T.loose_title(t), T.main_artist(a), T.distinct(t)
     title = T.search_title(t)
     for r in mb(f'recording:"{lucene(title)}" AND artist:"{lucene(T.main_artist_raw(a))}"'):
         if (r.get("score") or 0) < 80 or r.get("video"):
             continue
-        if T.loose_title(r.get("title", "")) != lt or bool(T.DISTINCT.search(r.get("title", "") + " " + (r.get("disambiguation") or ""))) != distinct:
+        if T.loose_title(r.get("title", "")) != lt or T.distinct(r.get("title", "") + " " + (r.get("disambiguation") or "")) != distinct:
             continue
         credit = " & ".join(c.get("name", "") for c in r.get("artist-credit", []) if isinstance(c, dict))
         if ma not in T.artists(credit):
@@ -114,16 +114,17 @@ def catalogue(artist_id, country):
 
 def apple_years(s, track, country):
     """[(year, collectionId)]: the played track plus same-artist releases of the same song."""
-    out = {}
+    out, played = {}, None
     if track:
         y = year_of(track.get("releaseDate"))
+        played = track.get("collectionId") or track["trackId"]
         if y:
-            out[track.get("collectionId") or track["trackId"]] = y
+            out[played] = y
         want = set(T.artists(s["a"]))
         for t in catalogue(track["artistId"], country):
             if T.loose_title(t.get("trackName", "")) != T.loose_title(s["t"]):
                 continue
-            if bool(T.DISTINCT.search(t.get("trackName", ""))) != bool(T.DISTINCT.search(s["t"])):
+            if T.distinct(t.get("trackName", "")) != T.distinct(s["t"]):
                 continue
             if want and not want <= T.credited(t):
                 continue
@@ -131,27 +132,47 @@ def apple_years(s, track, country):
             if y:
                 cid = t.get("collectionId") or t["trackId"]
                 out[cid] = min(y, out.get(cid, 9999))
-    return [(y, "apple:" + str(c)) for c, y in out.items()]
+    return [(y, ("apple-played:" if c == played else "apple:") + str(c)) for c, y in out.items()]
 
 def kind(src):
     return "apple" if src.startswith("apple") else "mb" if src.startswith("mb") else src
 
-def decide(cands, current):
-    """Earliest year that two independent sources agree on (within a year): two different Apple releases, or two
-    different kinds of source (Apple / MusicBrainz / CSV). MusicBrainz-by-ISRC counts on its own when nothing
-    agrees, since it identifies the exact recording. Otherwise the year stays as it is."""
-    ok = []
-    for i, (y, src) in enumerate(cands):
-        for j, (y2, src2) in enumerate(cands):
-            if i == j or abs(y - y2) > 1:
-                continue
-            if (kind(src) == kind(src2) == "apple" and src != src2) or kind(src) != kind(src2):
-                ok.append(y)
-                break
-    if ok:
-        return min(ok)
+REISSUE = re.compile(r"remaster|\bmono\b|\bstereo\b|single version|radio edit|\bedit\b|anniversary|deluxe", re.I)
+
+def near(y, ys):
+    return any(abs(y - x) <= 1 for x in ys)
+
+def decide(cands, current, title=""):
+    """Pick the year.
+    * With an ISRC (the playlist CSV identifies the exact recording): MusicBrainz's first release date of that
+      recording. Only for a remaster/single version/edit does an earlier original win, and only when at least
+      three Apple listings agree on it.
+    * Without one: keep the current year when an Apple listing of this song by this artist backs it (within a
+      year). Otherwise take the earliest year Apple and MusicBrainz (or the CSV) agree on; failing that, the
+      earliest year at least two Apple listings agree on; failing that, leave it alone."""
     isrc = [y for y, s in cands if s == "mb-isrc"]
-    return min(isrc) if isrc else current
+    apple = [y for y, s in cands if kind(s) == "apple"]
+    other = [y for y, s in cands if kind(s) != "apple"]
+    if isrc:
+        y = min(isrc)
+        if REISSUE.search(title):
+            early = sorted(a for a in apple if a < y - 1 and sum(abs(a - b) <= 1 for b in apple) >= 3)
+            if early:
+                return early[0]
+        return y
+    if current and near(current, apple):
+        return current
+    both = sorted(a for a in apple if near(a, other))
+    if both:
+        return both[0]
+    two = sorted(a for a in apple if sum(abs(a - b) <= 1 for b in apple) >= 2)
+    if two:
+        return two[0]
+    # Nothing backs the current year at all: the release year of the exact track Songdle plays beats a number from nowhere
+    played = [y for y, s in cands if s.startswith("apple-played")]
+    if played and not near(current or 0, [y for y, _ in cands]):
+        return played[0]
+    return current
 
 # ---- CSV info (ISRC and album year) ----
 def csv_info():
@@ -223,7 +244,7 @@ def check(data, charts, save):
         cands += [(y, "csv") for y in meta["years"][:1]]
         cur = min((c.get("y") or 9999) for c in copies)
         cur = 0 if cur == 9999 else cur
-        y = decide(cands, cur)
+        y = decide(cands, cur, s["t"])
         with lock:
             report["mb_hits"] += any(kind(src) == "mb" for _, src in cands)
             report["apple_hits"] += any(kind(src) == "apple" for _, src in cands)
@@ -231,6 +252,8 @@ def check(data, charts, save):
             if y and y != cur:
                 changed[0] += 1
                 report["changed"].append([s["t"], s["a"], cur, y, sorted(cands)])
+            elif cands and not near(cur or 0, [c for c, _ in cands]):
+                report.setdefault("unbacked", []).append([s["t"], s["a"], cur, sorted(cands)])
                 print(f"  {s['t']} — {s['a']}: {cur or '?'} -> {y}   {sorted(cands)}", flush=True)
             for c in copies:
                 if y:
