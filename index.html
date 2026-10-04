@@ -1368,11 +1368,11 @@ function wire(st,names,onGuess,used){
   // Rank: exact match (or exact song title) first, then names starting with the text, then anywhere; several words can match
   // across title and artist ("home drake"). Without this, short titles like "Run" or "i" could never reach the top 8.
   // Matching ignores case, accents and punctuation, so "dont stop" finds "Don't Stop" and "shoop shoop" finds "Exhale (Shoop Shoop)"
-  const sk=x=>String(x).normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/['’]/g,"").replace(/[^\p{L}\p{N}]+/gu," ").trim();
+  const sk=x=>String(x).normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/['’.]/g,"").replace(/[^\p{L}\p{N}]+/gu," ").trim();
   const keys=new Map(names.map(n=>[n,[sk(n),sk(String(n).split(" — ")[0])]]));
   const draw=()=>{const q=sk(inp.value),words=q.split(" ");opts=[];
     if(q){const hits=[];for(const n of names){if(used.includes(n))continue;const [l,head]=keys.get(n),i=l.indexOf(q);let r;
-      if(i>=0)r=l===q||head===q?0:i===0?1:(i&&l[i-1]===" ")?2+i/1000:2.5+i/1000;else if(words.length>1&&words.every(w=>l.includes(w)))r=3;else continue;
+      if(i>=0)r=l===q||head===q?0:i===0?1:(i&&l[i-1]===" ")?2+i/1000:2.5+i/1000;else if(words.length>1&&words.every(w=>l.includes(w)))r=3;else if(l.replace(/ /g,"").includes(q.replace(/ /g,"")))r=4;else continue;
       hits.push([r,l.length,n])}
       opts=hits.sort((a,b)=>a[0]-b[0]||a[1]-b[1]).slice(0,8).map(h=>h[2])}
     sel=0;ul.hidden=!opts.length;ul.innerHTML=opts.map((n,i)=>`<li data-n="${esc(n)}" class="${i===sel?"on":""}">${av(imgOf(n))}${esc(n)}</li>`).join("")};
