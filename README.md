@@ -79,6 +79,7 @@ Pushing to `main` deploys the site to GitHub Pages automatically (`.github/workf
 | `quotes.json` | Marveldle quotes, plus Harry Potterdle quotes, descriptions and locations (edit these without touching the code) |
 | `playlists.json` | Songdle libraries: `{"layla": [...], "yahya": [...]}`, each song `{"t": title, "a": artist, "y": year, "g": genre, "i": iTunes ID, "c": "GB" if UK-only}` |
 | `logos/` | Series logos used for each game's title |
+| `fonts/` | The title and body fonts (Bungee, Bricolage Grotesque), hosted here so they're ready for the first paint |
 | `playlists/layla/`, `playlists/yahya/` | Drop playlist CSVs here to add them to Songdle (see [playlists/README.md](playlists/README.md)) |
 | `tools/songs.py` | Song pipeline: imports CSVs, groups genres, merges duplicates, adds iTunes IDs (run automatically by the action) |
 | `tools/itunes_ids.py` | The iTunes lookups `songs.py` uses |
@@ -113,5 +114,6 @@ Pushing to `main` deploys the site to GitHub Pages automatically (`.github/workf
   - 212 more aircraft by registration, with photos from the [Planespotters.net Photo API](https://planespotters.net/photo/api).
 - **Series logos:** in `logos/`, from Wikimedia Commons, where they're listed as public domain because they're simple text logos. They're cropped and recoloured for the dark theme, and remain trademarks of their owners: [Bleach](https://commons.wikimedia.org/wiki/File:Bleach_(manga)_Logo.png), [Jujutsu Kaisen](https://commons.wikimedia.org/wiki/File:Jujutsu_Kaisen_logo.svg), [Black Clover](https://commons.wikimedia.org/wiki/File:Black_Clover_English_logo.png), [Hunter x Hunter](https://commons.wikimedia.org/wiki/File:Hunter_x_hunter.png), [Star Wars](https://commons.wikimedia.org/wiki/File:Star_wars_logo_alternate.svg), [Marvel](https://commons.wikimedia.org/wiki/File:Marvel_Studios_2016_logo.svg), [Harry Potter](https://commons.wikimedia.org/wiki/File:Harry_Potter_wordmark.svg). The "dle" beside each logo uses the closest free Google Font.
 - **Song previews and IDs:** from the iTunes Search API.
+- **Fonts:** Bungee and Bricolage Grotesque (in `fonts/`) and the other fonts from Google Fonts, all under the SIL Open Font License.
 
 Unofficial fan project, not affiliated with any of the original sites or rights holders.
