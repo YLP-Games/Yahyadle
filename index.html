@@ -75,13 +75,33 @@ td .arr{display:block;font-size:16px;line-height:1}
 .clue{background:var(--panel2);border-radius:12px;padding:18px;margin-bottom:14px;font-size:17px;line-height:1.5;max-width:70ch}
 .clue .k{display:block;font:700 12px var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
 .hint{color:var(--muted);font-size:14px;margin-top:8px}
-.swf{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 10px;margin:4px auto 14px;font-size:13px;color:var(--muted)}
-.swf b{font-weight:600;color:var(--text,#eee);margin-right:2px}
-.swf .chip{display:inline-flex;align-items:center;gap:8px;padding:6px 12px 6px 8px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);color:var(--muted);font:600 13px var(--body);cursor:pointer}
-.swf .chip .sw{width:30px;height:18px;border-radius:9px;background:#444;position:relative;transition:background .2s}
-.swf .chip .sw::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:left .2s}
-.swf .chip.on{border-color:var(--accent);color:#fff}.swf .chip.on .sw{background:var(--accent)}.swf .chip.on .sw::after{left:14px}
-.swf .count{flex-basis:100%;text-align:center;font-size:12px}
+.hdr-r{display:flex;align-items:center;gap:12px}
+.gearbtn{display:inline-flex;align-items:center;gap:4px;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);color:var(--text,#eee);font:600 13px var(--body);cursor:pointer}
+.gearbtn:hover{border-color:var(--accent)}
+body.noscroll{overflow:hidden}
+.scrim{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.6);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;padding:16px}
+.scrim[hidden]{display:none}
+.sett{width:min(760px,100%);max-height:calc(100vh - 32px);display:grid;grid-template-columns:190px 1fr;grid-template-rows:auto 1fr auto;background:#14161c;border:1px solid #2c3040;border-radius:18px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.7);color:#e9e9ee;font:14px var(--body)}
+.sett header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;margin:0;padding:14px 18px;border-bottom:1px solid #2c3040}
+.sett header h2{margin:0;font:700 18px var(--body)}.sx{background:none;border:0;color:#aaa;font-size:20px;cursor:pointer}
+.stabs{border-right:1px solid #2c3040;padding:10px;display:flex;flex-direction:column;gap:4px;overflow:auto}
+.stab{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;border:0;background:none;color:#b9bccb;font:600 14px var(--body);white-space:nowrap;cursor:pointer;text-align:left}
+.stab i{width:9px;height:9px;border-radius:50%;flex:none}.stab.on{background:#232736;color:#fff}
+.sbody{padding:18px 22px;overflow:auto}
+.sbody h3{margin:0 0 4px;font:700 17px var(--body)}.ssub{margin:0 0 16px;color:#9a9db0;font-size:13px}
+.sgrp{margin:0 0 16px}.sgrp h4{margin:0 0 8px;font:700 11px var(--body);letter-spacing:.1em;text-transform:uppercase;color:#8d90a3}
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.sopt{display:flex;width:100%;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid #2c3040;border-radius:12px;background:#1a1d27;color:#e9e9ee;font:14px var(--body);text-align:left;cursor:pointer;margin:0 0 6px}
+.sgrid .sopt{margin:0}.sopt[disabled]{cursor:not-allowed}.sopt[disabled] .tg{opacity:.5}
+.sopt b{font-weight:600}.sopt small{display:block;color:#8d90a3;font-weight:400;font-size:12px;margin-top:2px}
+.tg{flex:none;width:36px;height:21px;border-radius:11px;background:#444a5a;position:relative;transition:background .2s}.tg::after{content:"";position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .2s}
+.tg.on{background:var(--c)}.tg.on::after{left:17px}
+.snote{font-size:12px;color:#8d90a3;margin:8px 0 0}
+.sett footer{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-top:1px solid #2c3040;color:#8d90a3;font-size:12px}
+.sdone{padding:8px 18px;border-radius:10px;border:0;background:var(--c);color:#111;font:700 14px var(--body);cursor:pointer}
+@media (max-width:700px){.gearbtn span{display:none}.gearbtn{padding:6px 10px}
+ .scrim{padding:10px;align-items:flex-end}.sett{grid-template-columns:1fr;grid-template-rows:auto auto 1fr auto;max-height:calc(100vh - 20px)}
+ .stabs{flex-direction:row;border-right:0;border-bottom:1px solid #2c3040;overflow-x:auto}.stab{padding:7px 11px}.sgrid{grid-template-columns:1fr}.sbody{padding:14px 16px}}
 svg.crest{display:block;width:36px;height:41px;margin:0 auto 3px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
 @media (max-width:700px){svg.crest{width:22px;height:25px;margin-bottom:2px}}
 /* Harry Potterdle: Description / Quote / Location printed on an old book page */
@@ -418,7 +438,7 @@ span.sg-side{visibility:hidden}
 <div class="wrap">
   <header>
     <div class="brand"><h1>YAHYA<span>DLE</span></h1><p class="sub">Every dle in one place. Random character each round.</p></div>
-    <div class="streaks" id="score"></div>
+    <div class="hdr-r"><div class="streaks" id="score"></div><button class="gearbtn" id="opensettings" aria-label="Settings">⚙<span> Settings</span></button></div>
   </header>
   <div class="dock">
     <nav class="carts" id="carts" aria-label="Games"></nav>
@@ -898,18 +918,42 @@ function wireDaily(){
   const u=$("#dunl");if(u)u.onclick=()=>{daily=false;store.daily=false;save();render()}}
 setInterval(()=>{const c=$("#dcount");if(!c)return;const ms=untilMidnight();c.textContent=hms(ms);if(ms<1000)setTimeout(render,1200)},1000);
 // Starwarsdle show switches: leave out characters who only appear in the shows switched off
-const SWSHOWS=["Ahsoka","The Bad Batch"];
+const SWSHOWS=["Ahsoka","The Bad Batch","The Acolyte","Skeleton Crew","Maul - Shadow Lord"];
 let SWOFF={};try{SWOFF=JSON.parse(localStorage.getItem("swshows")||"{}")}catch(e){}
 const swApps=x=>(x.m||"").split(/\s*,\s*/).filter(Boolean);
 const swOut=x=>{const m=swApps(x);return m.length>0&&m.every(s=>SWOFF[s])};
 const playItems=()=>cur.id==="sw"?cur.items.filter(x=>!swOut(x)):cur.items;
-function swFilter(){if(cur.id!=="sw")return"";const out=cur.items.filter(swOut);
-  return`<div class="swf"><b>Shows:</b>${SWSHOWS.map(sh=>`<button class="chip${SWOFF[sh]?"":" on"}" data-show="${esc(sh)}" aria-pressed="${!SWOFF[sh]}"><span class="sw"></span>${esc(sh)}</button>`).join("")}<span class="count">${cur.items.length-out.length} of ${cur.items.length} characters in play</span></div>`}
-function wireSwFilter(){document.querySelectorAll(".swf .chip").forEach(b=>b.onclick=()=>{const sh=b.dataset.show;if(SWOFF[sh])delete SWOFF[sh];else SWOFF[sh]=true;
-  try{localStorage.setItem("swshows",JSON.stringify(SWOFF))}catch(e){}
-  const k=cur.id+":Classic",st=S[k];if(st&&st.target&&swOut(st.target)&&!st.guesses.length)S[k]=newRound();
-  const d=DS[k];if(d&&!d.done&&!d.guesses.length){delete DS[k];delete DLY[k]}   // today's daily not started yet: re-pick it from the shows switched on
-  render()})}
+/* ================= Settings ================= */
+const SETTABS=[["sw","Starwarsdle"],["song","Songdle"]];   // more dles get a tab as their options are added
+let setTab=null;
+function settingsBody(id){
+  const tg=(key,label,on,sub,dis)=>`<button class="sopt" data-k="${esc(key)}"${dis?" disabled":""} aria-pressed="${on}"><b>${esc(label)}${sub?`<small>${esc(sub)}</small>`:""}</b><span class="tg${on?" on":""}"></span></button>`;
+  if(id==="sw"){const g=GAMES.find(x=>x.id==="sw"),out=g.items.filter(swOut).length;
+    return`<h3>Starwarsdle</h3><p class="ssub">Switch a show off to leave out characters who only appear there.</p>
+    <div class="sgrp"><h4>Shows</h4><div class="sgrid">${SWSHOWS.map(sh=>tg("sw:"+sh,sh.replace(" - "," – "),!SWOFF[sh])).join("")}</div>
+    <p class="snote">${g.items.length-out} of ${g.items.length} characters in play</p></div>`}
+  if(id==="song"){const on=SONG.on,n=["layla","yahya","charts"].filter(k=>on[k]).length,L=[["layla","Layla's playlist",""],["yahya","Yahya's playlist",""],["charts","Charts","The built-in hits list"]];
+    return`<h3>Songdle</h3><p class="ssub">Songs come from every list that's switched on. At least one has to stay on.</p>
+    <div class="sgrp"><h4>Playlists</h4>${L.map(([k,l,sub])=>tg("song:"+k,l,!!on[k],sub,on[k]&&n===1)).join("")}</div>`}
+  return""}
+function renderSettings(){const el=$("#settings");if(!el)return;const c=(GAMES.find(g=>g.id===setTab)||{}).c||"var(--accent)";
+  el.innerHTML=`<div class="sett" role="dialog" aria-modal="true" aria-label="Settings" style="--c:${c}"><header><h2>⚙ Settings</h2><button class="sx" id="setclose" aria-label="Close">✕</button></header>
+  <nav class="stabs">${SETTABS.map(([id,n])=>{const g=GAMES.find(x=>x.id===id);return`<button class="stab${id===setTab?" on":""}" data-tab="${id}"><i style="background:${g?g.c:"#888"}"></i>${n}</button>`}).join("")}</nav>
+  <div class="sbody">${settingsBody(setTab)}</div><footer><span>Saved on this device</span><button class="sdone" id="setdone">Done</button></footer></div>`;
+  el.querySelectorAll(".stab").forEach(b=>b.onclick=()=>{setTab=b.dataset.tab;renderSettings()});
+  const on=el.querySelector(".stab.on");if(on&&on.scrollIntoView)on.scrollIntoView({block:"nearest",inline:"center"});
+  el.querySelectorAll(".sopt").forEach(b=>b.onclick=()=>{if(b.disabled)return;const [g,k]=b.dataset.k.split(/:(.*)/s);
+    if(g==="sw"){if(SWOFF[k])delete SWOFF[k];else SWOFF[k]=true;try{localStorage.setItem("swshows",JSON.stringify(SWOFF))}catch(e){}
+      const key="sw:Classic",st=S[key];if(st&&st.target&&swOut(st.target)&&!st.guesses.length)delete S[key];
+      const d=DS[key];if(d&&!d.done&&!d.guesses.length){delete DS[key];delete DLY[key]}}   // today's daily not started yet: re-pick it
+    if(g==="song"){if(SONG.on[k])delete SONG.on[k];else SONG.on[k]=true;SONG.genre="All";try{localStorage.setItem("songcfg",JSON.stringify(SONG))}catch(e){}
+      songStop();for(const m of GAMES.find(x=>x.id==="song").modes)delete S["song:"+m]}
+    renderSettings();render()});
+  const close=()=>{el.hidden=true;document.body.classList.remove("noscroll")};
+  $("#setclose").onclick=close;$("#setdone").onclick=close;el.onclick=e=>{if(e.target===el)close()}}
+function openSettings(){let el=$("#settings");if(!el){el=document.createElement("div");el.id="settings";el.className="scrim";document.body.appendChild(el);
+    document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!el.hidden){el.hidden=true;document.body.classList.remove("noscroll")}})}
+  setTab=SETTABS.some(t=>t[0]===cur.id)?cur.id:(setTab||SETTABS[0][0]);el.hidden=false;document.body.classList.add("noscroll");renderSettings()}
 function newRound(){
   if(cur.id==="song")return songRound();
   if(mode==="Classic")return{target:pick(cur.photos?cur.items.filter(x=>x.reg||x.img):playItems(),cur.id+mode),guesses:[],done:false};
@@ -939,6 +983,8 @@ function renderTabs(){
 /* ================= Songdle ================= */
 const CHARTS=[["Billie Jean","Michael Jackson",1982,"Pop",269573364],["Like a Prayer","Madonna",1989,"Pop",83445997],["Wannabe","Spice Girls",1996,"Pop",1573849255],["...Baby One More Time","Britney Spears",1998,"Pop",268284600],["I Want It That Way","Backstreet Boys",1999,"Pop",283567164],["Dancing Queen","ABBA",1976,"Pop",1422648513],["Take On Me","a-ha",1985,"Pop",368555810],["Girls Just Want to Have Fun","Cyndi Lauper",1983,"Pop",187488205],["I Wanna Dance with Somebody (Who Loves Me)","Whitney Houston",1987,"Pop",840431935],["Toxic","Britney Spears",2003,"Pop",269969902],["Crazy in Love","Beyoncé",2003,"R&B",201274644],["Hey Ya!","OutKast",2003,"Hip-Hop",1774796999],["Since U Been Gone","Kelly Clarkson",2004,"Pop",275765380],["Umbrella","Rihanna",2007,"Pop",1441154437],["Poker Face","Lady Gaga",2008,"Pop",1440818665],["Hot n Cold","Katy Perry",2008,"Pop",715891658],["Single Ladies (Put a Ring on It)","Beyoncé",2008,"R&B",296016899],["I Gotta Feeling","The Black Eyed Peas",2009,"Pop",1443060259],["TiK ToK","Kesha",2009,"Pop",381237322],["Rolling in the Deep","Adele",2010,"Pop",1544491233],["Call Me Maybe","Carly Rae Jepsen",2011,"Pop",1442997912],["Somebody That I Used to Know","Gotye",2011,"Pop",1440754487],["Shake It Off","Taylor Swift",2014,"Pop",1440936016],["Uptown Funk","Mark Ronson",2014,"Pop",938032045],["Shape of You","Ed Sheeran",2017,"Pop",1193701392],["Bad Guy","Billie Eilish",2019,"Pop",1450695739],["Blinding Lights","The Weeknd",2019,"Pop",1499378607],["Watermelon Sugar","Harry Styles",2019,"Pop",1485802967],["Levitating","Dua Lipa",2020,"Pop",1551179407],["drivers license","Olivia Rodrigo",2021,"Pop",1560735424],["As It Was","Harry Styles",2022,"Pop",1615585008],["Anti-Hero","Taylor Swift",2022,"Pop",1650841515],["Flowers","Miley Cyrus",2023,"Pop",1702906535],["Espresso","Sabrina Carpenter",2024,"Pop",1750307362],["Birds of a Feather","Billie Eilish",2024,"Pop",1739659142],["APT.","ROSÉ",2024,"K-Pop",1771105935],["Good Luck, Babe!","Chappell Roan",2024,"Pop",1737497080],["Die With A Smile","Lady Gaga",2024,"Pop",1762656732],["Juicy","The Notorious B.I.G.",1994,"Hip-Hop",217613305],["California Love","2Pac",1995,"Hip-Hop",1031604977],["Gangsta's Paradise","Coolio",1995,"Hip-Hop",1827554491],["Nuthin' but a \"G\" Thang","Dr. Dre",1992,"Hip-Hop",1668461604],["Rapper's Delight","The Sugarhill Gang",1979,"Hip-Hop",52310973],["Lose Yourself","Eminem",2002,"Hip-Hop",1443175650],["In Da Club","50 Cent",2003,"Hip-Hop",1440879594],["Gold Digger","Kanye West",2005,"Hip-Hop",1440669054],["Lollipop","Lil Wayne",2008,"Hip-Hop",1445298109],["Empire State of Mind","JAY-Z",2009,"Hip-Hop",1440932750],["Super Bass","Nicki Minaj",2011,"Hip-Hop",1539774201],["HUMBLE.","Kendrick Lamar",2017,"Hip-Hop",1403517305],["God's Plan","Drake",2018,"Hip-Hop",1418213269],["SICKO MODE","Travis Scott",2018,"Hip-Hop",1421658123],["Old Town Road","Lil Nas X",2019,"Hip-Hop",1468166468],["Sunflower","Post Malone",2018,"Hip-Hop",1477880764],["WAP","Cardi B",2020,"Hip-Hop",1526747167],["First Class","Jack Harlow",2022,"Hip-Hop",1618136917],["Not Like Us","Kendrick Lamar",2024,"Hip-Hop",1781353929],["Bohemian Rhapsody","Queen",1975,"Rock",6781080934],["Hotel California","Eagles",1976,"Rock",635770202],["Sweet Child O' Mine","Guns N' Roses",1987,"Rock",1377826892],["Smells Like Teen Spirit","Nirvana",1991,"Rock",1413921155],["Wonderwall","Oasis",1995,"Rock",1517447333],["Livin' on a Prayer","Bon Jovi",1986,"Rock",1422955211],["Back in Black","AC/DC",1980,"Rock",574050602],["Don't Stop Believin'","Journey",1981,"Rock",160024096],["Stairway to Heaven","Led Zeppelin",1971,"Rock",580708180],["Creep","Radiohead",1992,"Rock",1097862231],["Mr. Brightside","The Killers",2004,"Rock",1526194192],["Seven Nation Army","The White Stripes",2003,"Rock",1533513537],["In the End","Linkin Park",2000,"Rock",528437613],["Boulevard of Broken Dreams","Green Day",2004,"Rock",1295797526],["Use Somebody","Kings of Leon",2008,"Rock",290303018],["Viva la Vida","Coldplay",2008,"Rock",1122773680],["Do I Wanna Know?","Arctic Monkeys",2013,"Rock",663097965],["Radioactive","Imagine Dragons",2012,"Rock",1440855760],["Believer","Imagine Dragons",2017,"Rock",1411628233],["Heat Waves","Glass Animals",2020,"Rock",1680740761],["Sweater Weather","The Neighbourhood",2012,"Rock",548656753],["I Will Always Love You","Whitney Houston",1992,"R&B",388151901],["No Scrubs","TLC",1999,"R&B",721770649],["Waterfalls","TLC",1995,"R&B",270246724],["Let's Stay Together","Al Green",1971,"R&B",1209335639],["What's Going On","Marvin Gaye",1971,"R&B",1538081594],["Yeah!","Usher",2004,"R&B",386153478],["Irreplaceable","Beyoncé",2006,"R&B",261707067],["We Belong Together","Mariah Carey",2005,"R&B",1476731889],["Thinking Bout You","Frank Ocean",2012,"R&B"],["Redbone","Childish Gambino",2016,"R&B",1771719595],["Kill Bill","SZA",2022,"R&B",1664534428],["Snooze","SZA",2022,"R&B",1704183237],["Leave The Door Open","Bruno Mars",2021,"R&B",1612867242],["Essence","Wizkid",2020,"R&B",1581003829],["Jolene","Dolly Parton",1973,"Country",216345135],["9 to 5","Dolly Parton",1980,"Country",282883590],["Friends in Low Places","Garth Brooks",1990,"Country"],["Man! I Feel Like a Woman!","Shania Twain",1997,"Country",1635406724],["Before He Cheats","Carrie Underwood",2005,"Country",214696369],["Love Story","Taylor Swift",2008,"Country",1440924808],["Cruise","Florida Georgia Line",2012,"Country",1440812204],["Tennessee Whiskey","Chris Stapleton",2015,"Country",1440827492],["Last Night","Morgan Wallen",2023,"Country",1818424212],["Texas Hold 'Em","Beyoncé",2024,"Country",1738363782],["A Bar Song (Tipsy)","Shaboozey",2024,"Country",1737085899],["Take Me Home, Country Roads","John Denver",1971,"Country",1482520559],["Ho Hey","The Lumineers",2012,"Country",1754219314],["Gangnam Style","PSY",2012,"K-Pop",1445144527],["Dynamite","BTS",2020,"K-Pop",1597017115],["Butter","BTS",2021,"K-Pop",1597016227],["DDU-DU DDU-DU","BLACKPINK",2018,"K-Pop",1551479993],["How You Like That","BLACKPINK",2020,"K-Pop",1533894669],["Pink Venom","BLACKPINK",2022,"K-Pop",1644440670],["Super Shy","NewJeans",2023,"K-Pop",1695951897],["Ditto","NewJeans",2022,"K-Pop",1657231962],["FANCY","TWICE",2019,"K-Pop",1555390187],["Seven","Jung Kook",2023,"K-Pop",1703097180],["Spicy","aespa",2023,"K-Pop",1707236276],["Get Lucky","Daft Punk",2013,"Electronic",617154366],["One More Time","Daft Punk",2000,"Electronic",697195462],["Levels","Avicii",2011,"Electronic",1440787349],["Wake Me Up","Avicii",2013,"Electronic",1440872929],["Titanium","David Guetta",2011,"Electronic",693226464],["Don't You Worry Child","Swedish House Mafia",2012,"Electronic",6798736833],["Lean On","Major Lazer",2015,"Electronic",1880058730],["Closer","The Chainsmokers",2016,"Electronic",1170699703],["Sandstorm","Darude",1999,"Electronic",1171298924],["Blue (Da Ba Dee)","Eiffel 65",1998,"Electronic",257425340],["Animals","Martin Garrix",2013,"Electronic",1670593167],["Despacito","Luis Fonsi",2017,"Latin",1447401620],["Gasolina","Daddy Yankee",2004,"Latin",1786000124],["Hips Don't Lie","Shakira",2006,"Latin",1817217063],["Tití Me Preguntó","Bad Bunny",2022,"Latin",1622045635],["Macarena","Los Del Rio",1995,"Latin",1518348098],["Calm Down","Rema",2022,"Afrobeats",1683358629],["Jerusalema","Master KG",2019,"Afrobeats",1522732266],["Last Last","Burna Boy",2022,"Afrobeats",1623677811],["Water","Tyla",2023,"Afrobeats",1699082734]];
 const SONG={src:"charts",genre:"All",era:"All"};try{Object.assign(SONG,JSON.parse(localStorage.getItem("songcfg")||"{}"))}catch(e){}
+// Which song lists are switched on in Settings (older saves had a single "src")
+if(!SONG.on)SONG.on=SONG.src==="both"?{layla:true,yahya:true}:{[SONG.src||"charts"]:true};
 const PLAY={layla:[],yahya:[]};
 try{const l=JSON.parse(localStorage.getItem("songpl")||"{}");if(l.layla)PLAY.layla=l.layla;if(l.yahya)PLAY.yahya=l.yahya}catch(e){}
 const CLIPS=[0.1,0.5,2,8,15];
@@ -975,9 +1021,11 @@ function bothSongs(){
   const out=[...m.values()];bothCache={l:PLAY.layla,y:PLAY.yahya,out,shared:out.filter(x=>x.who.length>1).length};return out}
 // Every song from the chosen source; the genre/era filters only decide which songs get picked as answers
 function songSource(){
-  if(SONG.src==="charts")return CHARTS.map(r=>mkSong(r[0],r[1],r[2],r[3],"Charts",r[4],r[5]));
-  if(SONG.src==="both")return bothSongs().map(r=>{const x=mkSong(r.t,r.a,r.y,r.g,r.who.length>1?"Both":r.who[0],r.i,r.c);x.who=r.who;return x});
-  return PLAY[SONG.src].map(r=>mkSong(r.t,r.a,r.y,r.g,SONG.src==="layla"?"Layla":"Yahya",r.i,r.c));
+  const on=SONG.on,out=[];
+  if(on.layla&&on.yahya)out.push(...bothSongs().map(r=>{const x=mkSong(r.t,r.a,r.y,r.g,r.who.length>1?"Both":r.who[0],r.i,r.c);x.who=r.who;return x}));
+  else for(const w of ["layla","yahya"])if(on[w])out.push(...PLAY[w].map(r=>mkSong(r.t,r.a,r.y,r.g,w==="layla"?"Layla":"Yahya",r.i,r.c)));
+  if(on.charts){const have=new Set(out.map(x=>songKey(x.name,x.v[0])));for(const r of CHARTS)if(!have.has(songKey(r[0],r[1])))out.push(mkSong(r[0],r[1],r[2],r[3],"Charts",r[4],r[5]))}
+  return out;
 }
 function songPool(){
   const p=songSource(),e=ERAS.find(x=>x[0]===SONG.era)||ERAS[0];
@@ -1047,13 +1095,12 @@ async function findPreview(song){
 function renderSong(){
   songStop();
   const st=state(),t=st.target,artistMode=mode==="Artist";
-  const genres=["All",...new Set((SONG.src==="charts"?CHARTS.map(r=>r[3]):(SONG.src==="both"?[...PLAY.layla,...PLAY.yahya]:PLAY[SONG.src]).map(r=>r.g).filter(Boolean)))];
-  const srcs=[["charts","Charts"],["layla","Layla's playlist"],["yahya","Yahya's playlist"],["both","Both playlists"]];
+  const genres=["All",...new Set(songSource().map(x=>x.v[2]).filter(g=>g&&g!=="—"))];
   let h=banner();
-  h+=`<div class="sg-filters"><label>Songs from <select id="sg-src">${srcs.map(([k,l])=>`<option value="${k}"${SONG.src===k?" selected":""}>${l}${k!=="charts"&&k!=="both"?` (${PLAY[k].length})`:k==="both"?` (${bothSongs().length}${bothCache.shared?`, ${bothCache.shared} on both`:""})`:""}</option>`).join("")}</select></label>
+  h+=`<div class="sg-filters">
     <label>Genre <select id="sg-genre">${genres.map(g=>`<option${SONG.genre===g?" selected":""}>${esc(g)}</option>`).join("")}</select></label>
     <label>Era <select id="sg-era">${ERAS.map(e=>`<option${SONG.era===e[0]?" selected":""}>${e[0]}</option>`).join("")}</select></label></div>`;
-  if(!t){h+=`<div class="clue"><span class="k">No songs here yet</span>${SONG.src==="charts"?"No chart songs match these filters. Try another genre or era.":"This playlist is empty. Import it below, or pick Charts."}</div>`+songImport();$("#stage").innerHTML=h;wireSongFilters();return}
+  if(!t){h+=`<div class="clue"><span class="k">No songs here yet</span>No songs match these filters. Try another genre or era, or switch more playlists on in Settings.</div>`+songImport();$("#stage").innerHTML=h;wireSongFilters();return}
   const step=Math.min(st.guesses.length,CLIPS.length-1),len=st.done?0:CLIPS[step];
   // Scrubber: during a round the bar spans the longest clip and only the unlocked part can be played or dragged;
   // once the round is over it spans the whole preview
@@ -1117,14 +1164,13 @@ function renderSong(){
 }
 function wireSongFilters(){
   const ch=()=>{try{localStorage.setItem("songcfg",JSON.stringify(SONG))}catch(e){}songStop();for(const m of cur.modes)delete S[cur.id+":"+m];render()};
-  $("#sg-src").onchange=e=>{SONG.src=e.target.value;SONG.genre="All";ch()};
   $("#sg-genre").onchange=e=>{SONG.genre=e.target.value;ch()};
   $("#sg-era").onchange=e=>{SONG.era=e.target.value;ch()};
   const un=$("#sg-unimport");if(un)un.onclick=()=>{try{localStorage.removeItem("songpl")}catch(e){}location.reload()};
   const f=$("#sg-file");if(f)f.onchange=()=>{const file=f.files[0];if(!file)return;const who=$("#sg-who").value;const r=new FileReader();
     r.onload=()=>{const rows=parseCSV(String(r.result));PLAY[who]=rows;try{localStorage.setItem("songpl",JSON.stringify(PLAY))}catch(e){}
       $("#sg-imp-msg").textContent=rows.length?`Imported ${rows.length} songs into ${who==="layla"?"Layla":"Yahya"}'s playlist on this device.`:"Couldn't find song titles and artists in that file.";
-      if(rows.length){SONG.src=who;SONG.genre="All";ch()}};r.readAsText(file)};
+      if(rows.length){SONG.on[who]=true;SONG.genre="All";ch()}};r.readAsText(file)};
 }
 function songImport(){return`<details class="sg-import"><summary>Import a playlist</summary><p class="meta">Export a Spotify playlist with Exportify (exportify.app) or an Apple Music playlist with TuneMyMusic (tunemymusic.com → export to file), then pick the CSV here. It's saved on this device only. To share it with Yahya, send the CSV to Claude to add to the site.</p>
   <div class="bar"><select id="sg-who"><option value="layla">Layla's playlist</option><option value="yahya">Yahya's playlist</option></select><input type="file" id="sg-file" accept=".csv,text/csv"></div><p class="meta" id="sg-imp-msg"></p>${(()=>{try{return localStorage.getItem("songpl")}catch(e){return null}})()?`<p class="meta">This device is using an imported playlist instead of the shared one. <button class="btn" id="sg-unimport">Use the shared playlists again</button></p>`:""}</details>`}
@@ -1202,7 +1248,7 @@ function searchBar(placeholder){
 }
 function renderClassic(){
   const st=state(),t=st.target;
-  let h=banner()+swFilter();
+  let h=banner();
   if(!st.rev)st.rev={};
   if(cur.hints){const open=cur.hints.filter(([n,l])=>st.rev[l]&&(st.done||st.guesses.length>=n));
     h+=`<div class="bar hintbox">${cur.hints.map(([n,l])=>st.done||st.guesses.length>=n?`<button class="btn hintbtn${st.rev[l]?" on":""}" data-hint="${esc(l)}" aria-expanded="${!!st.rev[l]}">${l}<small>${st.rev[l]?"Hide":"Click to reveal"}</small></button>`:`<span class="btn hintbtn locked">${l}<small>in ${n-st.guesses.length} guess${n-st.guesses.length===1?"":"es"}</small></span>`).join("")}</div>`;
@@ -1218,7 +1264,7 @@ function renderClassic(){
   h+=`<div class="legend"><span><i style="background:var(--hit)"></i>Correct</span><span><i style="background:var(--near)"></i>Partial</span><span><i style="background:var(--miss)"></i>Wrong</span><span>↑ ↓ higher / later, lower / earlier</span><button class="cbtoggle" id="cb" aria-pressed="${!!store.cb}">Colour-blind colours</button></div>`;
   $("#stage").innerHTML=h;
   $("#cb").onclick=()=>{store.cb=!store.cb;save();if(store.cb)document.documentElement.dataset.cb="";else delete document.documentElement.dataset.cb;$("#cb").setAttribute("aria-pressed",store.cb)};
-  document.querySelectorAll(".hintbtn[data-hint]").forEach(b=>b.onclick=()=>{const l=b.dataset.hint;st.rev[l]=!st.rev[l];render();focusGuess()});wireSwFilter();wire(st,[...new Set([...playItems().map(x=>x.name),t.name])],name=>{
+  document.querySelectorAll(".hintbtn[data-hint]").forEach(b=>b.onclick=()=>{const l=b.dataset.hint;st.rev[l]=!st.rev[l];render();focusGuess()});wire(st,[...new Set([...playItems().map(x=>x.name),t.name])],name=>{
     const g=cur.items.find(x=>x.name===name);st.guesses.push(g);if(g===t){st.done=true;st.won=true;bump(true)}render();focusGuess();
   },st.guesses.map(g=>g.name));
 }
@@ -1265,15 +1311,16 @@ function renderList(){
   let idx=rows.map((_,i)=>i).filter(i=>rows[i].join(" ").toLowerCase().includes(filter.toLowerCase()));
   const isNum=sortCol>0&&sortCol<=cur.attrs.length&&["num","ord"].includes(cur.attrs[sortCol-1][1]);
   idx.sort((a,b)=>{const x=raw[a][sortCol],y=raw[b][sortCol];if(isNum){const u=isNaN(+x[0]),v=isNaN(+y[0]);if(u||v)return u&&v?0:u?1:-1}return(isNum?(x[0]-y[0]):String(x).localeCompare(String(y)))*sortDir});
-  let h=swFilter()+`<div class="bar"><div class="search"><input id="filter" placeholder="Filter by any detail, e.g. Gryffindor, Espada, 2014" value="${esc(filter)}" aria-label="Filter"></div><span class="meta">${idx.length} of ${rows.length}</span><select class="sortsel m-only" id="sortsel" aria-label="Sort by">${cols.map((c,i)=>`<option value="${i}"${i===sortCol?" selected":""}>Sort by ${c}${i===sortCol?(sortDir>0?" ▲":" ▼"):""}</option>`).join("")}</select></div>`;
+  let h=`<div class="bar"><div class="search"><input id="filter" placeholder="Filter by any detail, e.g. Gryffindor, Espada, 2014" value="${esc(filter)}" aria-label="Filter"></div><span class="meta">${idx.length} of ${rows.length}</span><select class="sortsel m-only" id="sortsel" aria-label="Sort by">${cols.map((c,i)=>`<option value="${i}"${i===sortCol?" selected":""}>Sort by ${c}${i===sortCol?(sortDir>0?" ▲":" ▼"):""}</option>`).join("")}</select></div>`;
   h+=`<div class="listwrap"><table class="list${items.some(x=>x.img)?"":" compact"}"><thead><tr>${cols.map((c,i)=>`<th data-c="${i}">${c}${i===sortCol?(sortDir>0?" ▲":" ▼"):""}</th>`).join("")}</tr></thead><tbody>`;
   h+=idx.map(i=>`<tr>${rows[i].map((v,c)=>`${c===0?`<td class="name${items[i].img?"":" noimg"}" data-l="${esc(cols[c])}">${av(items[i].img)}<span class="nm">${esc(v)}</span></td>`:`<td data-l="${esc(cols[c])}">${cur.id==="hp"&&cols[c]==="House"?crest(v):""}${tv(v)}</td>`}`).join("")}</tr>`).join("");
   h+=`</tbody></table></div>`;
-  $("#stage").innerHTML=h;wireSwFilter();
+  $("#stage").innerHTML=h;
   const f=$("#filter");f.oninput=()=>{filter=f.value;renderList();const n=$("#filter");n.focus();n.setSelectionRange(n.value.length,n.value.length)};
   const ss=$("#sortsel");if(ss)ss.onchange=()=>{const c=+ss.value;if(c===sortCol)sortDir*=-1;else{sortCol=c;sortDir=1}renderList()};
   document.querySelectorAll("th[data-c]").forEach(th=>th.onclick=()=>{const c=+th.dataset.c;if(c===sortCol)sortDir*=-1;else{sortCol=c;sortDir=1}renderList()});
 }
+$("#opensettings").onclick=openSettings;
 $("#carts").onclick=e=>{const b=e.target.closest(".cart");if(!b)return;cur=GAMES.find(g=>g.id===b.dataset.id);store.last=cur.id;save();if(mode!=="Character list"&&mode!=="Classic"&&!(cur.clues||{})[mode]&&!(cur.modes||[]).includes(mode))mode="Classic";if(cur.modes&&mode==="Classic")mode=cur.modes[0];sortCol=0;songStop();filter="";render()};
 $("#tabs").onclick=e=>{const d=e.target.closest("[data-daily]");if(d){daily=d.dataset.daily==="1";store.daily=daily;save();render();return}
   const b=e.target.closest(".tab");if(!b)return;mode=b.dataset.m;sortCol=0;render()};
