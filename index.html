@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=JetBrains+Mono:wght@500&family=DM+Sans:wght@500;700&family=DM+Serif+Display:ital@0;1&display=swap">
 <!-- Fonts for the "dle" beside each game's logo, cut down to just the letters they draw -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Russo+One&family=Kalam:wght@700&family=UnifrakturMaguntia&family=Rubik:wght@900&family=Archivo+Black&family=Anton&family=Grenze+Gotisch:wght@700&family=Barlow+Condensed:wght@700&text=dleDLEPlanespotPLANESPOT&display=swap">
 <style>
@@ -380,41 +380,116 @@ table.g td.name .nm{text-align:center}
 .hintshow{display:flex;flex-direction:column;gap:8px;align-items:center;margin-bottom:12px}
 .hintshow .clue{margin:0;width:100%;max-width:70ch;text-align:center;font-size:16px;padding:12px 16px}
 
-/* ---- Songdle ---- */
-html[data-game="song"]{--bg:#0a0f0c;--panel:#111a14;--panel2:#1a271e;--line:#2a3e30;--muted:#9fbaa7;--logo:"Bungee",sans-serif;--logo-shadow:0 0 18px rgba(30,215,96,.45);
- --deco:repeating-radial-gradient(circle at 50% 120%,transparent 0 18px,rgba(30,215,96,.05) 18px 20px)}
-.sg-filters{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:14px}
-.sg-filters label{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:13px}
-.sg-filters select,.sg-import select{background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:600 14px var(--body)}
-.sg-player{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:14px}
-.sg-play{width:76px;height:76px;border-radius:50%;border:0;background:var(--accent);color:#06240f;cursor:pointer;display:grid;place-items:center;box-shadow:0 0 0 6px color-mix(in srgb,var(--accent) 22%,transparent)}
-.sg-play svg{width:34px;height:34px;margin-left:4px}
-.sg-play.playing{animation:pulse 1s ease-in-out infinite}
-.sg-play .i-pause{display:none}.sg-play.playing .i-pause{display:block}.sg-play.playing .i-play{display:none}.sg-play .i-pause{margin-left:0}
-@keyframes pulse{50%{box-shadow:0 0 0 14px color-mix(in srgb,var(--accent) 10%,transparent)}}
-.sg-scrub{position:relative;width:min(560px,100%);padding:12px 0 30px;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;--open:0%;--pos:0%}
+/* ---- Songdle: green record player (Settings > Songdle > Look: Emerald, Forest or Sage) ----
+   Theme colours sit on <body> so they win over the accent the page sets on <html> for every game */
+html[data-game="song"]{--logo:"DM Serif Display",Georgia,serif;--logo-shadow:none;--deco:none}
+html[data-game="song"] body{--accent:#2fbf71;--on-accent:#06140c;--bg:#070908;--fg:#eef3ee;--muted:#a3aea6;--line:#1f2622;--panel:#0d110f;--panel2:#131a16;--g1:#040504;--g2:#131714;--miss:#8f2c3c;--near:#8a5f0a}
+html[data-game="song"][data-sgtheme="forest"] body{--accent:#a9c9a4;--on-accent:#0b130f;--bg:#0b130f;--fg:#e7eee3;--muted:#9db39a;--line:#23332a;--panel:#101a14;--panel2:#16231b;--g1:#050a07;--g2:#142019}
+html[data-game="song"][data-sgtheme="sage"] body{--accent:#1f4d36;--on-accent:#eef2ea;--bg:#dfe6d8;--fg:#13241a;--muted:#3e5446;--line:#b9c6b0;--panel:#eef2ea;--panel2:#e7ece2;--g1:#0b0f0c;--g2:#1b221d;--text:#13241a;color-scheme:light}
+html[data-game="song"][data-cb] body{--miss:#4b4b57;--near:#b85f00}
+html[data-game="song"] .stage{font-family:"DM Sans",var(--body)}
+.sg-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;padding-bottom:16px;margin-bottom:24px;border-bottom:1px solid var(--line)}
+.sg-head .sg-logo{margin:0;text-align:left;text-transform:none;font-style:italic;font-weight:400;letter-spacing:0;font-size:40px;color:var(--fg)}
+.sg-mini{font-size:13px;font-weight:700;color:var(--muted)}
+.sg-head+.sg-filters{margin-bottom:16px}
+.sg-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:24px 48px;align-items:start}
+.sg-left{display:flex;flex-direction:column;align-items:center;gap:18px;min-width:0}
+.sg-right{display:flex;flex-direction:column;gap:22px;min-width:0}
+/* The record: ring = unlocked part of the clip (lighter where it has played), label holds the play button */
+.sg-rec{position:relative;width:min(460px,100%);aspect-ratio:1;display:grid;place-items:center}
+.sg-ring{position:absolute;inset:0;border-radius:50%;background:conic-gradient(color-mix(in srgb,var(--accent) 55%,#fff) 0 var(--pos),var(--accent) 0 var(--open),var(--line) 0 100%)}
+.sg-disc{position:absolute;inset:1.7%;border-radius:50%;display:grid;place-items:center}
+.sg-grooves{position:absolute;inset:0;border-radius:50%;background:repeating-radial-gradient(circle,var(--g1) 0 1px,var(--g2) 1px 3px);box-shadow:0 30px 60px rgba(0,0,0,.45)}
+.sg-glint{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 10deg,rgba(255,255,255,0) 0deg,rgba(255,255,255,.05) 8deg,rgba(255,255,255,0) 16deg)}
+.sg-label{position:absolute;width:39%;aspect-ratio:1;border-radius:50%;background:var(--accent);color:var(--on-accent)}
+.sg-label b,.sg-label em{position:absolute;left:0;right:0;text-align:center;white-space:nowrap}
+.sg-label b{top:15%;font:700 11px "DM Sans",sans-serif;letter-spacing:.3em;padding-left:.3em}
+.sg-label em{bottom:15%;font:italic 400 13px "DM Serif Display",serif}
+.sg-sheen{position:absolute;inset:1.7%;border-radius:50%;pointer-events:none;background:conic-gradient(from 200deg,rgba(255,255,255,0) 0deg,rgba(255,255,255,.13) 30deg,rgba(255,255,255,0) 70deg,rgba(255,255,255,0) 180deg,rgba(255,255,255,.09) 215deg,rgba(255,255,255,0) 250deg)}
+.sg-play{position:relative;z-index:1;width:84px;height:84px;border-radius:50%;border:0;background:var(--g1);color:var(--accent);box-shadow:0 0 0 4px var(--accent);cursor:pointer;display:grid;place-items:center}
+.sg-play svg{width:34px;height:34px}.sg-play .i-play{margin-left:3px}
+.sg-play .i-pause{display:none}.sg-play.playing .i-pause{display:block}.sg-play.playing .i-play{display:none}
+.sg-play:focus-visible{outline:3px solid var(--fg);outline-offset:6px}
+@keyframes sg-spin{to{transform:rotate(360deg)}}
+html[data-sgspin="always"] .sg-disc,html[data-sgspin="playing"] .sg-rec:has(.sg-play.playing) .sg-disc{animation:sg-spin 1.8s linear infinite}
+@media (prefers-reduced-motion:reduce){.sg-disc{animation-duration:6s!important}}
+.sg-clips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;font:700 14px "DM Sans",sans-serif}
+.sg-clips span{padding:8px 14px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.sg-clips .on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.sg-clips .cur{border:2px solid var(--accent);color:var(--fg);padding:7px 13px}
+/* Scrubber: drag or tap to move within the unlocked part */
+.sg-scrub{position:relative;width:min(460px,100%);padding:10px 0 26px;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;--open:0%;--pos:0%}
 .sg-scrub:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:8px}
-.sg-track{position:relative;height:12px;border-radius:999px;background:var(--panel2);box-shadow:inset 0 0 0 1px var(--line)}
-.sg-open{position:absolute;left:0;top:0;bottom:0;width:var(--open);min-width:6px;border-radius:999px;background:color-mix(in srgb,var(--accent) 30%,transparent)}
+.sg-track{position:relative;height:6px;border-radius:999px;background:var(--line)}
+.sg-open{position:absolute;left:0;top:0;bottom:0;width:var(--open);min-width:6px;border-radius:999px;background:color-mix(in srgb,var(--accent) 45%,transparent)}
 .sg-fill{position:absolute;left:0;top:0;bottom:0;width:var(--pos);border-radius:999px;background:var(--accent)}
-.sg-track i{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;border-radius:1px;background:var(--line)}
-.sg-knob{position:absolute;top:50%;left:var(--pos);width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.5);transition:transform .12s}
-.sg-scrub:hover .sg-knob,.sg-scrub:active .sg-knob{transform:scale(1.15)}
-.sg-tip{position:absolute;top:30px;left:clamp(18px,var(--pos),calc(100% - 18px));transform:translateX(-50%);font:700 12px var(--mono);color:var(--accent);white-space:nowrap;pointer-events:none}
-.sg-tip::before{content:"\25B2";display:block;text-align:center;font-size:8px;line-height:1.1}
-.sg-end{position:absolute;right:0;top:32px;font:600 11px var(--mono);color:var(--muted);pointer-events:none}
-.sg-rows{display:flex;flex-direction:column;gap:6px;max-width:720px;margin:10px auto 0}
-.sg-row{display:flex;gap:6px}
-.sg-row span{flex:1;min-width:0;border-radius:8px;padding:8px;text-align:center;font-weight:600;font-size:14px;overflow-wrap:anywhere}
-.sg-own{display:block;width:fit-content;margin-top:8px;padding:4px 11px;border-radius:999px;font:700 12px var(--body);background:var(--panel2);border:1px solid var(--line);color:var(--fg)}
-.sg-own.both{background:var(--accent);border-color:var(--accent);color:var(--on-accent,#0b1a10)}
-.sg-got{display:block;margin-top:8px;font:700 15px var(--body);color:var(--fg)}
-.sg-row span.wide{flex:1}
-.sg-row small{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.06em;opacity:.8}
+.sg-track i{position:absolute;top:-2px;bottom:-2px;width:2px;margin-left:-1px;background:var(--bg)}
+.sg-knob{position:absolute;top:50%;left:var(--pos);width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--fg);box-shadow:0 1px 4px rgba(0,0,0,.5);transition:transform .12s}
+.sg-scrub:hover .sg-knob,.sg-scrub:active .sg-knob{transform:scale(1.2)}
+.sg-tip{position:absolute;top:22px;left:clamp(18px,var(--pos),calc(100% - 18px));transform:translateX(-50%);font:700 12px var(--mono);color:var(--accent);white-space:nowrap;pointer-events:none}
+.sg-end{position:absolute;right:0;top:22px;font:600 11px var(--mono);color:var(--muted);pointer-events:none}
+.sg-left .meta{margin:0;text-align:center}
+.sg-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.sg-stats div{border:1px solid var(--line);border-radius:16px;padding:16px}
+.sg-stats b{display:block;font:400 40px/1.1 "DM Serif Display",serif}
+.sg-stats b.ac{color:var(--accent)}
+.sg-stats span{font-size:14px;font-weight:700;color:var(--muted)}
+.sg-filters{display:flex;gap:12px;flex-wrap:wrap}
+.sg-filters label{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:700;color:var(--muted)}
+.sg-filters select{min-height:44px;min-width:180px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--fg);padding:0 12px;font:500 16px "DM Sans",sans-serif}
+.sg-import select{background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:600 14px var(--body)}
+.sg-guess{font-size:14px;font-weight:700;color:var(--muted);margin-bottom:-14px}
+html[data-game="song"] .sg-search input{min-height:60px;border:0;border-bottom:2px solid var(--accent);border-radius:0;background:transparent;color:var(--fg);padding:0 2px;font:400 28px "DM Serif Display",serif}
+html[data-game="song"] .sg-search input::placeholder{color:color-mix(in srgb,var(--muted) 75%,transparent)}
+html[data-game="song"] .sg-search input[aria-invalid="true"]{border-color:var(--miss);box-shadow:0 2px 0 var(--miss)}
+.sg-right .sg-search{flex:none}
+html[data-game="song"] .sg-search input:focus-visible{outline:none;border-bottom-width:3px;box-shadow:0 3px 0 color-mix(in srgb,var(--accent) 35%,transparent)}
+.sg-search .sugg{font:500 15px "DM Sans",sans-serif}
+.sg-btns{display:flex;gap:12px;flex-wrap:wrap}
+.sg-btn{min-height:50px;padding:0 28px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--fg);font:700 16px "DM Sans",sans-serif;cursor:pointer}
+.sg-btn:hover{border-color:var(--accent)}
+.sg-btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.sg-btn.primary:hover{filter:brightness(1.08)}
+.sg-rows{display:flex;flex-direction:column;gap:8px}
+.sg-rowhead,.sg-row{display:grid;grid-template-columns:2fr 2fr 1fr;gap:8px}
+.sg-rows.two .sg-rowhead,.sg-rows.two .sg-row{grid-template-columns:2fr 1fr}
+.sg-rowhead span{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.sg-row span{min-width:0;border-radius:8px;padding:12px;font-size:15px;font-weight:700;color:#fff;overflow-wrap:anywhere}
+.sg-row small{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .sg-row .hit{background:var(--hit)}.sg-row .near{background:var(--near)}.sg-row .miss{background:var(--miss)}
+.sg-row .skip{grid-column:1/-1;background:none;border:1px dashed var(--line);color:var(--muted)}
+html[data-game="song"] .win{margin:0}
+html[data-game="song"] .win h3{font:400 26px/1.15 "DM Serif Display",serif}
+.sg-right .prev{text-align:left;margin:0}
+.sg-own{display:block;width:fit-content;margin-top:8px;padding:4px 11px;border-radius:999px;font:700 12px var(--body);background:var(--panel2);border:1px solid var(--line);color:var(--fg)}
+.sg-own.both{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.sg-got{display:block;margin-top:8px;font:700 15px var(--body);color:var(--fg)}
 .sg-import{max-width:720px;margin:16px auto 0;color:var(--muted)}
 .sg-import summary{cursor:pointer;font-weight:600}
-@media (prefers-reduced-motion:reduce){.sg-play.playing{animation:none}}
+/* Settings > Songdle > Look */
+.sg-themes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.sett .sg-th{flex-direction:column;align-items:flex-start;gap:8px;margin:0;background:var(--th-bg);color:var(--th-fg);border:2px solid transparent}
+.sett .sg-th small{color:inherit;opacity:.75}
+.sett .sg-th.on{border-color:var(--c)}
+.sg-th .sw{display:flex;gap:4px}.sg-th .sw i{width:18px;height:18px;border-radius:50%;background:var(--th-ac)}.sg-th .sw i+i{background:var(--th-g2);box-shadow:0 0 0 1px rgba(127,127,127,.4)}
+@media (max-width:560px){.sg-themes{grid-template-columns:1fr}.sett .sg-th{flex-direction:row;align-items:center}}
+@media (min-width:861px){.sg-mini{display:none}}
+@media (max-width:860px){
+  .sg-layout{grid-template-columns:minmax(0,1fr);gap:20px}
+  .sg-stats{display:none}
+  .sg-right .sg-filters{order:9}
+  .sg-head{margin-bottom:18px}.sg-head .sg-logo{font-size:36px}
+  .sg-rec{width:min(360px,100%)}
+  .sg-label b,.sg-label em{display:none}
+  .sg-play{width:72px;height:72px}.sg-play svg{width:30px;height:30px}
+  .sg-filters label{flex:1 1 140px}.sg-filters select{min-width:0;width:100%}
+  html[data-game="song"] .sg-search input{min-height:52px;font-size:22px}
+  .sg-btn{flex:1;padding:0 16px;min-height:48px;font-size:15px}
+  .sg-rowhead{display:none}
+  .sg-row,.sg-rows.two .sg-row{grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:6px}
+  .sg-row span{padding:8px 6px;text-align:center;font-size:13px;border-radius:6px}
+  .sg-row small{position:static;width:auto;height:auto;clip:auto;display:block;font-size:10px;text-transform:uppercase;letter-spacing:.06em;opacity:.8}
+}
 
 table.list td.name,table.list td.name .nm{white-space:normal;min-width:0}
 table.list td.name .nm{overflow-wrap:anywhere}
@@ -426,11 +501,6 @@ table.list td.name .nm{overflow-wrap:anywhere}
   table.list.compact td .tv{max-height:none}
 }
 
-.sg-controls{display:flex;align-items:center;justify-content:center;gap:18px}
-.sg-side{min-width:112px;min-height:54px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:10px 14px}
-span.sg-side{visibility:hidden}
-.sg-side small{font:600 11px var(--mono);color:var(--muted)}
-@media (max-width:700px){.sg-controls{gap:10px}.sg-side{min-width:0;flex:1;padding:10px 8px}}
 
 .sg-vol{display:flex;align-items:center;gap:8px;color:var(--muted);font:600 12px var(--mono)}
 .sg-vol svg{width:18px;height:18px}
@@ -990,6 +1060,8 @@ function settingsBody(id){
     <div class="sgrp"><h4>Tabs</h4>${tg("pl-list:x","Show the plane list",!PLSET.hideList,"The Character list tab with every aircraft")}</div>`;
   if(id==="song"){const on=SONG.on,n=["layla","yahya","charts"].filter(k=>on[k]).length,L=[["layla","Layla's library",""],["yahya","Yahya's library",""],["charts","Charts","Each year's top 10 since 1970, plus extra hits"]];
     return`<h3>Songdle</h3><p class="ssub">Songs come from every list that's switched on. At least one has to stay on.</p>
+    <div class="sgrp"><h4>Look</h4><div class="sg-themes">${Object.entries(SG_THEMES).map(([k,[n,sub,ac,g2,bg,fg]])=>`<button class="sopt sg-th${(SG_THEMES[SONG.theme]?SONG.theme:"emerald")===k?" on":""}" data-k="song-theme:${k}" aria-pressed="${(SG_THEMES[SONG.theme]?SONG.theme:"emerald")===k}" style="--th-bg:${bg};--th-fg:${fg};--th-ac:${ac};--th-g2:${g2}"><span class="sw"><i></i><i></i></span><b>${n}<small>${sub}</small></b></button>`).join("")}</div></div>
+    <div class="sgrp"><h4>Record</h4>${seg("song-spin",[["playing","Spin while playing"],["always","Always spin"],["still","Still"]],SONG.spin||"playing")}</div>
     <div class="sgrp"><h4>Libraries</h4>${L.map(([k,l,sub])=>tg("song:"+k,l,!!on[k],sub,on[k]&&n===1)).join("")}</div>
     <div class="sgrp"><h4>Spotify</h4>${SPOTIFY_ID?(spLinked()?tg("sp-off:x","Spotify connected",true,"Switch off to disconnect this device.")+`<label class="sp-to"><b>Save songs to</b><select id="sp-target"><option value="">${esc(spTarget().name)}</option></select></label>`:tg("sp-on:x","Connect Spotify",false,"Lets the Add to Spotify button save songs to your Liked Songs on this device")):`<p class="snote" style="margin:0">Spotify isn't set up for this site yet.</p>`}</div>
     <div class="sgrp"><h4>Add to my library</h4><p class="snote" style="margin:0 0 8px">After a round, show Apple Music and Spotify buttons for songs that aren't in your library yet. Saved on this device only.</p><div class="sradio">${[["","Off","No buttons"],["all","On","Buttons after every song"],["layla","I'm Layla","Buttons for songs not in Layla's library"],["yahya","I'm Yahya","Buttons for songs not in Yahya's library"]].map(([v,l,sub])=>`<button class="sopt srad${(SONG.mine||"")===v?" on":""}" data-k="song-mine:${v}"><span class="dot"></span><b>${l}<small>${sub}</small></b></button>`).join("")}</div></div>
@@ -1018,6 +1090,7 @@ function renderSettings(){const el=$("#settings");if(!el)return;const c=(GAMES.f
     if(g==="sp-on"){spConnect();return}
     if(g==="sp-off"){spDisconnect()}
     if(g==="song-mine"){SONG.mine=k;try{localStorage.setItem("songcfg",JSON.stringify(SONG))}catch(e){}}
+    if(g==="song-theme"||g==="song-spin"){SONG[g.slice(5)]=k;try{localStorage.setItem("songcfg",JSON.stringify(SONG))}catch(e){}}
     if(g==="song-flow"){SONG.flow=SONG.flow===false;try{localStorage.setItem("songcfg",JSON.stringify(SONG))}catch(e){}}
     if(g==="song"){if(SONG.on[k])delete SONG.on[k];else SONG.on[k]=true;SONG.genre="All";try{localStorage.setItem("songcfg",JSON.stringify(SONG))}catch(e){}
       songStop();for(const m of GAMES.find(x=>x.id==="song").modes)delete S["song:"+m]}
@@ -1045,6 +1118,7 @@ function bump(win){const s=store[cur.id]||(store[cur.id]={w:0,streak:0,best:0});
 function renderCarts(){
   $("#carts").innerHTML=GAMES.map(g=>`<button class="cart" style="--c:${g.c}" aria-pressed="${g===cur}" data-id="${g.id}"><span class="dot"></span><b>${g.name}</b><small>${g.tag} · ${g.items.filter(x=>!itemOut(x,g.id)).length}${g.src?" · official list":""}</small></button>`).join("");
   document.documentElement.style.setProperty("--accent",cur.c);document.documentElement.dataset.game=cur.id;
+  document.documentElement.dataset.sgtheme=SG_THEMES[SONG.theme]?SONG.theme:"emerald";document.documentElement.dataset.sgspin=SONG.spin||"playing";
   const on=document.querySelector('.cart[aria-pressed="true"]');if(on&&shownCart!==cur.id&&on.scrollIntoView&&matchMedia("(max-width:700px)").matches)on.scrollIntoView({block:"nearest",inline:"center"});shownCart=cur.id;
   const s=store[cur.id]||{w:0,streak:0};
   $("#score").innerHTML=`<span class="gname">${cur.name.toUpperCase()}<br></span>wins ${s.w} · streak ${s.streak}`;
@@ -1060,6 +1134,8 @@ const CHARTS=[["Disco Lady","Johnnie Taylor",1966,"Dance/Electronic",171110105],
 const SONG={src:"charts",genre:"All",era:"All"};try{Object.assign(SONG,JSON.parse(localStorage.getItem("songcfg")||"{}"))}catch(e){}
 // Which song lists are switched on in Settings (older saves had a single "src")
 if(!SONG.on)SONG.on=SONG.src==="both"?{layla:true,yahya:true}:{[SONG.src||"charts"]:true};
+// Songdle looks (Settings > Songdle > Look); the colours themselves live in the CSS
+const SG_THEMES={emerald:["Emerald","Dark, bright green","#2fbf71","#131714","#070908","#eef3ee"],forest:["Forest","Dark, soft sage","#a9c9a4","#142019","#0b130f","#e7eee3"],sage:["Sage","Light, deep green","#1f4d36","#1b221d","#dfe6d8","#13241a"]};
 const PLAY={layla:[],yahya:[]};
 try{const l=JSON.parse(localStorage.getItem("songpl")||"{}");if(l.layla)PLAY.layla=l.layla;if(l.yahya)PLAY.yahya=l.yahya}catch(e){}
 const CLIPS=[0.1,0.5,2,8,15];
@@ -1134,7 +1210,7 @@ function songStop(){if(songTimer){clearTimeout(songTimer);songTimer=null}cancelA
   if(songAudio)songAudio.pause();document.querySelectorAll(".sg-play").forEach(b=>{b.classList.remove("playing");b.setAttribute("aria-label","Play")});songDraw()}
 function songDraw(){const sc=$("#sg-scrub");if(!sc||!songCtx)return;const {st,limit,total}=songCtx;
   const t=songAudio&&!songAudio.paused?Math.min(songAudio.currentTime,limit):st.pos||0;
-  sc.style.setProperty("--open",limit/total*100+"%");sc.style.setProperty("--pos",t/total*100+"%");
+  sc.style.setProperty("--open",limit/total*100+"%");sc.style.setProperty("--pos",t/total*100+"%");const rc=$("#sg-rec");if(rc){rc.style.setProperty("--open",limit/total*100+"%");rc.style.setProperty("--pos",t/total*100+"%")}
   $("#sg-pos").textContent=t.toFixed(1)+"s";sc.setAttribute("aria-valuemax",limit.toFixed(1));sc.setAttribute("aria-valuenow",t.toFixed(1));sc.setAttribute("aria-valuetext",t.toFixed(1)+" of "+(+limit.toFixed(1))+" seconds")}
 function songPlay(){if(!songAudio||!songCtx)return;songStop();const ctx=songCtx,st=ctx.st;
   if((st.pos||0)>=ctx.limit-0.02)st.pos=0;try{songAudio.currentTime=st.pos||0}catch(e){}
@@ -1188,33 +1264,46 @@ function renderSong(){
   const st=state(),t=st.target,artistMode=mode==="Artist";
   const genres=["All",...[...new Set(songSource().map(x=>x.v[2]).filter(g=>g&&g!=="—"))].sort((a,b)=>(a==="Other")-(b==="Other")||a.localeCompare(b))];
   if(!genres.includes(SONG.genre)){SONG.genre="All";try{localStorage.setItem("songcfg",JSON.stringify(SONG))}catch(e){}}   // e.g. a genre name from before the categories
-  let h=banner();
-  h+=`<div class="sg-filters">
+  const s0=store[cur.id]||{w:0,streak:0,best:0};
+  let h=`<div class="sg-head"><div class="logo sg-logo">Song<span>dle</span></div><span class="sg-mini">Streak ${s0.streak} · Best ${s0.best||0} · Wins ${s0.w}</span></div>`;
+  const filt=`<div class="sg-filters">
     <label>Genre <select id="sg-genre">${genres.map(g=>`<option${SONG.genre===g?" selected":""}>${esc(g)}</option>`).join("")}</select></label>
     <label>Era <select id="sg-era">${ERAS.map(e=>`<option${SONG.era===e[0]?" selected":""}>${e[0]}</option>`).join("")}</select></label></div>`;
-  if(!t){h+=`<div class="clue"><span class="k">No songs here yet</span>No songs match these filters. Try another genre or era, or switch more libraries on in Settings.</div>`;$("#stage").innerHTML=h;wireSongFilters();return}
+  if(!t){h+=filt+`<div class="clue"><span class="k">No songs here yet</span>No songs match these filters. Try another genre or era, or switch more libraries on in Settings.</div>`;$("#stage").innerHTML=h;wireSongFilters();return}
   const step=Math.min(st.guesses.length,CLIPS.length-1),len=st.done?0:CLIPS[step];
   // Scrubber: during a round the bar spans the longest clip and only the unlocked part can be played or dragged;
   // once the round is over it spans the whole preview
   const total=st.done?30:CLIPS[CLIPS.length-1],limit=st.done?30:len;
   if(st.seen!==limit){st.seen=limit;if(!st.keepPos)st.pos=0}st.keepPos=false;
   songCtx={st,limit,total};
-  h+=`<div class="sg-player"><div class="sg-controls">${st.done?`<span class="sg-side"></span>`:`<button class="btn sg-side" id="skip">Skip<small>+${CLIPS[Math.min(step+1,CLIPS.length-1)]}s</small></button>`}<button class="sg-play" id="sg-play" aria-label="Play"><svg class="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><svg class="i-pause" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></button>${st.done?`<button class="btn sg-side" id="shuffle">Next song</button>`:`<span class="sg-side"></span>`}</div>
-    <label class="sg-vol" for="sg-vol"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z"/></svg><span class="sr">Volume</span><input type="range" id="sg-vol" min="0" max="100" step="1" value="${Math.round(songVol*100)}" aria-label="Volume"><output id="sg-vol-out">${Math.round(songVol*100)}%</output></label>
+  // Record player (left column): the ring shows the unlocked part of the clip, the label holds the play button
+  const gap=!st.done&&step<CLIPS.length-1?+(CLIPS[step+1]-CLIPS[step]).toFixed(1):0,nLeft=CLIPS.length-st.guesses.length;
+  const left=`<div class="sg-left">
+    <div class="sg-rec" id="sg-rec" style="--open:${limit/total*100}%;--pos:0%">
+      <div class="sg-ring"></div>
+      <div class="sg-disc"><i class="sg-grooves"></i><i class="sg-glint"></i><div class="sg-label"><b>SONGDLE</b><em>side A · 33⅓</em></div></div>
+      <div class="sg-sheen"></div>
+      <button class="sg-play" id="sg-play" aria-label="Play"><svg class="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><svg class="i-pause" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></button>
+    </div>
+    <div class="sg-clips" role="list" aria-label="Clip lengths">${CLIPS.map((c,i)=>`<span role="listitem" class="${st.done||i<step?"on":i===step?"cur":""}"${!st.done&&i===step?' aria-current="step"':""}>${c}s</span>`).join("")}</div>
     <div class="sg-scrub" id="sg-scrub" role="slider" tabindex="0" aria-label="Position in the clip" aria-valuemin="0" style="--open:${limit/total*100}%;--pos:0%">
       <div class="sg-track"><div class="sg-open"></div><div class="sg-fill"></div>${st.done?"":CLIPS.slice(0,-1).map(c=>`<i style="left:${c/total*100}%"></i>`).join("")}<div class="sg-knob"></div></div>
       <div class="sg-tip"><span id="sg-pos">0.0s</span></div><span class="sg-end">${st.done?"":limit+"s of "+total+"s"}</span></div>
+    <label class="sg-vol" for="sg-vol"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z"/></svg><span class="sr">Volume</span><input type="range" id="sg-vol" min="0" max="100" step="1" value="${Math.round(songVol*100)}" aria-label="Volume"><output id="sg-vol-out">${Math.round(songVol*100)}%</output></label>
     <p class="meta" id="sg-status">${st.done?"Full preview":"Clip: "+len+"s"} · loading…</p></div>`;
-  if(st.done)h+=`<div class="win ${st.won?"":"lose"}"><img id="sg-art" class="av big" alt="" hidden><div><h3>${esc(t.name)}</h3><span class="meta">${esc(t.v[0])} · ${esc(t.v[1][1])}${t.v[2]!=="—"?" · "+esc(t.v[2]):""} · ${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span>${t.who?`<span class="sg-own${t.who.length>1?" both":""}">${t.who.length>1?"In both your libraries":"Only in "+esc(t.who[0])+"'s library"}</span>`:""}${st.won?(c=>`<span class="sg-got">Got it in ${c} second${c===1?"":"s"}</span>`)(CLIPS[Math.min(st.guesses.length-1,CLIPS.length-1)]):""}${SONG.mine==="all"||SONG.mine&&PLAY[SONG.mine]&&!PLAY[SONG.mine].some(r=>songKey(r.t,r.a)===songKey(t.name,t.v[0]))?`<div class="sg-links"><span>${SONG.mine==="all"?"Add it to your library:":"Not in your library yet. Add it:"}</span><a class="btn" id="lk-am" target="_blank" rel="noopener" href="https://music.apple.com/search?term=${encodeURIComponent(t.name+" "+t.v[0])}">Apple Music</a>${spLinked()?`<button class="btn" id="sp-add" type="button">Add to Spotify</button>`:`<a class="btn" target="_blank" rel="noopener" href="https://open.spotify.com/search/${encodeURIComponent(t.name+" "+t.v[0])}">Spotify</a>`}</div>`:""}</div></div>`;
-  else h+=`<div class="bar"><div class="search"><input id="guess" autocomplete="off" placeholder="${artistMode?"Type an artist…":"Type a song title…"}" aria-label="Guess"><ul class="sugg" id="sugg" hidden></ul></div>
-    <button class="btn primary" id="go">Guess</button><button class="btn" id="giveup">Give up</button></div>
-    <p class="meta" style="text-align:center">${CLIPS.length-st.guesses.length} guess${CLIPS.length-st.guesses.length===1?"":"es"} left</p>`;
-  const sfr=freshGuess(st);h+=`<div class="sg-rows">`+st.guesses.slice().reverse().map((g,gi)=>{const nw=gi===0&&sfr?" new":"";if(g.skip)return`<div class="sg-row${nw}"><span class="miss wide">Skipped</span></div>`;
+  // Right column: stats, filters, guess box and buttons, then the guesses
+  let r=`<div class="sg-stats"><div><b class="ac">${s0.streak}</b><span>Current streak</span></div><div><b>${s0.best||0}</b><span>Best streak</span></div><div><b>${s0.w}</b><span>Wins</span></div></div>`+filt;
+  if(st.done)r+=`<div class="win ${st.won?"":"lose"}"><img id="sg-art" class="av big" alt="" hidden><div><h3>${esc(t.name)}</h3><span class="meta">${esc(t.v[0])} · ${esc(t.v[1][1])}${t.v[2]!=="—"?" · "+esc(t.v[2]):""} · ${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span>${t.who?`<span class="sg-own${t.who.length>1?" both":""}">${t.who.length>1?"In both your libraries":"Only in "+esc(t.who[0])+"'s library"}</span>`:""}${st.won?(c=>`<span class="sg-got">Got it in ${c} second${c===1?"":"s"}</span>`)(CLIPS[Math.min(st.guesses.length-1,CLIPS.length-1)]):""}${SONG.mine==="all"||SONG.mine&&PLAY[SONG.mine]&&!PLAY[SONG.mine].some(r=>songKey(r.t,r.a)===songKey(t.name,t.v[0]))?`<div class="sg-links"><span>${SONG.mine==="all"?"Add it to your library:":"Not in your library yet. Add it:"}</span><a class="btn" id="lk-am" target="_blank" rel="noopener" href="https://music.apple.com/search?term=${encodeURIComponent(t.name+" "+t.v[0])}">Apple Music</a>${spLinked()?`<button class="btn" id="sp-add" type="button">Add to Spotify</button>`:`<a class="btn" target="_blank" rel="noopener" href="https://open.spotify.com/search/${encodeURIComponent(t.name+" "+t.v[0])}">Spotify</a>`}</div>`:""}</div></div>`+`<div class="sg-btns"><button class="sg-btn primary" id="shuffle">Next song</button></div>`;
+  else r+=`<label class="sg-guess" for="guess">Your guess · ${nLeft} left</label><div class="search sg-search"><input id="guess" autocomplete="off" placeholder="${artistMode?"Type an artist…":"Type a song title…"}"><ul class="sugg" id="sugg" hidden></ul></div>
+    <div class="sg-btns"><button class="sg-btn primary" id="skip">Skip${gap?" +"+gap+"s":""}</button><button class="sg-btn" id="giveup">Give up</button></div>`;
+  const sfr=freshGuess(st),heads=artistMode?["Artist","Year"]:["Song","Artist","Year"];
+  r+=`<div class="sg-rows${artistMode?" two":""}">`+(st.guesses.length?`<div class="sg-rowhead" aria-hidden="true">${heads.map(x=>`<span>${x}</span>`).join("")}</div>`:"")+st.guesses.slice().reverse().map((g,gi)=>{const nw=gi===0&&sfr?" new":"";if(g.skip)return`<div class="sg-row${nw}"><span class="skip wide">Skipped</span></div>`;
     const yr=g.v[1][0],ty=t.v[1][0],ya=!yr||!ty||yr===ty?"":ty>yr?"↑":"↓";
     const cells=artistMode?[["Artist",g.v[0],artistMatch(g,t)]]:[["Song",g.name,g.name===t.name&&g.v[0]===t.v[0]],["Artist",g.v[0],artistMatch(g,t)]];
     cells.push(["Year",(g.v[1][1]||"?")+(ya?" "+ya:""),yr&&yr===ty]);
     return`<div class="sg-row${nw}">${cells.map(([l,v,ok])=>`<span class="${typeof ok==="string"?ok:ok?"hit":"miss"}"><small>${l}</small>${esc(v)}</span>`).join("")}</div>`}).join("")+`</div>`;
-  if(lastAns[cur.id+mode])h+=`<p class="prev">Previous song was <b>${esc(lastAns[cur.id+mode])}</b></p>`;
+  if(lastAns[cur.id+mode])r+=`<p class="prev">Previous song was <b>${esc(lastAns[cur.id+mode])}</b></p>`;
+  h+=`<div class="sg-layout">${left}<div class="sg-right">${r}</div></div>`;
   $("#stage").innerHTML=h;wireSongFilters();
   {const b=$("#sp-add");if(b)spWire(b,t)}
   // audio
