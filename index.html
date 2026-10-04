@@ -988,6 +988,7 @@ function settingsBody(id){
   if(id==="song"){const on=SONG.on,n=["layla","yahya","charts"].filter(k=>on[k]).length,L=[["layla","Layla's library",""],["yahya","Yahya's library",""],["charts","Charts","Each year's top 10 since 1970, plus extra hits"]];
     return`<h3>Songdle</h3><p class="ssub">Songs come from every list that's switched on. At least one has to stay on.</p>
     <div class="sgrp"><h4>Libraries</h4>${L.map(([k,l,sub])=>tg("song:"+k,l,!!on[k],sub,on[k]&&n===1)).join("")}</div>
+    <div class="sgrp"><h4>Skip</h4>${tg("song-flow:x","Skip carries on",SONG.flow!==false,"The music keeps going from where it got to into the longer clip, instead of starting again")}</div>
     <div class="sgrp"><h4>Import</h4>${songImport()}</div>`}
   return""}
 // After a setting changes: rounds nobody has guessed in yet are re-dealt (an unstarted daily re-picks from what's switched on)
@@ -1009,6 +1010,7 @@ function renderSettings(){const el=$("#settings");if(!el)return;const c=(GAMES.f
     if(g==="hp-src"){HPSET.src=k;try{localStorage.setItem("hpset",JSON.stringify(HPSET))}catch(e){}resetRounds("hp")}
     if(g==="sw"){if(SWOFF[k])delete SWOFF[k];else SWOFF[k]=true;try{localStorage.setItem("swshows",JSON.stringify(SWOFF))}catch(e){}
       resetRounds("sw")}
+    if(g==="song-flow"){SONG.flow=SONG.flow===false;try{localStorage.setItem("songcfg",JSON.stringify(SONG))}catch(e){}}
     if(g==="song"){if(SONG.on[k])delete SONG.on[k];else SONG.on[k]=true;SONG.genre="All";try{localStorage.setItem("songcfg",JSON.stringify(SONG))}catch(e){}
       songStop();for(const m of GAMES.find(x=>x.id==="song").modes)delete S["song:"+m]}
     renderSettings();render()});
@@ -1156,8 +1158,14 @@ async function findPreview(song){
   const year=yrs.length?Math.min(...yrs):0;
   return prevCache[key]=best?{url:best.previewUrl,art:(best.artworkUrl100||"").replace("100x100","300x300"),link:best.trackViewUrl,year}:(year?{year,none:1}:null);
 }
+// Skip with "Skip carries on": the re-render leaves the music playing and the new clip picks it up
+let songCarry=false;
+function songKeep(){const ctx=songCtx;const btn=$("#sg-play");if(btn){btn.classList.add("playing");btn.setAttribute("aria-label","Pause")}
+  const end=()=>{if(songCtx!==ctx)return;cancelAnimationFrame(songRaf);if(songTimer){clearTimeout(songTimer);songTimer=null}songAudio.pause();ctx.st.pos=ctx.limit;songStop()};
+  const tick=()=>{if(!songAudio||songAudio.paused||songCtx!==ctx)return;if(songAudio.currentTime>=ctx.limit)return end();songDraw();songRaf=requestAnimationFrame(tick)};
+  songAudio.onended=end;songTimer=setTimeout(end,Math.max(0,(ctx.limit-songAudio.currentTime)*1000));songRaf=requestAnimationFrame(tick)}
 function renderSong(){
-  songStop();
+  if(songCarry){if(songTimer){clearTimeout(songTimer);songTimer=null}cancelAnimationFrame(songRaf)}else songStop();
   const st=state(),t=st.target,artistMode=mode==="Artist";
   const genres=["All",...new Set(songSource().map(x=>x.v[2]).filter(g=>g&&g!=="—"))];
   let h=banner();
@@ -1169,7 +1177,7 @@ function renderSong(){
   // Scrubber: during a round the bar spans the longest clip and only the unlocked part can be played or dragged;
   // once the round is over it spans the whole preview
   const total=st.done?30:CLIPS[CLIPS.length-1],limit=st.done?30:len;
-  if(st.seen!==limit){st.seen=limit;st.pos=0}
+  if(st.seen!==limit){st.seen=limit;if(!st.keepPos)st.pos=0}st.keepPos=false;
   songCtx={st,limit,total};
   h+=`<div class="sg-player"><div class="sg-controls">${st.done?`<span class="sg-side"></span>`:`<button class="btn sg-side" id="skip">Skip<small>+${CLIPS[Math.min(step+1,CLIPS.length-1)]}s</small></button>`}<button class="sg-play" id="sg-play" aria-label="Play"><svg class="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><svg class="i-pause" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></button>${st.done?`<button class="btn sg-side" id="shuffle">Next song</button>`:`<span class="sg-side"></span>`}</div>
     <label class="sg-vol" for="sg-vol"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z"/></svg><span class="sr">Volume</span><input type="range" id="sg-vol" min="0" max="100" step="1" value="${Math.round(songVol*100)}" aria-label="Volume"><output id="sg-vol-out">${Math.round(songVol*100)}%</output></label>
@@ -1195,7 +1203,7 @@ function renderSong(){
     if(!p){const k=cur.id+":"+mode;if(!st.done&&!st.guesses.length&&S[k]===st&&(st.auto||0)<5){const n=songRound();n.auto=(st.auto||0)+1;S[k]=n;render();return}
       status.textContent=st.done?"No preview found for this song.":"No preview found for this song. Press Give up to get another one.";return}
     songAudio=prevAudio&&prevAudio.src===p.url?prevAudio:preAudio[p.url]||new Audio(p.url);delete preAudio[p.url];songAudio.preload="auto";
-    if(!st.done)(songAudio.readyState>=3?setTimeout(songPrefetch,300):songAudio.addEventListener("canplaythrough",songPrefetch,{once:true}));songAudio.volume=songVol;status.textContent=(st.done?"Full preview":"Clip: "+len+"s")+" · press play";songAudio.onloadedmetadata=()=>{if(st.done&&songCtx&&songCtx.st===st&&isFinite(songAudio.duration)){songCtx.limit=songCtx.total=songAudio.duration;songDraw()}};if(songAudio.readyState>=1)songAudio.onloadedmetadata();
+    if(!st.done)(songAudio.readyState>=3?setTimeout(songPrefetch,300):songAudio.addEventListener("canplaythrough",songPrefetch,{once:true}));songAudio.volume=songVol;const going=songCarry&&!st.done&&!songAudio.paused;songCarry=false;if(going){status.textContent="Clip: "+len+"s · playing";songKeep()}else status.textContent=(st.done?"Full preview":"Clip: "+len+"s")+" · press play";songAudio.onloadedmetadata=()=>{if(st.done&&songCtx&&songCtx.st===st&&isFinite(songAudio.duration)){songCtx.limit=songCtx.total=songAudio.duration;songDraw()}};if(songAudio.readyState>=1)songAudio.onloadedmetadata();
     if(st.done&&st.won&&!st.autoplayed){st.autoplayed=true;status.textContent="Full preview · playing";st.pos=0;songPlay()}
     if(st.done){const a=$("#sg-art");if(a&&p.art){a.src=p.art;a.hidden=false}}
   }).catch(()=>{if(status)status.textContent="Couldn't reach the preview service. Song audio works on the GitHub Pages site."});
@@ -1223,7 +1231,11 @@ function renderSong(){
     else{g=pool.find(x=>x.name+" — "+x.v[0]===label);if(g.name===t.name&&g.v[0]===t.v[0]){st.done=true;st.won=true;bump(true)}}
     st.guesses.push(g);after();if(!artistMode&&g&&!g.skip&&!g.i)findPreview(g).then(info=>{if(applyYear(g,info)&&cur.id==="song")render()}).catch(()=>{});
   },used);
-  $("#skip").onclick=()=>{st.guesses.push({skip:1});after()};
+  $("#skip").onclick=()=>{if(SONG.flow===false){st.guesses.push({skip:1});after();return}
+    const playing=!!(songAudio&&!songAudio.paused);st.pos=playing?songAudio.currentTime:(st.pos||0);st.keepPos=true;
+    songCarry=playing&&st.guesses.length+1<CLIPS.length;st.guesses.push({skip:1});
+    if(!songCarry){after();return}
+    if(songTimer){clearTimeout(songTimer);songTimer=null}cancelAnimationFrame(songRaf);render();focusGuess()};
 }
 function wireSongFilters(){
   const ch=()=>{try{localStorage.setItem("songcfg",JSON.stringify(SONG))}catch(e){}songStop();for(const m of cur.modes)delete S[cur.id+":"+m];render()};
