@@ -865,7 +865,9 @@ function makeDaily(day){
   // Walk a fixed shuffled order one step per day, so answers don't repeat until the whole list has come up
   const pool=[...dailyPool()].sort((a,b)=>dailyKey(a)<dailyKey(b)?-1:dailyKey(a)>dailyKey(b)?1:0);
   const order=shuffledIdx(pool.length,hash(cur.id+"|"+mode)),n=pool.length;
-  return{date:day,target:pool[order[((dayNum(day)%n)+n)%n]],guesses:[],done:false,won:false,rev:{}}}
+  // Starwarsdle shows switched off: same daily as everyone unless it's one of the left-out characters, then the next one in the order
+  let at=((dayNum(day)%n)+n)%n;for(let k=0;k<n&&cur.id==="sw"&&mode==="Classic"&&swOut(pool[order[at]]);k++)at=(at+1)%n;
+  return{date:day,target:pool[order[at]],guesses:[],done:false,won:false,rev:{}}}
 function restoreDaily(o){
   let target,guesses=o.g||[];
   if(mode!=="Classic")target=o.t;
@@ -895,17 +897,19 @@ function wireDaily(){
   const n=$("#dnext");if(n)n.onclick=()=>{DS[cur.id+":"+mode]=null;render()};
   const u=$("#dunl");if(u)u.onclick=()=>{daily=false;store.daily=false;save();render()}}
 setInterval(()=>{const c=$("#dcount");if(!c)return;const ms=untilMidnight();c.textContent=hms(ms);if(ms<1000)setTimeout(render,1200)},1000);
-// Starwarsdle show switches: leave out characters who only appear in the shows switched off (Unlimited mode only)
+// Starwarsdle show switches: leave out characters who only appear in the shows switched off
 const SWSHOWS=["Ahsoka","The Bad Batch"];
 let SWOFF={};try{SWOFF=JSON.parse(localStorage.getItem("swshows")||"{}")}catch(e){}
 const swApps=x=>(x.m||"").split(/\s*,\s*/).filter(Boolean);
 const swOut=x=>{const m=swApps(x);return m.length>0&&m.every(s=>SWOFF[s])};
-const playItems=()=>cur.id==="sw"&&!isDaily()?cur.items.filter(x=>!swOut(x)):cur.items;
-function swFilter(){if(cur.id!=="sw"||isDaily())return"";const out=cur.items.filter(swOut);
-  return`<div class="swf"><b>Shows:</b>${SWSHOWS.map(sh=>`<button class="chip${SWOFF[sh]?"":" on"}" data-show="${esc(sh)}" aria-pressed="${!SWOFF[sh]}"><span class="sw"></span>${esc(sh)}</button>`).join("")}<span class="count">${cur.items.length-out.length} of ${cur.items.length} characters in play${out.length?` · left out: ${out.map(x=>esc(x.name)).join(", ")}`:""}</span></div>`}
+const playItems=()=>cur.id==="sw"?cur.items.filter(x=>!swOut(x)):cur.items;
+function swFilter(){if(cur.id!=="sw")return"";const out=cur.items.filter(swOut);
+  return`<div class="swf"><b>Shows:</b>${SWSHOWS.map(sh=>`<button class="chip${SWOFF[sh]?"":" on"}" data-show="${esc(sh)}" aria-pressed="${!SWOFF[sh]}"><span class="sw"></span>${esc(sh)}</button>`).join("")}<span class="count">${cur.items.length-out.length} of ${cur.items.length} characters in play</span></div>`}
 function wireSwFilter(){document.querySelectorAll(".swf .chip").forEach(b=>b.onclick=()=>{const sh=b.dataset.show;if(SWOFF[sh])delete SWOFF[sh];else SWOFF[sh]=true;
   try{localStorage.setItem("swshows",JSON.stringify(SWOFF))}catch(e){}
-  const k=cur.id+":Classic",st=S[k];if(st&&st.target&&swOut(st.target)&&!st.guesses.length)S[k]=newRound();render()})}
+  const k=cur.id+":Classic",st=S[k];if(st&&st.target&&swOut(st.target)&&!st.guesses.length)S[k]=newRound();
+  const d=DS[k];if(d&&!d.done&&!d.guesses.length){delete DS[k];delete DLY[k]}   // today's daily not started yet: re-pick it from the shows switched on
+  render()})}
 function newRound(){
   if(cur.id==="song")return songRound();
   if(mode==="Classic")return{target:pick(cur.photos?cur.items.filter(x=>x.reg||x.img):playItems(),cur.id+mode),guesses:[],done:false};
@@ -1214,7 +1218,7 @@ function renderClassic(){
   h+=`<div class="legend"><span><i style="background:var(--hit)"></i>Correct</span><span><i style="background:var(--near)"></i>Partial</span><span><i style="background:var(--miss)"></i>Wrong</span><span>↑ ↓ higher / later, lower / earlier</span><button class="cbtoggle" id="cb" aria-pressed="${!!store.cb}">Colour-blind colours</button></div>`;
   $("#stage").innerHTML=h;
   $("#cb").onclick=()=>{store.cb=!store.cb;save();if(store.cb)document.documentElement.dataset.cb="";else delete document.documentElement.dataset.cb;$("#cb").setAttribute("aria-pressed",store.cb)};
-  document.querySelectorAll(".hintbtn[data-hint]").forEach(b=>b.onclick=()=>{const l=b.dataset.hint;st.rev[l]=!st.rev[l];render();focusGuess()});wireSwFilter();wire(st,playItems().map(x=>x.name),name=>{
+  document.querySelectorAll(".hintbtn[data-hint]").forEach(b=>b.onclick=()=>{const l=b.dataset.hint;st.rev[l]=!st.rev[l];render();focusGuess()});wireSwFilter();wire(st,[...new Set([...playItems().map(x=>x.name),t.name])],name=>{
     const g=cur.items.find(x=>x.name===name);st.guesses.push(g);if(g===t){st.done=true;st.won=true;bump(true)}render();focusGuess();
   },st.guesses.map(g=>g.name));
 }
