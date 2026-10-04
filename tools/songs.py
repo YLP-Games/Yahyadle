@@ -74,6 +74,7 @@ def read_csv(path):
                     return i
         return -1
     ti, ai, yi, gi = col("track name", "title", "song", "name"), col("artist name", "artist"), col("release date", "year", "date"), col("genre")
+    li, di = col("album name", "album"), col("duration (ms)", "duration")
     if ti < 0 or ai < 0:
         print(f"  skipped {os.path.relpath(path, ROOT)}: no title/artist columns", flush=True)
         return []
@@ -81,13 +82,25 @@ def read_csv(path):
     for r in rows[1:]:
         get = lambda i: r[i].strip() if 0 <= i < len(r) else ""
         t, a = get(ti), join_artists(get(ai))
-        if not t or not a:
+        if not t or not a or t.lower() == "undefined" or a.lower() == "undefined":   # Exportify ends some exports with a blank "undefined" row
             continue
         y = re.match(r"\d{4}", get(yi))
         cats = [genre_category(g) for g in re.split(r"[;,]", get(gi)) if g.strip()]   # first tag that fits a real category
         g = next((c for c in cats if c != "Other"), cats[0] if cats else "")
-        out.append({"t": t, "a": a, "y": int(y.group()) if y else 0, "g": g})
+        d = re.match(r"\d+", get(di))
+        ms = int(d.group()) if d else 0
+        # _al/_d (album, length in seconds) help pick the exact recording on iTunes; they aren't saved in playlists.json
+        out.append({"t": t, "a": a, "y": int(y.group()) if y else 0, "g": g, "_al": get(li), "_d": round(ms / 1000) if ms > 1000 else ms})
     return out
+
+def csv_hints():
+    """{song key: (album, seconds)} from every playlist CSV, imported or not, for picking the right recording."""
+    hints = {}
+    for path in sorted(glob.glob(os.path.join(ROOT, "playlists", "*", "*.csv")) + glob.glob(os.path.join(ROOT, "playlists", "*", "imported", "*.csv"))):
+        for s in read_csv(path):
+            if s["_al"] or s["_d"]:
+                hints.setdefault(key(s), (s["_al"], s["_d"]))
+    return hints
 
 # ---- Tidy a list: categories, duplicates merged, sorted ----
 def key(s):
@@ -155,7 +168,7 @@ def save(data, charts):
             open(INDEX, "w", encoding="utf-8").write(new)
 
 # ---- iTunes ----
-def lookup_ids(lists, retry):
+def lookup_ids(lists, retry, hints=None):
     todo = {}
     for songs in lists:
         for s in songs:
@@ -171,7 +184,7 @@ def lookup_ids(lists, retry):
     found = 0
     for n, (artist, songs) in enumerate(by_artist.items(), 1):
         try:
-            res = T.resolve_artist(songs[0][1]["a"], songs, {})
+            res = T.resolve_artist(songs[0][1]["a"], songs, hints or {})
         except Exception as e:
             print("  error:", songs[0][1]["a"], e, flush=True)
             continue
@@ -249,7 +262,7 @@ def main():
     # 4-5. iTunes IDs and missing genres (saved as it goes, so a long run never loses work)
     if not args.no_lookup:
         _progress.append(lambda: save(data, charts))
-        lookup_ids(list(data.values()) + [charts], args.retry_missing)
+        lookup_ids(list(data.values()) + [charts], args.retry_missing, csv_hints())
         fill_genres(list(data.values()) + [charts])
         tidy_all()
         save(data, charts)

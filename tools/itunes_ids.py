@@ -24,6 +24,9 @@ PLAYLISTS = ROOT + "/playlists.json"
 # Same matching rules as songKey / mainArtist in index.html
 VARIANT = re.compile(r"\b(remix|edit|mix|version|slowed|sped|nightcore|live|acoustic|instrumental|cover|karaoke|rework|bootleg|vip|flip|mashup)\b", re.I)
 SPLIT = r"\s*(?:&|,|;|\bx\b|\bfeat\.?|\bft\.?|\bwith\b|\band\b)\s*"
+# Versions that are a different recording (an acoustic or remix never gets the original's clip, and vice versa).
+# "edit" and "version" aren't here: a radio edit or "Single Version" is still the song people know.
+DISTINCT = re.compile(r"\b(remix|mix|slowed|sped|nightcore|live|acoustic|instrumental|cover|karaoke|rework|bootleg|vip|flip|mashup|demo|draft|piano|restrung|unplugged)\b", re.I)
 
 def norm(x):
     x = unicodedata.normalize("NFKD", str(x or ""))
@@ -93,17 +96,25 @@ def itunes(params, endpoint="search"):
             time.sleep(3 * (attempt + 1))
     raise RuntimeError("iTunes kept refusing: " + url)
 
-def candidates(results, t, a, loose=False):
+def candidates(results, t, a, loose=False, hint=None):
     """Results that are this song: same title (ignoring feat./remaster tags) by an artist credited on it.
-    With loose=True, titles only have to match once brackets and " - …" tails are dropped."""
+    With loose=True, titles only have to match once brackets and " - …" tails are dropped; then the length
+    has to match the playlist copy too (when known), so an extended mix or live take isn't mistaken for it.
+    A remix/acoustic/live title only matches a track that is also one, and the other way round."""
     key = loose_title if loose else title_key
     tk, ma = key(t), main_artist(a)
     own_variant = bool(VARIANT.search(t))
+    own_distinct = bool(DISTINCT.search(t))
+    secs = hint[1] if hint else 0
     out = []
     for r in results:
         if r.get("kind") != "song" or not tk or key(r.get("trackName", "")) != tk:
             continue
         if ma and ma not in artists(r.get("artistName", "")):
+            continue
+        if own_distinct != bool(DISTINCT.search(r.get("trackName", ""))):
+            continue
+        if loose and secs and r.get("trackTimeMillis") and abs(r["trackTimeMillis"] / 1000 - secs) > 15:
             continue
         r["_variant"] = bool(VARIANT.search(r.get("trackName", ""))) and not own_variant
         out.append(r)
@@ -112,10 +123,14 @@ def candidates(results, t, a, loose=False):
 def strip_release(x):
     return norm(re.sub(r"\s+-\s+(single|ep)$", "", x or "", flags=re.I))
 
-def best(cands, t, hint):
-    """The version to play: same album/length as the playlist copy if known, not a remix, not a compilation."""
+def best(cands, t, hint, a=""):
+    """The version to play: same album/length as the playlist copy if known, crediting everyone on it
+    (the version with the guest, not the solo original), not a remix, not a compilation."""
+    want = set(artists(a))
     def score(r):
         s = 0
+        if want and not want <= credited(r):
+            s += 5
         if hint:
             if strip_release(r.get("collectionName")) == strip_release(hint[0]):
                 s -= 4
@@ -131,18 +146,26 @@ def best(cands, t, hint):
     ok = [r for r in cands if r.get("previewUrl")]
     return min(ok, key=score) if ok else None
 
-def earliest(cands):
-    years = [int(r["releaseDate"][:4]) for r in cands if r.get("releaseDate") and not r["_variant"]]
+def credited(r):
+    """Everyone credited on an iTunes track: the artist field plus "(feat. …)" / "(with …)" names in the title."""
+    ft = re.findall(r"[(\[]\s*(?:feat|ft|with)\.?\s+([^)\]]+)[)\]]", r.get("trackName", ""), re.I)
+    return set(artists(r.get("artistName", ""))) | {x for f in ft for x in artists(f)}
+
+def earliest(cands, a=""):
+    """Earliest release year of this recording. Only tracks crediting everyone on the playlist copy count, so a
+    2020 remix with a guest doesn't take the year of the 2018 solo original (or a re-recording the original's)."""
+    want = set(artists(a))
+    years = [int(r["releaseDate"][:4]) for r in cands if r.get("releaseDate") and not r["_variant"] and want <= credited(r)]
     return min(years) if years else 0
 
 def search_song(t, a, hint):
     """Last resort: plain song search with the full credit, US then UK."""
     for country in ("US", "GB"):
         found = itunes({"term": f"{main_artist_raw(a)} {loose_title(t) or search_title(t)}", "media": "music", "entity": "song", "limit": 50, "country": country})
-        res = candidates(found, t, a) or candidates(found, t, a, loose=True)
-        pick = best(res, t, hint)
+        res = candidates(found, t, a, hint=hint) or candidates(found, t, a, loose=True, hint=hint)
+        pick = best(res, t, hint, a)
         if pick:
-            return pick["trackId"], country, earliest(res)
+            return pick["trackId"], country, earliest(res, a)
     return 0, None, 0
 
 def artist_catalogues(name, country):
@@ -161,10 +184,11 @@ def resolve_artist(name, songs, hints):
     for country in ("US", "GB"):            # UK store only for what the US one doesn't have
         for catalogue in artist_catalogues(name, country):
             for key, s in list(left.items()):
-                cands = candidates(catalogue, s["t"], s["a"]) or candidates(catalogue, s["t"], s["a"], loose=True)
-                pick = best(cands, s["t"], hints.get(key))
+                h = hints.get(key)
+                cands = candidates(catalogue, s["t"], s["a"], hint=h) or candidates(catalogue, s["t"], s["a"], loose=True, hint=h)
+                pick = best(cands, s["t"], h, s["a"])
                 if pick:
-                    out[key] = (pick["trackId"], country, earliest(cands))
+                    out[key] = (pick["trackId"], country, earliest(cands, s["a"]))
                     del left[key]
             if not left:
                 return out
@@ -172,9 +196,10 @@ def resolve_artist(name, songs, hints):
         alias = re.search(r"\(([^)]+)\)\s*$", s["a"])  # "Olly Alexander (Years & Years)": Apple files these under the alias
         if alias:
             for catalogue in artist_catalogues(alias.group(1), "US"):
-                pick = best(candidates(catalogue, s["t"], alias.group(1)), s["t"], hints.get(key))
+                cands = candidates(catalogue, s["t"], alias.group(1), hint=hints.get(key))
+                pick = best(cands, s["t"], hints.get(key), alias.group(1))
                 if pick:
-                    out[key] = (pick["trackId"], "US", earliest(candidates(catalogue, s["t"], alias.group(1))))
+                    out[key] = (pick["trackId"], "US", earliest(cands, alias.group(1)))
                     del left[key]
                     break
     for key, s in left.items():             # e.g. songs filed under a featured artist

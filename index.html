@@ -1141,7 +1141,7 @@ try{const l=JSON.parse(localStorage.getItem("songpl")||"{}");if(l.layla)PLAY.lay
 const CLIPS=[0.1,0.5,2,8,15];
 const ERAS=[["All",0,9999],["Classic",0,1999],["2000s",2000,2009],["2010s",2010,2019],["2020s",2020,9999]];
 // Earliest release years found on iTunes, so compilations/remasters in playlist exports don't show the wrong year
-let YEARFIX={};try{localStorage.removeItem("songyears");YEARFIX=JSON.parse(localStorage.getItem("songyears2")||"{}")}catch(e){}
+let YEARFIX={};try{localStorage.removeItem("songyears");localStorage.removeItem("songyears2");YEARFIX=JSON.parse(localStorage.getItem("songyears3")||"{}")}catch(e){}   // songyears2 held corrections from before the library was rebuilt
 // Shared genre categories, so Apple genres, Spotify tags and chart genres all land in one short list
 // (same rules as tools/songs.py; first match wins, so specific ones come before broad ones)
 const GENRE_CATS=[["K-Pop",/k-?pop|korean/i],["J-Pop",/j-?pop|j-?rock|japanese|city pop|vocaloid/i],["Anime",/anime/i],["Soundtrack",/soundtrack|score|video game|musical|show tunes/i],
@@ -1153,7 +1153,7 @@ const GENRE_CATS=[["K-Pop",/k-?pop|korean/i],["J-Pop",/j-?pop|j-?rock|japanese|c
 const GENRE_NAMES=new Set([...GENRE_CATS.map(c=>c[0]),"Other"]),genreMemo={};
 const genreCat=g=>{g=String(g||"").trim();if(!g||g==="—")return"";if(GENRE_NAMES.has(g))return g;return genreMemo[g]??=((GENRE_CATS.find(c=>c[1].test(g))||["Other"])[0])};
 const mkSong=(t,a,y,g,src,i,c)=>{const f=YEARFIX[t+"|"+a];y=+y||0;if(f&&(!y||f<y))y=f;return{name:t,v:[a,[y,y?String(y):"?"],genreCat(g)||"—"],src,i:i||0,c:c||""}};
-function applyYear(song,info){const y=info&&info.year;if(!y)return false;const cy=song.v[1][0];if(cy&&cy<=y)return false;song.v[1]=[y,String(y)];YEARFIX[song.name+"|"+song.v[0]]=y;try{localStorage.setItem("songyears2",JSON.stringify(YEARFIX))}catch(e){}return true}
+function applyYear(song,info){const y=info&&info.year;if(!y)return false;const cy=song.v[1][0];if(cy&&cy<=y)return false;song.v[1]=[y,String(y)];YEARFIX[song.name+"|"+song.v[0]]=y;try{localStorage.setItem("songyears3",JSON.stringify(YEARFIX))}catch(e){}return true}
 // Same song on both playlists? Match on title + main artist, ignoring feat. credits, remaster/edit tags, accents and punctuation
 // (so Apple Music's "Dave & Central Cee" matches a Spotify export's "Dave"). Remixes, live and sped-up versions stay separate.
 const mainArtist=a=>String(a).normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase().split(/\s*(?:&|,|;|\bx\b|\bfeat\.?|\bft\.?|\bwith\b|\band\b)\s*/)[0].replace(/^the\s+/,"").replace(/[^\p{L}\p{N}]+/gu," ").trim();
