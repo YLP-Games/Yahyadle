@@ -1291,11 +1291,13 @@ async function spToken(body){const r=await fetch("https://accounts.spotify.com/a
   SP={access:d.access_token,refresh:d.refresh_token||(SP&&SP.refresh),exp:Date.now()+(d.expires_in-60)*1000};spSave();return SP.access}
 async function spAccess(){if(!spLinked())throw new Error("Not connected");if(Date.now()<SP.exp)return SP.access;
   try{return await spToken({grant_type:"refresh_token",refresh_token:SP.refresh})}catch(e){spDisconnect();throw new Error("Please connect Spotify again in Settings")}}
-async function spApi(path,opt={}){const tok=await spAccess();const r=await fetch("https://api.spotify.com/v1"+path,{...opt,headers:{Authorization:"Bearer "+tok,"Content-Type":"application/json"}});
+async function spApi(path,opt={}){try{return await spApi1(path,opt)}catch(e){
+  if(e.status===400&&/limit/i.test(e.message)&&/[?&]limit=/.test(path))return spApi1(path.replace(/([?&])limit=\d+&?/,"$1").replace(/[?&]$/,""),opt);throw e}}
+async function spApi1(path,opt={}){const tok=await spAccess();const r=await fetch("https://api.spotify.com/v1"+path,{...opt,headers:{Authorization:"Bearer "+tok,"Content-Type":"application/json"}});
   if(!r.ok){let m="";try{const j=await r.json();m=j.error&&(j.error.message||j.error)||""}catch(e){}const err=new Error("Spotify "+r.status+(m?": "+m:""));err.status=r.status;throw err}return r.status===204||r.headers.get("content-length")==="0"?null:r.json().catch(()=>null)}
 // Find the real artist's original recording, like the iTunes matching
 async function spFind(t){const q=`track:${t.name.replace(/\s*[(\[].*?[)\]]/g,"")} artist:${mainArtist(t.v[0])}`;
-  const d=await spApi("/search?type=track&limit=20&q="+encodeURIComponent(q));const who=[...artistSet(t.v[0],t.name)].map(clean);
+  const d=await spApi("/search?type=track&limit=10&q="+encodeURIComponent(q));const who=[...artistSet(t.v[0],t.name)].map(clean);
   const L=((d&&d.tracks&&d.tracks.items)||[]).filter(x=>x.artists.some(a=>who.some(w=>clean(a.name).includes(w)||w.includes(clean(a.name))))&&!VARIANT.test(x.name.replace(t.name,""))&&!FAKE.test(x.name+" "+x.album.name));
   const tt=clean(t.name);return L.find(x=>clean(x.name)===tt)||L[0]||null}
 // Where "Add to Spotify" saves: Liked Songs (default) or one of your own playlists. Remembered per device.
