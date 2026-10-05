@@ -444,7 +444,7 @@ html[data-sgspin="always"] .sg-disc,html[data-sgspin="playing"] .sg-rec:has(.sg-
 .sg-track i{position:absolute;top:-2px;bottom:-2px;width:2px;margin-left:-1px;background:var(--bg)}
 .sg-knob{position:absolute;top:50%;left:var(--pos);width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--fg);box-shadow:0 1px 4px rgba(0,0,0,.5);transition:transform .12s}
 .sg-scrub:hover .sg-knob,.sg-scrub:active .sg-knob{transform:scale(1.2)}
-.sg-tip{position:absolute;top:22px;left:clamp(18px,var(--pos),calc(100% - 18px));transform:translateX(-50%);font:700 12px var(--mono);color:var(--accent);white-space:nowrap;pointer-events:none}
+.sg-tip{position:absolute;top:22px;left:0;font:700 12px var(--mono);color:var(--accent);white-space:nowrap;pointer-events:none}   /* fixed at the left so it never runs into the clip length on the right */
 .sg-end{position:absolute;right:0;top:22px;font:600 11px var(--mono);color:var(--muted);pointer-events:none}
 .sg-left .meta{margin:0;text-align:center}
 .sg-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
