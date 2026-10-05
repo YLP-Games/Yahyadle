@@ -9,11 +9,12 @@ data changes, and can be run by hand:  python3 tools/songs.py
 3. Merges duplicates within each list: same title and main artist, ignoring feat. credits and remaster/edit tags.
 4. Adds iTunes track IDs (and original release years) to songs that don't have one yet, including Charts.
 5. Fills in missing genres from Apple's genre for each song.
+Songs by (or featuring) the artists in BLOCKED_ARTISTS are dropped from every list, CSV imports included.
 
 Files: playlists.json ({"layla": [...], "yahya": [...]}) and the CHARTS list inside index.html.
 Options: --no-lookup (tidy only, no network), --retry-missing (look again for songs not found before).
 """
-import argparse, csv, glob, io, json, os, re, sys
+import argparse, csv, glob, io, json, os, re, sys, unicodedata
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import itunes_ids as T
 
@@ -126,9 +127,25 @@ def merge(a, b):
         else:
             a.pop("c", None)
 
+# Artists left out of Songdle altogether, including songs they're featured on (index.html filters the same names).
+# Credits are compared like artistSet() in index.html, so "P!nk" becomes "p nk"; Pink Floyd, Blackpink etc. are unaffected.
+BLOCKED_ARTISTS = {"ed sheeran", "pink", "p nk"}
+SPLIT_CREDITS = re.compile(r"\s*(?:&|,|;|\bx\b|\bfeat\.?|\bft\.?|\bwith\b|\band\b)\s*")
+
+def credits(s):
+    n = lambda x: unicodedata.normalize("NFKD", str(x or "")).encode("ascii", "ignore").decode().lower()
+    ft = re.search(r"[(\[]\s*(?:feat|ft|with)\.?\s+([^)\]]+)[)\]]", n(s["t"]))
+    names = SPLIT_CREDITS.split(n(s["a"]) + (", " + ft.group(1) if ft else ""))
+    return {re.sub(r"[^a-z0-9$]+", " ", re.sub(r"^the\s+", "", x)).strip() for x in names if x.strip()}
+
+def blocked(s):
+    return bool(credits(s) & BLOCKED_ARTISTS)
+
 def tidy(songs, sort_key):
     seen, out = {}, []
     for s in songs:
+        if blocked(s):
+            continue
         s["g"] = genre_category(s.get("g"))
         if not s["g"]:
             s.pop("g")
