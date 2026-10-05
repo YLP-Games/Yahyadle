@@ -1338,8 +1338,9 @@ function renderSong(){
     if(!p){const k=cur.id+":"+mode;if(!st.done&&!st.guesses.length&&S[k]===st&&(st.auto||0)<5){const n=songRound();n.auto=(st.auto||0)+1;S[k]=n;render();return}
       status.textContent=st.done?"No preview found for this song.":"No preview found for this song. Press Give up to get another one.";return}
     songAudio=prevAudio&&prevAudio.src===p.url?prevAudio:preAudio[p.url]||new Audio(p.url);delete preAudio[p.url];songAudio.preload="auto";
-    if(!st.done)(songAudio.readyState>=3?setTimeout(songPrefetch,300):songAudio.addEventListener("canplaythrough",songPrefetch,{once:true}));songAudio.volume=songVol;const going=songCarry&&!st.done&&!songAudio.paused;songCarry=false;if(going){status.textContent="Clip: "+len+"s · playing";songKeep()}else status.textContent=(st.done?"Full preview":"Clip: "+len+"s")+" · press play";songAudio.onloadedmetadata=()=>{if(st.done&&songCtx&&songCtx.st===st&&isFinite(songAudio.duration)){songCtx.limit=songCtx.total=songAudio.duration;songDraw()}};if(songAudio.readyState>=1)songAudio.onloadedmetadata();
-    if(st.done&&st.won&&!st.autoplayed){st.autoplayed=true;status.textContent="Full preview · playing";st.pos=0;songPlay()}
+    if(!st.done)(songAudio.readyState>=3?setTimeout(songPrefetch,300):songAudio.addEventListener("canplaythrough",songPrefetch,{once:true}));songAudio.volume=songVol;const going=songCarry&&!songAudio.paused;songCarry=false;if(going){status.textContent=(st.done?"Full preview":"Clip: "+len+"s")+" · playing";songKeep()}else status.textContent=(st.done?"Full preview":"Clip: "+len+"s")+" · press play";songAudio.onloadedmetadata=()=>{if(st.done&&songCtx&&songCtx.st===st&&isFinite(songAudio.duration)){songCtx.limit=songCtx.total=songAudio.duration;songDraw()}};if(songAudio.readyState>=1)songAudio.onloadedmetadata();
+    // A win plays on from where the clip got to (still playing, or where it was paused), into the full preview
+    if(st.done&&st.won&&!st.autoplayed){st.autoplayed=true;if(!going){status.textContent="Full preview · playing";songPlay()}}
     if(st.done){const a=$("#sg-art");if(a&&p.art){a.src=p.art;a.hidden=false}const lk=$("#lk-am");if(lk&&p.link)lk.href=p.link}
   }).catch(()=>{if(status)status.textContent="Couldn't reach the preview service. Song audio works on the GitHub Pages site."});
   const vol=$("#sg-vol");if(vol)vol.oninput=()=>{songVol=vol.value/100;if(songAudio)songAudio.volume=songVol;$("#sg-vol-out").textContent=vol.value+"%";try{localStorage.setItem("songvol",String(songVol))}catch(e){}};
@@ -1360,10 +1361,12 @@ function renderSong(){
   const pool=songSource();if(!pool.some(x=>x.name===t.name&&x.v[0]===t.v[0]))pool.push(t);
   const names=artistMode?[...new Set(pool.map(x=>x.v[0]))].sort():pool.map(x=>x.name+" — "+x.v[0]);
   const used=st.guesses.filter(g=>!g.skip).map(g=>artistMode?g.v[0]:g.name+" — "+g.v[0]);
-  const after=()=>{if(st.guesses.length>=CLIPS.length&&!st.done){st.done=true;st.won=false;bump(false)}songStop();render();focusGuess()};
+  const after=()=>{if(st.guesses.length>=CLIPS.length&&!st.done){st.done=true;st.won=false;bump(false)}if(songCarry){if(songTimer){clearTimeout(songTimer);songTimer=null}cancelAnimationFrame(songRaf)}else songStop();render();focusGuess()};
+  // Right answer: keep the music going from where it is (or resume from where it was paused) instead of starting over
+  const won=()=>{const playing=!!(songAudio&&!songAudio.paused);st.pos=playing?songAudio.currentTime:(st.pos||0);st.keepPos=true;songCarry=playing;st.done=true;st.won=true;bump(true)};
   wire(st,names,label=>{
-    let g;if(artistMode){const s0=pool.find(x=>x.v[0]===label);g={name:"",v:[label,s0?s0.v[1]:[0,"?"],""]};if(label===t.v[0]){st.done=true;st.won=true;bump(true)}}
-    else{g=pool.find(x=>x.name+" — "+x.v[0]===label);if(g.name===t.name&&g.v[0]===t.v[0]){st.done=true;st.won=true;bump(true)}}
+    let g;if(artistMode){const s0=pool.find(x=>x.v[0]===label);g={name:"",v:[label,s0?s0.v[1]:[0,"?"],""]};if(label===t.v[0])won()}
+    else{g=pool.find(x=>x.name+" — "+x.v[0]===label);if(g.name===t.name&&g.v[0]===t.v[0])won()}
     st.guesses.push(g);after();if(!artistMode&&g&&!g.skip&&!g.i)findPreview(g).then(info=>{if(applyYear(g,info)&&cur.id==="song")render()}).catch(()=>{});
   },used);
   $("#skip").onclick=()=>{if(SONG.flow===false){st.guesses.push({skip:1});after();return}
