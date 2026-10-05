@@ -275,6 +275,9 @@ table.list .av{width:52px;height:52px}
 .hintbox{justify-content:center;gap:8px}
 .hintbox .btn{text-align:center}
 .prev{text-align:center;color:var(--muted);font-size:13px;margin:10px 0 0}
+.twin{display:flex;flex-direction:column;gap:3px;max-width:70ch;margin:0 auto 12px;padding:10px 14px;border:2px solid var(--near);border-radius:12px;background:color-mix(in srgb,var(--near) 14%,var(--panel));text-align:center;font-size:15px}
+.twin span{color:var(--muted);font-size:13px}
+.twintag{display:block;margin-top:3px;font:700 10px/1.2 var(--body);letter-spacing:.04em;text-transform:uppercase;color:var(--near)}
 .prev b{color:var(--fg)}
 table.g td .tv{overflow-wrap:anywhere;width:100%}
 .tv.l{font-size:12px;line-height:1.2}.tv.xl{font-size:11px;line-height:1.2}
@@ -1541,7 +1544,11 @@ function renderClassic(){
   else h+=searchBar("Type a character…");
   if(st.done)h+=isDaily()?dailyDone(st):`<div class="bar"><button class="btn primary" id="shuffle">Shuffle new character</button></div>`;
   h+=`<div class="gridwrap"><table class="g"><thead><tr><th style="text-align:left">Character</th>${cur.attrs.map(a=>`<th>${a[0]}</th>`).join("")}</tr></thead><tbody>`;
-  const fr=freshGuess(st);h+=st.guesses.slice().reverse().map((g,gi)=>`<tr${gi===0&&fr?' class="new"':""}><td class="name${g.img?"":" noimg"}" title="${esc(g.name)}">${av(g.img)}<span class="nm">${esc(g.name)}</span></td>${cur.attrs.map((a,i)=>{const[c,arr]=cmp(a,g.v[i],t.v[i]);return`<td class="${c}" data-l="${a[0]}" style="animation-delay:${i*90}ms">${cur.id==="hp"&&a[0]==="House"?crest(g.v[i]):""}${tv(fmt(a,g.v[i]))}${arr?`<span class="arr">${arr}</span>`:""}</td>`}).join("")}</tr>`).join("");
+  // A guess can match every column without being the answer (two characters with identical details): say so plainly
+  const twin=g=>g!==t&&cur.attrs.every((a,i)=>cmp(a,g.v[i],t.v[i])[0]==="hit"),notIt=isDaily()?"today's character":"the answer";
+  const lastG=st.guesses[st.guesses.length-1];
+  if(!st.done&&lastG&&twin(lastG))h=h.replace('<div class="gridwrap">',`<div class="twin" role="status"><b>Every column matches, but ${esc(lastG.name)} isn't ${notIt}.</b><span>Another character has exactly the same details. Keep guessing!</span></div><div class="gridwrap">`);
+  const fr=freshGuess(st);h+=st.guesses.slice().reverse().map((g,gi)=>`<tr${gi===0&&fr?' class="new"':""}><td class="name${g.img?"":" noimg"}" title="${esc(g.name)}">${av(g.img)}<span class="nm">${esc(g.name)}${twin(g)?`<small class="twintag">All match, not ${notIt}</small>`:""}</span></td>${cur.attrs.map((a,i)=>{const[c,arr]=cmp(a,g.v[i],t.v[i]);return`<td class="${c}" data-l="${a[0]}" style="animation-delay:${i*90}ms">${cur.id==="hp"&&a[0]==="House"?crest(g.v[i]):""}${tv(fmt(a,g.v[i]))}${arr?`<span class="arr">${arr}</span>`:""}</td>`}).join("")}</tr>`).join("");
   h+=`</tbody></table></div>`;
   if(st.guesses.length)h+=`<p class="meta" style="text-align:center">Guesses this round: ${st.guesses.length}</p>`;
   if(lastAns[cur.id+mode]&&!isDaily())h+=`<p class="prev">Previous character was <b>${esc(lastAns[cur.id+mode])}</b></p>`;
