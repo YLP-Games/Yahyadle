@@ -1637,13 +1637,13 @@ function wire(st,names,onGuess,used){
     if(q){const hits=[];for(let x=0;x<names.length;x++){const n=names[x];if(used.includes(n))continue;const [l,head]=keys[x],i=l.indexOf(q);let r;
       if(i>=0)r=l===q||head===q?0:i===0?1:(i&&l[i-1]===" ")?2+i/1000:2.5+i/1000;else if(words.length>1&&words.every(w=>l.includes(w)))r=3;else if(l.replace(/ /g,"").includes(q.replace(/ /g,"")))r=4;else continue;
       hits.push([r,l.length,n])}
-      opts=hits.sort((a,b)=>a[0]-b[0]||a[1]-b[1]).slice(0,8).map(h=>h[2])}
+      opts=hits.sort((a,b)=>a[0]-b[0]||a[1]-b[1]).slice(0,60).map(h=>h[2])}   // the list scrolls, so an artist's whole catalogue fits (not just the first 8)
     sel=0;ul.hidden=!opts.length;ul.innerHTML=opts.map((n,i)=>`<li data-n="${esc(n)}" class="${i===sel?"on":""}">${av(imgOf(n))}${esc(n)}</li>`).join("")};
   inp.oninput=()=>{inp.removeAttribute("aria-invalid");draw()};
   inp.onblur=()=>{ul.hidden=true};inp.onfocus=()=>{if(inp.value.trim())draw()};
   const submit=()=>{const q=inp.value.trim().toLowerCase();if(!q)return;const ex=names.find(n=>n.toLowerCase()===q&&!used.includes(n));if(ex)return onGuess(ex);if(!opts.length)draw();if(opts.length)onGuess(opts[sel]||opts[0]);else inp.setAttribute("aria-invalid","true");};
   const go=$("#go");if(go)go.onclick=submit;
-  inp.onkeydown=e=>{if(e.key==="ArrowDown"&&opts.length){sel=(sel+1)%opts.length;e.preventDefault()}else if(e.key==="ArrowUp"&&opts.length){sel=(sel-1+opts.length)%opts.length;e.preventDefault()}else if(e.key==="Enter"){submit();return}else if(e.key==="Escape"){ul.hidden=true;return}else return;[...ul.children].forEach((li,i)=>li.className=i===sel?"on":"")};
+  inp.onkeydown=e=>{if(e.key==="ArrowDown"&&opts.length){sel=(sel+1)%opts.length;e.preventDefault()}else if(e.key==="ArrowUp"&&opts.length){sel=(sel-1+opts.length)%opts.length;e.preventDefault()}else if(e.key==="Enter"){submit();return}else if(e.key==="Escape"){ul.hidden=true;return}else return;[...ul.children].forEach((li,i)=>li.className=i===sel?"on":"");const on=ul.children[sel];if(on&&on.scrollIntoView)on.scrollIntoView({block:"nearest"})};
   ul.onmousedown=e=>{const li=e.target.closest("li");if(li){e.preventDefault();onGuess(li.dataset.n)}};
 }
 let sortCol=0,sortDir=1,filter="",listObs=null;
