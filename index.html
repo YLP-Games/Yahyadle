@@ -1341,10 +1341,7 @@ function renderSong(){
   if(!genres.includes(SONG.genre)){SONG.genre="All";try{localStorage.setItem("songcfg",JSON.stringify(SONG))}catch(e){}}   // e.g. a genre name from before the categories
   const s0=store[cur.id]||{w:0,streak:0,best:0};
   let h=`<div class="sg-head"><div class="logo sg-logo">Song<span>dle</span></div><span class="sg-mini">Streak ${s0.streak} · Best ${s0.best||0} · Wins ${s0.w}</span></div>`;
-  if(dly)h+=dailyBar(st);
-  else{   // Unlimited: yesterday's daily song too, unless yesterday's daily is still unfinished (it would spoil it)
-    const d=new Date();d.setDate(d.getDate()-1);const o=DLY["song:Song"];
-    if(playlistsReady&&!(o&&o.date===dayStr(d)&&!o.done))h+=yesterdayLine({date:dayStr()}).replace("Yesterday's song","Yesterday's daily song")}
+  if(dly)h+=dailyBar(st);   // yesterday's song is part of the daily bar, so it only shows in Daily
   const filt=dly?"":`<div class="sg-filters">
     <label>Genre <select id="sg-genre">${genres.map(g=>`<option${SONG.genre===g?" selected":""}>${esc(g)}</option>`).join("")}</select></label>
     <label>Era <select id="sg-era">${ERAS.map(e=>`<option${SONG.era===e[0]?" selected":""}>${e[0]}</option>`).join("")}</select></label></div>`;
