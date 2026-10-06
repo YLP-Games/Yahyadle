@@ -1342,6 +1342,9 @@ function renderSong(){
   const s0=store[cur.id]||{w:0,streak:0,best:0};
   let h=`<div class="sg-head"><div class="logo sg-logo">Song<span>dle</span></div><span class="sg-mini">Streak ${s0.streak} · Best ${s0.best||0} · Wins ${s0.w}</span></div>`;
   if(dly)h+=dailyBar(st);
+  else{   // Unlimited: yesterday's daily song too, unless yesterday's daily is still unfinished (it would spoil it)
+    const d=new Date();d.setDate(d.getDate()-1);const o=DLY["song:Song"];
+    if(playlistsReady&&!(o&&o.date===dayStr(d)&&!o.done))h+=yesterdayLine({date:dayStr()}).replace("Yesterday's song","Yesterday's daily song")}
   const filt=dly?"":`<div class="sg-filters">
     <label>Genre <select id="sg-genre">${genres.map(g=>`<option${SONG.genre===g?" selected":""}>${esc(g)}</option>`).join("")}</select></label>
     <label>Era <select id="sg-era">${ERAS.map(e=>`<option${SONG.era===e[0]?" selected":""}>${e[0]}</option>`).join("")}</select></label></div>`;
@@ -1528,6 +1531,7 @@ function banner(){const m=/dle$/i.test(cur.name)?[cur.name.slice(0,-3),"dle"]:[c
   return (L?`<div class="logo img" role="img" aria-label="${esc(cur.name)}"><img src="logos/${L[0]}" width="${L[1]}" height="${L[2]}" alt="" fetchpriority="high"><span>${L[3]}</span></div>`:`<div class="logo">${esc(n)}<span>${esc(m[1])}</span></div>`)+`<div class="chips"><span class="chip" title="Current win streak">${FLAME}Streak ${s.streak}</span><span class="chip ghost">Best ${s.best||0}</span><span class="chip ghost">Wins ${s.w}</span></div>`+(isDaily()?dailyBar(state()):"")}
 function render(){if(cur.id==="song")loadPlaylists();   // opening Songdle before the idle load fires starts it now
   if(cur.id==="plane"&&PLSET.hideList&&mode==="Character list")mode="Classic";if(isDaily())saveDaily();renderCarts();renderTabs();if(cur.id!=="song")songStop();mode==="Character list"?renderList():cur.id==="song"?renderSong():mode==="Classic"?(cur.id==="plane"?renderPlane():renderClassic()):renderClue();if(isDaily()){saveDaily();wireDaily()}
+  {const y=$("#yday");if(y)y.onclick=()=>{ydShown[y.dataset.k]=!ydShown[y.dataset.k];render()}}   // yesterday's answer, in Daily and Songdle's Unlimited
   const win=document.querySelector("#stage .win");if(win&&mode!=="Character list"){const st=state();if(st&&!st.winShown){st.winShown=1;win.classList.add("appear")}}}
 const PZ=[3,2.3,1.75,1.35,1.1],PMAX=5;
 function renderPlane(){
