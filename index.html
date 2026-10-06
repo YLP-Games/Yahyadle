@@ -277,6 +277,7 @@ table.list .av{width:52px;height:52px}
 .prev{text-align:center;color:var(--muted);font-size:13px;margin:10px 0 0}
 .twin{display:flex;flex-direction:column;gap:3px;max-width:70ch;margin:0 auto 12px;padding:10px 14px;border:2px solid var(--near);border-radius:12px;background:color-mix(in srgb,var(--near) 14%,var(--panel));text-align:center;font-size:15px}
 .twin span{color:var(--muted);font-size:13px}
+.redact{background:currentColor;-webkit-text-fill-color:transparent;border-radius:3px;padding:0 .1em;user-select:none;-webkit-user-select:none}   /* a bar in the text's own colour, so it shows on parchment and dark boxes alike */
 .twintag{display:inline-block;margin-top:4px;padding:3px 8px;border-radius:999px;background:var(--near);color:#fff;font:700 11px/1.2 var(--body);white-space:normal;text-align:center}
 .prev b{color:var(--fg)}
 table.g td .tv{overflow-wrap:anywhere;width:100%}
@@ -975,6 +976,14 @@ const CREST={Gryffindor:["#7f0909","#d3a625","\u{1F981}"],Slytherin:["#1a472a","
 const crest=h=>{const c=CREST[h];if(!c)return"";return`<svg class="crest" viewBox="0 0 40 46" aria-hidden="true"><path d="M3 4h34v18c0 12-8 19-17 22C11 41 3 34 3 22z" fill="${c[0]}" stroke="${c[1]}" stroke-width="3"/><path d="M20 4v40" stroke="${c[1]}" stroke-width="2" opacity=".35"/><text x="20" y="28" text-anchor="middle" font-size="17">${c[2]}</text></svg>`};
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+// Clue text with the answer's own words blacked out (e.g. "bathroom" in the Prefects' Bathroom's description),
+// so the clue doesn't give the answer away. Small words (the, of…) stay; plurals and possessives count too.
+const MASK_SKIP=new Set(["the","and","for","with","from","into","over","under","near","her","his","its","one","two"]);
+function maskClue(text,answer){let h=esc(text);
+  const words=[...new Set(String(answer||"").normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase().split(/[^a-z0-9]+/).filter(w=>w.length>2&&!MASK_SKIP.has(w)))];
+  if(!words.length)return h;
+  const rx=new RegExp("\\b("+words.map(w=>w.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("|")+")(?:s|es|['’]s|['’])?\\b","gi");
+  return h.replace(rx,m=>`<span class="redact" title="Hidden: part of the answer">${"x".repeat(m.length)}</span>`)}
 const rand=a=>a[Math.floor(Math.random()*a.length)];
 let store={};try{store=JSON.parse(localStorage.getItem("yahyadle")||"{}")}catch(e){}
 const save=()=>{try{localStorage.setItem("yahyadle",JSON.stringify(store))}catch(e){}};
@@ -1575,7 +1584,7 @@ function renderClassic(){
   if(!st.rev)st.rev={};
   if(cur.hints){const open=cur.hints.filter(([n,l])=>st.rev[l]&&(st.done||st.guesses.length>=n));
     h+=`<div class="bar hintbox">${cur.hints.map(([n,l])=>st.done||st.guesses.length>=n?`<button class="btn hintbtn${st.rev[l]?" on":""}" data-hint="${esc(l)}" aria-expanded="${!!st.rev[l]}">${l}<small>${st.rev[l]?"Hide":"Click to reveal"}</small></button>`:`<span class="btn hintbtn locked">${l}<small>in ${n-st.guesses.length} guess${n-st.guesses.length===1?"":"es"}</small></span>`).join("")}</div>`;
-    if(open.length)h+=`<div class="hintshow">${open.map(([n,l,k])=>`<div class="clue"><span class="k">${l}</span>${esc(t[k]||"Not added yet")}</div>`).join("")}</div>`;}
+    if(open.length)h+=`<div class="hintshow">${open.map(([n,l,k])=>`<div class="clue"><span class="k">${l}</span>${(k==="q"||k==="d")&&!st.done&&t[k]?maskClue(t[k],t.name):esc(t[k]||"Not added yet")}</div>`).join("")}</div>`;}
   if(st.done)h+=`<div class="win ${st.won?"":"lose"}">${av(t.img,1)}<div><h3>${st.won?"Got it: ":""}${esc(t.name)}</h3><span class="meta">${st.guesses.length} guess${st.guesses.length===1?"":"es"}${isDaily()?"":" · press Shuffle for another"}</span></div></div>`;
   else h+=searchBar("Type a character…");
   if(st.done)h+=isDaily()?dailyDone(st):`<div class="bar"><button class="btn primary" id="shuffle">Shuffle new character</button></div>`;
@@ -1599,7 +1608,7 @@ function renderClue(){
   const st=state(),t=st.target,cfg=cur.clues[mode];
   const answers=[...new Set(cfg.items.filter(r=>!clueOut(r)).map(x=>x[0]).concat(mode==="Quote"||mode==="Description"?playItems().map(x=>x.name):[],[t[0]]))].sort();
   const pg=cur.id==="hp"&&["Description","Quote","Location"].includes(mode);
-  let h=banner()+(pg?`<div class="clue page" data-m="${mode}"><span class="k">${cfg.k}</span><span class="txt">${esc(t[1])}</span>`:`<div class="clue"><span class="k">${cfg.k}</span>${esc(t[1])}`);
+  let h=banner()+(pg?`<div class="clue page" data-m="${mode}"><span class="k">${cfg.k}</span><span class="txt">${st.done?esc(t[1]):maskClue(t[1],t[0])}</span>`:`<div class="clue"><span class="k">${cfg.k}</span>${st.done?esc(t[1]):maskClue(t[1],t[0])}`);
   if(!st.done&&st.guesses.length>=3)h+=`<div class="hint">Hint: starts with “${esc(t[0][0])}”, ${t[0].length} characters.</div>`;
   h+=`</div>`;
   if(st.done)h+=`<div class="win ${st.won?"":"lose"}">${av(imgOf(t[0]),1)}<div><h3>${st.won?"Got it: ":""}${esc(t[0])}</h3><span class="meta">${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span></div></div>${isDaily()?dailyDone(st):`<div class="bar"><button class="btn primary" id="shuffle">Shuffle new one</button></div>`}`;
