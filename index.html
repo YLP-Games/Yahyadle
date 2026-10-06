@@ -386,6 +386,11 @@ table.g td.name .nm{text-align:center}
 .dtoggle button{background:transparent;border:0;color:var(--muted);font:700 13px var(--body);padding:6px 12px;border-radius:999px;cursor:pointer}
 .dtoggle button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent,#1a1020)}
 .dbar{display:flex;justify-content:center;align-items:center;gap:8px;margin:-4px 0 12px;font:600 13px var(--body);color:var(--muted)}
+.yday{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:6px;margin:-6px 0 12px;font:600 13px var(--body);color:var(--muted)}
+.spoil{border:0;border-radius:6px;padding:3px 10px;font:700 13px var(--body);cursor:pointer;background:var(--accent);color:var(--on-accent,#1a1020);max-width:100%;overflow-wrap:anywhere}
+.spoil:not(.shown){color:transparent;text-shadow:none;user-select:none}
+.spoil:not(.shown):hover{filter:brightness(1.1)}
+.spoil.shown{background:var(--panel2);color:var(--fg);box-shadow:inset 0 0 0 1px var(--line)}
 .dbar .dtag{background:var(--accent);color:var(--on-accent,#1a1020);border-radius:999px;padding:2px 9px;font:800 11px var(--body);letter-spacing:.06em;text-transform:uppercase}
 .dbar.old{color:var(--fg)}.dbar.old .dtag{background:var(--near);color:#fff}
 .dnext{justify-content:center;gap:12px}
@@ -982,12 +987,12 @@ function freshGuess(st){const n=st.guesses.length;if(st.seen===undefined)st.seen
 function pick(pool,key){let p;do{p=rand(pool)}while(pool.length>1&&p===lastPick[key]);lastPick[key]=p;return p}
 function state(){const key=cur.id+":"+mode;if(isDaily())return dailyState(key);if(!S[key])S[key]=newRound();return S[key]}
 
-/* ---- Daily mode (every game except Songdle) ----
+/* ---- Daily mode (every game, Songdle too) ----
    One puzzle per game and mode per day, the same for everyone (picked from the date). Progress is saved.
    An unfinished puzzle carries over past midnight until it's finished; after that you move on to the current day's,
    so it stays one a day and missed days are skipped. */
 let daily=store.daily!==false;
-const isDaily=()=>daily&&cur.id!=="song"&&mode!=="Character list";
+const isDaily=()=>daily&&mode!=="Character list";
 const dayStr=(d=new Date())=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 const dayNum=s=>{const [y,m,d]=s.split("-").map(Number);return Math.round(Date.UTC(y,m-1,d)/864e5)};
 const dayLabel=s=>{const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"})};
@@ -996,8 +1001,8 @@ function shuffledIdx(n,seed){let a=seed||1;const rnd=()=>{a|=0;a=a+0x6D2B79F5|0;
   const o=[...Array(n).keys()];for(let i=n-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[o[i],o[j]]=[o[j],o[i]]}return o}
 let DLY={};try{DLY=JSON.parse(localStorage.getItem("yahyadle-daily")||"{}")}catch(e){}
 const DS={}; // live daily rounds by game:mode
-const dailyPool=()=>mode!=="Classic"?cur.clues[mode].items:cur.id==="plane"?cur.items.filter(x=>x.img||x.reg):cur.items;
-const dailyKey=x=>Array.isArray(x)?x[0]+"|"+x[1]:cur.id==="plane"?x.img||x.reg:x.name;
+const dailyPool=()=>cur.id==="song"?songDailyPool():mode!=="Classic"?cur.clues[mode].items:cur.id==="plane"?cur.items.filter(x=>x.img||x.reg):cur.items;
+const dailyKey=x=>Array.isArray(x)?x[0]+"|"+x[1]:cur.id==="song"?x.name+"|"+x.v[0]:cur.id==="plane"?x.img||x.reg:x.name;
 // Planes whose Planespotters photo turned out to be missing: Daily skips them (same result for everyone)
 const NOPHOTO=new Set((()=>{try{return JSON.parse(localStorage.getItem("plnophoto")||"[]")}catch(e){return[]}})());
 function makeDaily(day){
@@ -1009,10 +1014,12 @@ function makeDaily(day){
   return{date:day,target:pool[order[at]],guesses:[],done:false,won:false,rev:{}}}
 function restoreDaily(o){
   let target,guesses=o.g||[];
-  if(mode!=="Classic")target=o.t;
+  if(cur.id==="song"){const all=new Map([...songSource(),...songDailyPool()].map(x=>[dailyKey(x),x]));target=all.get(o.t);
+    guesses=guesses.map(k=>k==="~skip"?{skip:1}:all.get(k)).filter(Boolean)}
+  else if(mode!=="Classic")target=o.t;
   else if(cur.id==="plane")target=cur.items.find(x=>(x.img||x.reg)===o.t);
   else{target=cur.items.find(x=>x.name===o.t);guesses=guesses.map(n=>cur.items.find(x=>x.name===n)).filter(Boolean)}
-  return target?{date:o.date,target,guesses,done:!!o.done,won:!!o.won,rev:o.rev||{},sel:o.sel,f:o.f,wasDone:!!o.done}:null}
+  return target?{date:o.date,target,guesses,done:!!o.done,won:!!o.won,rev:o.rev||{},sel:o.sel,f:o.f,wasDone:!!o.done,autoplayed:!!o.done}:null}
 function dailyState(key){
   const today=dayStr();let st=DS[key];
   if(st&&st.date!==today&&st.done&&!st.doneHere)st=null;      // an older day that's finished: on to today's
@@ -1021,20 +1028,31 @@ function dailyState(key){
 function saveDaily(){
   const key=cur.id+":"+mode,st=DS[key];if(!st)return;const t=st.target;
   if(st.done&&!st.wasDone)st.doneHere=st.wasDone=true;          // finished during this visit: keep showing it until they move on
-  DLY[key]=mode!=="Classic"?{date:st.date,t,g:st.guesses,done:st.done,won:st.won}
+  DLY[key]=cur.id==="song"?{date:st.date,t:dailyKey(t),g:st.guesses.map(g=>g.skip?"~skip":dailyKey(g)),done:st.done,won:st.won}
+    :mode!=="Classic"?{date:st.date,t,g:st.guesses,done:st.done,won:st.won}
     :cur.id==="plane"?{date:st.date,t:t.img||t.reg,g:st.guesses,done:st.done,won:st.won,sel:st.sel,f:st.f}
     :{date:st.date,t:t.name,g:st.guesses.map(g=>g.name),done:st.done,won:st.won,rev:st.rev};
   try{localStorage.setItem("yahyadle-daily",JSON.stringify(DLY))}catch(e){}}
 const untilMidnight=()=>{const n=new Date(),m=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1);return m-n};
 const hms=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return[Math.floor(s/3600),Math.floor(s/60)%60,s%60].map(x=>String(x).padStart(2,"0")).join(":")};
+// Yesterday's answer (worked out the same way as every daily), covered until it's clicked
+const ydShown={};
+function yesterdayLine(st){
+  if(st.date!==dayStr())return"";          // still on an older puzzle: yesterday's answer could be the one they're playing
+  const d=new Date();d.setDate(d.getDate()-1);let t;try{t=makeDaily(dayStr(d)).target}catch(e){return""}if(!t)return"";
+  const name=cur.id==="song"?t.name+" — "+t.v[0]:Array.isArray(t)?t[0]:cur.id==="plane"?t.v[0]+" "+t.v[1]:t.name;
+  const noun=cur.id==="song"?"song":cur.id==="plane"?"plane":mode==="Spell"?"spell":mode==="Location"?"place":"character";
+  const k=cur.id+":"+mode+":"+st.date,on=!!ydShown[k];
+  return`<div class="yday">Yesterday's ${noun} was <button type="button" class="spoil${on?" shown":""}" id="yday" data-k="${esc(k)}" aria-expanded="${on}" aria-label="${on?esc(name):"Show yesterday's "+noun}">${on?esc(name):`<span aria-hidden="true">${esc(name.replace(/\S/g,"x"))}</span>`}</button></div>`}
 function dailyBar(st){const today=dayStr(),old=st.date!==today;
-  return`<div class="dbar${old&&!st.done?" old":""}"><span class="dtag">Daily</span>${esc(dayLabel(st.date))}${old&&!st.done?" · finish it to unlock today's":""}</div>`}
+  return`<div class="dbar${old&&!st.done?" old":""}"><span class="dtag">Daily</span>${esc(dayLabel(st.date))}${old&&!st.done?" · finish it to unlock today's":""}</div>`+yesterdayLine(st)}
 function dailyDone(st){
   if(st.date!==dayStr())return`<div class="bar dnext"><button class="btn primary" id="dnext">Play today's daily</button></div>`;
   return`<div class="bar dnext"><span class="dcount">Next daily in <b id="dcount">${hms(untilMidnight())}</b></span><button class="btn" id="dunl">Play unlimited</button></div>`}
 function wireDaily(){
   const n=$("#dnext");if(n)n.onclick=()=>{DS[cur.id+":"+mode]=null;render()};
-  const u=$("#dunl");if(u)u.onclick=()=>{daily=false;store.daily=false;save();render()}}
+  const u=$("#dunl");if(u)u.onclick=()=>{daily=false;store.daily=false;save();render()};
+  const y=$("#yday");if(y)y.onclick=()=>{ydShown[y.dataset.k]=!ydShown[y.dataset.k];render()}}
 setInterval(()=>{const c=$("#dcount");if(!c)return;const ms=untilMidnight();c.textContent=hms(ms);if(ms<1000)setTimeout(render,1200)},1000);
 // Starwarsdle show switches: leave out characters who only appear in the shows switched off
 const SWSHOWS=["Ahsoka","The Bad Batch","The Acolyte","Skeleton Crew","Maul - Shadow Lord"];
@@ -1154,7 +1172,7 @@ function renderCarts(){
 function renderTabs(){
   const modes=(cur.modes?[...cur.modes,"Character list"]:["Classic",...Object.keys(cur.clues||{}),"Character list"]).filter(m=>!(m==="Character list"&&cur.id==="plane"&&PLSET.hideList));
   $("#tabs").innerHTML=modes.map(m=>`<button class="tab" aria-pressed="${m===mode}" data-m="${m}">${m==="Character list"&&cur.listName?cur.listName:m}</button>`).join("")
-    +(cur.id!=="song"&&mode!=="Character list"?`<span class="dtoggle" role="group" aria-label="Play mode"><button data-daily="1" aria-pressed="${daily}">Daily</button><button data-daily="0" aria-pressed="${!daily}">Unlimited</button></span>`:"");
+    +(mode!=="Character list"?`<span class="dtoggle" role="group" aria-label="Play mode"><button data-daily="1" aria-pressed="${daily}">Daily</button><button data-daily="0" aria-pressed="${!daily}">Unlimited</button></span>`:"");
 }
 
 /* ================= Songdle ================= */
@@ -1220,6 +1238,20 @@ function songSource(){
   if(on.charts){const have=new Set(out.map(x=>songKey(x.name,x.v[0])));for(const r of CHARTS)if(!have.has(songKey(r[0],r[1])))out.push(mkSong(r[0],r[1],r[2],r[3],"Charts",r[4],r[5]))}
   return out.filter(x=>!songBlocked(x.v[0],x.name));
 }
+// Daily song: the same for everyone, so it comes from the shared libraries (playlists.json, never a playlist imported on
+// one device) plus Charts, whatever is switched on in Settings, and only songs with a clip
+const SHARED={layla:[],yahya:[]};let dailySongs=null;
+function songDailyPool(){
+  if(dailySongs)return dailySongs;
+  const m=new Map();
+  for(const [w,who] of [["layla","Layla"],["yahya","Yahya"]])for(const r of SHARED[w]){const k=songKey(r.t,r.a),o=m.get(k);
+    if(!o){m.set(k,{t:r.t,a:r.a,y:r.y,g:r.g,i:r.i,c:r.c,who:[who]});continue}
+    if(!o.i&&r.i){o.i=r.i;o.c=r.c}if(!o.who.includes(who))o.who.push(who);
+    if(String(r.a).length>String(o.a).length){o.t=r.t;o.a=r.a}if(+r.y&&(!+o.y||+r.y<+o.y))o.y=r.y;if(!o.g&&r.g)o.g=r.g}
+  const out=[...m.values()].map(r=>{const x=mkSong(r.t,r.a,r.y,r.g,r.who.length>1?"Both":r.who[0],r.i,r.c);x.who=r.who;return x});
+  for(const r of CHARTS)if(!m.has(songKey(r[0],r[1])))out.push(mkSong(r[0],r[1],r[2],r[3],"Charts",r[4],r[5]));
+  return dailySongs=out.filter(x=>x.i&&!songBlocked(x.v[0],x.name))}
+const sameSong=(a,b)=>songKey(a.name,a.v[0])===songKey(b.name,b.v[0]);
 function songPool(){
   const p=songSource(),e=ERAS.find(x=>x[0]===SONG.era)||ERAS[0];
   return p.filter(x=>(SONG.genre==="All"||x.v[2]===SONG.genre)&&(e[0]==="All"||(x.v[1][0]>=e[1]&&x.v[1][0]<=e[2])));
@@ -1293,12 +1325,15 @@ function songKeep(){const ctx=songCtx;const btn=$("#sg-play");if(btn){btn.classL
   songAudio.onended=end;songTimer=setTimeout(end,Math.max(0,(ctx.limit-songAudio.currentTime)*1000));songRaf=requestAnimationFrame(tick)}
 function renderSong(){
   if(songCarry){if(songTimer){clearTimeout(songTimer);songTimer=null}cancelAnimationFrame(songRaf)}else songStop();
-  const st=state(),t=st.target,artistMode=mode==="Artist";
+  // Today's song is picked from the shared libraries, so wait for them before dealing it
+  if(isDaily()&&!playlistsReady){$("#stage").innerHTML=`<div class="sg-head"><div class="logo sg-logo">Song<span>dle</span></div></div><p class="meta">Loading today's song…</p>`;return}
+  const st=state(),t=st.target,artistMode=mode==="Artist",dly=isDaily();
   const genres=["All",...[...new Set(songSource().map(x=>x.v[2]).filter(g=>g&&g!=="—"))].sort((a,b)=>(a==="Other")-(b==="Other")||a.localeCompare(b))];
   if(!genres.includes(SONG.genre)){SONG.genre="All";try{localStorage.setItem("songcfg",JSON.stringify(SONG))}catch(e){}}   // e.g. a genre name from before the categories
   const s0=store[cur.id]||{w:0,streak:0,best:0};
   let h=`<div class="sg-head"><div class="logo sg-logo">Song<span>dle</span></div><span class="sg-mini">Streak ${s0.streak} · Best ${s0.best||0} · Wins ${s0.w}</span></div>`;
-  const filt=`<div class="sg-filters">
+  if(dly)h+=dailyBar(st);
+  const filt=dly?"":`<div class="sg-filters">
     <label>Genre <select id="sg-genre">${genres.map(g=>`<option${SONG.genre===g?" selected":""}>${esc(g)}</option>`).join("")}</select></label>
     <label>Era <select id="sg-era">${ERAS.map(e=>`<option${SONG.era===e[0]?" selected":""}>${e[0]}</option>`).join("")}</select></label></div>`;
   if(!t){h+=filt+`<div class="clue"><span class="k">No songs here yet</span>No songs match these filters. Try another genre or era, or switch more libraries on in Settings.</div>`;$("#stage").innerHTML=h;wireSongFilters();return}
@@ -1325,16 +1360,16 @@ function renderSong(){
     <p class="meta" id="sg-status">${st.done?"Full preview":"Clip: "+len+"s"} · loading…</p></div>`;
   // Right column: stats, filters, guess box and buttons, then the guesses
   let r=`<div class="sg-stats"><div><b class="ac">${s0.streak}</b><span>Current streak</span></div><div><b>${s0.best||0}</b><span>Best streak</span></div><div><b>${s0.w}</b><span>Wins</span></div></div>`+filt;
-  if(st.done)r+=`<div class="win ${st.won?"":"lose"}"><img id="sg-art" class="av big" alt="" hidden><div><h3>${esc(t.name)}</h3><span class="meta">${esc(t.v[0])} · ${esc(t.v[1][1])}${t.v[2]!=="—"?" · "+esc(t.v[2]):""} · ${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span>${t.who?`<span class="sg-own${t.who.length>1?" both":""}">${t.who.length>1?"In both your libraries":"Only in "+esc(t.who[0])+"'s library"}</span>`:""}${st.won?(c=>`<span class="sg-got">Got it in ${c} second${c===1?"":"s"}</span>`)(CLIPS[Math.min(st.guesses.length-1,CLIPS.length-1)]):""}${SONG.mine==="all"||SONG.mine&&PLAY[SONG.mine]&&!PLAY[SONG.mine].some(r=>songKey(r.t,r.a)===songKey(t.name,t.v[0]))?`<div class="sg-links"><span>${SONG.mine==="all"?"Add it to your library:":"Not in your library yet. Add it:"}</span><a class="btn" id="lk-am" target="_blank" rel="noopener" href="https://music.apple.com/search?term=${encodeURIComponent(t.name+" "+t.v[0])}">Apple Music</a>${spLinked()?`<button class="btn" id="sp-add" type="button">Add to Spotify</button>`:`<a class="btn" target="_blank" rel="noopener" href="https://open.spotify.com/search/${encodeURIComponent(t.name+" "+t.v[0])}">Spotify</a>`}</div>`:""}</div></div>`+`<div class="sg-btns"><button class="sg-btn primary" id="shuffle">Next song</button></div>`;
+  if(st.done)r+=`<div class="win ${st.won?"":"lose"}"><img id="sg-art" class="av big" alt="" hidden><div><h3>${esc(t.name)}</h3><span class="meta">${esc(t.v[0])} · ${esc(t.v[1][1])}${t.v[2]!=="—"?" · "+esc(t.v[2]):""} · ${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span>${t.who?`<span class="sg-own${t.who.length>1?" both":""}">${t.who.length>1?"In both your libraries":"Only in "+esc(t.who[0])+"'s library"}</span>`:""}${st.won?(c=>`<span class="sg-got">Got it in ${c} second${c===1?"":"s"}</span>`)(CLIPS[Math.min(st.guesses.length-1,CLIPS.length-1)]):""}${SONG.mine==="all"||SONG.mine&&PLAY[SONG.mine]&&!PLAY[SONG.mine].some(r=>songKey(r.t,r.a)===songKey(t.name,t.v[0]))?`<div class="sg-links"><span>${SONG.mine==="all"?"Add it to your library:":"Not in your library yet. Add it:"}</span><a class="btn" id="lk-am" target="_blank" rel="noopener" href="https://music.apple.com/search?term=${encodeURIComponent(t.name+" "+t.v[0])}">Apple Music</a>${spLinked()?`<button class="btn" id="sp-add" type="button">Add to Spotify</button>`:`<a class="btn" target="_blank" rel="noopener" href="https://open.spotify.com/search/${encodeURIComponent(t.name+" "+t.v[0])}">Spotify</a>`}</div>`:""}</div></div>`+`${dly?dailyDone(st):`<div class="sg-btns"><button class="sg-btn primary" id="shuffle">Next song</button></div>`}`;
   else r+=`<label class="sg-guess" for="guess">Your guess · ${nLeft} left</label><div class="search sg-search"><input id="guess" autocomplete="off" placeholder="${artistMode?"Type an artist…":"Type a song title…"}"><ul class="sugg" id="sugg" hidden></ul></div>
     <div class="sg-btns"><button class="sg-btn primary" id="skip">Skip${gap?" +"+gap+"s":""}</button><button class="sg-btn" id="giveup">Give up</button></div>`;
   const sfr=freshGuess(st),heads=artistMode?["Artist","Year"]:["Song","Artist","Year"];
   r+=`<div class="sg-rows${artistMode?" two":""}">`+(st.guesses.length?`<div class="sg-rowhead" aria-hidden="true">${heads.map(x=>`<span>${x}</span>`).join("")}</div>`:"")+st.guesses.slice().reverse().map((g,gi)=>{const nw=gi===0&&sfr?" new":"";if(g.skip)return`<div class="sg-row${nw}"><span class="skip wide">Skipped</span></div>`;
     const yr=g.v[1][0],ty=t.v[1][0],ya=!yr||!ty||yr===ty?"":ty>yr?"↑":"↓";
-    const cells=artistMode?[["Artist",g.v[0],artistMatch(g,t)]]:[["Song",g.name,g.name===t.name&&g.v[0]===t.v[0]],["Artist",g.v[0],artistMatch(g,t)]];
+    const cells=artistMode?[["Artist",g.v[0],artistMatch(g,t)]]:[["Song",g.name,sameSong(g,t)],["Artist",g.v[0],artistMatch(g,t)]];
     cells.push(["Year",(g.v[1][1]||"?")+(ya?" "+ya:""),yr&&yr===ty]);
     return`<div class="sg-row${nw}">${cells.map(([l,v,ok])=>`<span class="${typeof ok==="string"?ok:ok?"hit":"miss"}"><small>${l}</small>${esc(v)}</span>`).join("")}</div>`}).join("")+`</div>`;
-  if(lastAns[cur.id+mode])r+=`<p class="prev">Previous song was <b>${esc(lastAns[cur.id+mode])}</b></p>`;
+  if(lastAns[cur.id+mode]&&!dly)r+=`<p class="prev">Previous song was <b>${esc(lastAns[cur.id+mode])}</b></p>`;
   h+=`<div class="sg-layout">${left}<div class="sg-right">${r}</div></div>`;
   $("#stage").innerHTML=h;wireSongFilters();
   {const b=$("#sp-add");if(b)spWire(b,t)}
@@ -1343,9 +1378,9 @@ function renderSong(){
   findPreview(t).then(p=>{if(!$("#sg-play"))return;if(p&&applyYear(t,p)){render();return}if(p&&p.none)p=null;
     // No clip for this one (it happens for a few songs Apple's search can't find): quietly deal another before anyone has guessed
     if(!p){const k=cur.id+":"+mode;if(!st.done&&!st.guesses.length&&S[k]===st&&(st.auto||0)<5){const n=songRound();n.auto=(st.auto||0)+1;S[k]=n;render();return}
-      status.textContent=st.done?"No preview found for this song.":"No preview found for this song. Press Give up to get another one.";return}
+      status.textContent=st.done?"No preview found for this song.":dly?"Couldn't load today's clip. Try again in a moment, or play Unlimited.":"No preview found for this song. Press Give up to get another one.";return}
     songAudio=prevAudio&&prevAudio.src===p.url?prevAudio:preAudio[p.url]||new Audio(p.url);delete preAudio[p.url];songAudio.preload="auto";
-    if(!st.done)(songAudio.readyState>=3?setTimeout(songPrefetch,300):songAudio.addEventListener("canplaythrough",songPrefetch,{once:true}));songAudio.volume=songVol;const going=songCarry&&!songAudio.paused;songCarry=false;if(going){status.textContent=(st.done?"Full preview":"Clip: "+len+"s")+" · playing";songKeep()}else status.textContent=(st.done?"Full preview":"Clip: "+len+"s")+" · press play";songAudio.onloadedmetadata=()=>{if(st.done&&songCtx&&songCtx.st===st&&isFinite(songAudio.duration)){songCtx.limit=songCtx.total=songAudio.duration;songDraw()}};if(songAudio.readyState>=1)songAudio.onloadedmetadata();
+    if(!st.done&&!dly)(songAudio.readyState>=3?setTimeout(songPrefetch,300):songAudio.addEventListener("canplaythrough",songPrefetch,{once:true}));songAudio.volume=songVol;const going=songCarry&&!songAudio.paused;songCarry=false;if(going){status.textContent=(st.done?"Full preview":"Clip: "+len+"s")+" · playing";songKeep()}else status.textContent=(st.done?"Full preview":"Clip: "+len+"s")+" · press play";songAudio.onloadedmetadata=()=>{if(st.done&&songCtx&&songCtx.st===st&&isFinite(songAudio.duration)){songCtx.limit=songCtx.total=songAudio.duration;songDraw()}};if(songAudio.readyState>=1)songAudio.onloadedmetadata();
     // A win plays on from where the clip got to (still playing, or where it was paused), into the full preview
     if(st.done&&st.won&&!st.autoplayed){st.autoplayed=true;if(!going){status.textContent="Full preview · playing";songPlay()}}
     if(st.done){const a=$("#sg-art");if(a&&p.art){a.src=p.art;a.hidden=false}const lk=$("#lk-am");if(lk&&p.link)lk.href=p.link}
@@ -1365,7 +1400,7 @@ function renderSong(){
   const sh=$("#shuffle");if(sh)sh.onclick=()=>{songStop();lastAns[cur.id+mode]=t.name+" — "+t.v[0];S[cur.id+":"+mode]=newRound();render()};
   if(st.done)return;
   // Guess from the whole playlist, and always include this round's answer (a year correction can move it out of the era filter)
-  const pool=songSource();if(!pool.some(x=>x.name===t.name&&x.v[0]===t.v[0]))pool.push(t);
+  const pool=songSource();if(!pool.some(x=>sameSong(x,t)))pool.push(t);
   const names=artistMode?[...new Set(pool.map(x=>x.v[0]))].sort():pool.map(x=>x.name+" — "+x.v[0]);
   const used=st.guesses.filter(g=>!g.skip).map(g=>artistMode?g.v[0]:g.name+" — "+g.v[0]);
   const after=()=>{if(st.guesses.length>=CLIPS.length&&!st.done){st.done=true;st.won=false;bump(false)}if(songCarry){if(songTimer){clearTimeout(songTimer);songTimer=null}cancelAnimationFrame(songRaf)}else songStop();render();focusGuess()};
@@ -1373,7 +1408,7 @@ function renderSong(){
   const won=()=>{const playing=!!(songAudio&&!songAudio.paused);st.pos=playing?songAudio.currentTime:(st.pos||0);st.keepPos=true;songCarry=playing;st.done=true;st.won=true;bump(true)};
   wire(st,names,label=>{
     let g;if(artistMode){const s0=pool.find(x=>x.v[0]===label);g={name:"",v:[label,s0?s0.v[1]:[0,"?"],""]};if(label===t.v[0])won()}
-    else{g=pool.find(x=>x.name+" — "+x.v[0]===label);if(g.name===t.name&&g.v[0]===t.v[0])won()}
+    else{g=pool.find(x=>x.name+" — "+x.v[0]===label);if(sameSong(g,t))won()}
     st.guesses.push(g);after();if(!artistMode&&g&&!g.skip&&!g.i)findPreview(g).then(info=>{if(applyYear(g,info)&&cur.id==="song")render()}).catch(()=>{});
   },used);
   $("#skip").onclick=()=>{if(SONG.flow===false){st.guesses.push({skip:1});after();return}
@@ -1384,8 +1419,9 @@ function renderSong(){
 }
 function wireSongFilters(){
   const ch=()=>{try{localStorage.setItem("songcfg",JSON.stringify(SONG))}catch(e){}songStop();for(const m of cur.modes)delete S[cur.id+":"+m];render()};
-  $("#sg-genre").onchange=e=>{SONG.genre=e.target.value;ch()};
-  $("#sg-era").onchange=e=>{SONG.era=e.target.value;ch()};
+  const g=$("#sg-genre"),e=$("#sg-era");if(!g)return;   // no filters in Daily (everyone gets the same song)
+  g.onchange=ev=>{SONG.genre=ev.target.value;ch()};
+  e.onchange=ev=>{SONG.era=ev.target.value;ch()};
 }
 function wireSongImport(){
   const un=$("#sg-unimport");if(un)un.onclick=()=>{try{localStorage.removeItem("songpl")}catch(e){}location.reload()};
@@ -1470,7 +1506,7 @@ function spWire(b,t){const T=spTarget();b.textContent=T.id?"Add to "+T.name:"Add
 // The libraries (400 KB+) load straight away only when Songdle is open; otherwise once the page is idle,
 // so they don't compete with the first game's pictures
 var playlistsReq=null,playlistsReady=false;   // Songdle's count shows once the libraries are in
-function loadPlaylists(){return playlistsReq??=fetch("playlists.json",{cache:"no-cache"}).then(r=>r.ok?r.json():null).then(p=>{playlistsReady=true;if(!p)return renderCarts();for(const w of ["layla","yahya"])if(Array.isArray(p[w])&&p[w].length&&!PLAY[w].length)PLAY[w]=p[w];
+function loadPlaylists(){return playlistsReq??=fetch("playlists.json",{cache:"no-cache"}).then(r=>r.ok?r.json():null).then(p=>{playlistsReady=true;if(!p)return renderCarts();for(const w of ["layla","yahya"])if(Array.isArray(p[w])&&p[w].length){SHARED[w]=p[w];dailySongs=null;if(!PLAY[w].length)PLAY[w]=p[w]}
   // A round dealt before the playlists arrived may have had nothing to pick from; deal it again
   for(const k in S)if(k.startsWith("song:")&&S[k]&&!S[k].target)delete S[k];
   if(cur.id==="song")render();else renderCarts()}).catch(()=>{playlistsReady=true;renderCarts()})}
