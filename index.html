@@ -1261,6 +1261,9 @@ function songDailyPool(){
   for(const r of CHARTS)if(!m.has(songKey(r[0],r[1])))out.push(mkSong(r[0],r[1],r[2],r[3],"Charts",r[4],r[5]));
   return dailySongs=out.filter(x=>x.i&&!songBlocked(x.v[0],x.name))}
 const sameSong=(a,b)=>songKey(a.name,a.v[0])===songKey(b.name,b.v[0]);
+// The right answer: the same song with exactly the same artists. Same title and main artist but only some of the
+// artists (e.g. the solo version vs the one with a guest) is only partly right.
+const songMatch=(g,t)=>!sameSong(g,t)?"miss":artistMatch(g,t)==="hit"?"hit":"near";
 function songPool(){
   const p=songSource(),e=ERAS.find(x=>x[0]===SONG.era)||ERAS[0];
   return p.filter(x=>(SONG.genre==="All"||x.v[2]===SONG.genre)&&(e[0]==="All"||(x.v[1][0]>=e[1]&&x.v[1][0]<=e[2])));
@@ -1375,7 +1378,7 @@ function renderSong(){
   const sfr=freshGuess(st),heads=artistMode?["Artist","Year"]:["Song","Artist","Year"];
   r+=`<div class="sg-rows${artistMode?" two":""}">`+(st.guesses.length?`<div class="sg-rowhead" aria-hidden="true">${heads.map(x=>`<span>${x}</span>`).join("")}</div>`:"")+st.guesses.slice().reverse().map((g,gi)=>{const nw=gi===0&&sfr?" new":"";if(g.skip)return`<div class="sg-row${nw}"><span class="skip wide">Skipped</span></div>`;
     const yr=g.v[1][0],ty=t.v[1][0],ya=!yr||!ty||yr===ty?"":ty>yr?"↑":"↓";
-    const cells=artistMode?[["Artist",g.v[0],artistMatch(g,t)]]:[["Song",g.name,sameSong(g,t)],["Artist",g.v[0],artistMatch(g,t)]];
+    const cells=artistMode?[["Artist",g.v[0],artistMatch(g,t)]]:[["Song",g.name,songMatch(g,t)],["Artist",g.v[0],artistMatch(g,t)]];
     cells.push(["Year",(g.v[1][1]||"?")+(ya?" "+ya:""),yr&&yr===ty]);
     return`<div class="sg-row${nw}">${cells.map(([l,v,ok])=>`<span class="${typeof ok==="string"?ok:ok?"hit":"miss"}"><small>${l}</small>${esc(v)}</span>`).join("")}</div>`}).join("")+`</div>`;
   if(lastAns[cur.id+mode]&&!dly)r+=`<p class="prev">Previous song was <b>${esc(lastAns[cur.id+mode])}</b></p>`;
@@ -1409,7 +1412,7 @@ function renderSong(){
   const sh=$("#shuffle");if(sh)sh.onclick=()=>{songStop();lastAns[cur.id+mode]=t.name+" — "+t.v[0];S[cur.id+":"+mode]=newRound();render()};
   if(st.done)return;
   // Guess from the whole playlist, and always include this round's answer (a year correction can move it out of the era filter)
-  const pool=songSource();if(!pool.some(x=>sameSong(x,t)))pool.push(t);
+  const pool=songSource();if(!pool.some(x=>x.name===t.name&&x.v[0]===t.v[0]))pool.push(t);   // the exact answer is always guessable
   const names=artistMode?[...new Set(pool.map(x=>x.v[0]))].sort():pool.map(x=>x.name+" — "+x.v[0]);
   const used=st.guesses.filter(g=>!g.skip).map(g=>artistMode?g.v[0]:g.name+" — "+g.v[0]);
   const after=()=>{if(st.guesses.length>=CLIPS.length&&!st.done){st.done=true;st.won=false;bump(false)}if(songCarry){if(songTimer){clearTimeout(songTimer);songTimer=null}cancelAnimationFrame(songRaf)}else songStop();render();focusGuess()};
@@ -1417,7 +1420,7 @@ function renderSong(){
   const won=()=>{const playing=!!(songAudio&&!songAudio.paused);st.pos=playing?songAudio.currentTime:(st.pos||0);st.keepPos=true;songCarry=playing;st.done=true;st.won=true;bump(true)};
   wire(st,names,label=>{
     let g;if(artistMode){const s0=pool.find(x=>x.v[0]===label);g={name:"",v:[label,s0?s0.v[1]:[0,"?"],""]};if(label===t.v[0])won()}
-    else{g=pool.find(x=>x.name+" — "+x.v[0]===label);if(sameSong(g,t))won()}
+    else{g=pool.find(x=>x.name+" — "+x.v[0]===label);if(songMatch(g,t)==="hit")won()}
     st.guesses.push(g);after();if(!artistMode&&g&&!g.skip&&!g.i)findPreview(g).then(info=>{if(applyYear(g,info)&&cur.id==="song")render()}).catch(()=>{});
   },used);
   $("#skip").onclick=()=>{if(SONG.flow===false){st.guesses.push({skip:1});after();return}
