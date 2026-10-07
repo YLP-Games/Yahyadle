@@ -1019,8 +1019,15 @@ function makeDaily(day){
   const pool=[...dailyPool()].sort((a,b)=>dailyKey(a)<dailyKey(b)?-1:dailyKey(a)>dailyKey(b)?1:0);
   const order=shuffledIdx(pool.length,hash(cur.id+"|"+mode)),n=pool.length;
   // Starwarsdle shows switched off: same daily as everyone unless it's one of the left-out characters, then the next one in the order
-  const out=mode==="Classic"?x=>itemOut(x)||(cur.id==="plane"&&!x.img&&NOPHOTO.has(x.reg)):r=>clueOut(r);let at=((dayNum(day)%n)+n)%n;for(let k=0;k<n&&out(pool[order[at]]);k++)at=(at+1)%n;
-  return{date:day,target:pool[order[at]],guesses:[],done:false,won:false,rev:{}}}
+  // Left-out ones (manga-only, shows switched off…) are taken out of the order first. Stepping past them to the next one
+  // instead used to hand out the next day's answer a day early, so the same answer came up two days running.
+  const out=mode==="Classic"?x=>itemOut(x)||(cur.id==="plane"&&!x.img&&NOPHOTO.has(x.reg)):r=>clueOut(r);
+  // Days up to 7 Oct 2026 keep their old answers, so puzzles already played and "Yesterday's…" stay right
+  if(dayNum(day)<dayNum("2026-10-08")){let at=((dayNum(day)%n)+n)%n;for(let k=0;k<n&&out(pool[order[at]]);k++)at=(at+1)%n;return{date:day,target:pool[order[at]],guesses:[],done:false,won:false,rev:{}}}
+  const keep=order.filter(i=>!out(pool[i])),use=keep.length?keep:order,L=use.length;let at=((dayNum(day)%L)+L)%L;
+  // The changeover day: don't repeat 7 Oct's answer (the slot before it belongs to no day under this rule)
+  if(day==="2026-10-08"&&L>1&&pool[use[at]]===makeDaily("2026-10-07").target)at=(at-1+L)%L;
+  return{date:day,target:pool[use[at]],guesses:[],done:false,won:false,rev:{}}}
 function restoreDaily(o){
   let target,guesses=o.g||[];
   if(cur.id==="song"){const all=new Map([...songSource(),...songDailyPool()].map(x=>[dailyKey(x),x]));target=all.get(o.t);
