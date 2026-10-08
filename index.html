@@ -1135,6 +1135,7 @@ function settingsBody(id){
     <div class="sgrp"><h4>Look</h4><div class="sg-themes">${Object.entries(SG_THEMES).map(([k,[n,sub,ac,g2,bg,fg]])=>`<button class="sopt sg-th${(SG_THEMES[SONG.theme]?SONG.theme:"emerald")===k?" on":""}" data-k="song-theme:${k}" aria-pressed="${(SG_THEMES[SONG.theme]?SONG.theme:"emerald")===k}" style="--th-bg:${bg};--th-fg:${fg};--th-ac:${ac};--th-g2:${g2}"><span class="sw"><i></i><i></i></span><b>${n}<small>${sub}</small></b></button>`).join("")}</div></div>
     <div class="sgrp"><h4>Record</h4>${seg("song-spin",[["playing","Spin while playing"],["always","Always spin"],["still","Still"]],SONG.spin||"playing")}</div>
     <div class="sgrp"><h4>Libraries</h4>${L.map(([k,l,sub])=>tg("song:"+k,l,!!on[k],sub,on[k]&&n===1)).join("")}</div>
+    <div class="sgrp"><h4>Apple Music</h4>${AM_TOKEN?(amLinked()?tg("am-off:x","Apple Music connected",true,"Switch off to disconnect this device."):tg("am-on:x","Connect Apple Music",false,"Lets the Add to Apple Music button save songs straight to your library on this device (needs an Apple Music subscription)"))+`<p class="snote" id="am-msg" style="margin:6px 0 0"></p>`:`<p class="snote" style="margin:0">One-tap adding to Apple Music isn't set up for this site yet.</p>`}</div>
     <div class="sgrp"><h4>Spotify</h4>${SPOTIFY_ID?(spLinked()?tg("sp-off:x","Spotify connected",true,"Switch off to disconnect this device.")+`<label class="sp-to"><b>Save songs to</b><select id="sp-target"><option value="">${esc(spTarget().name)}</option></select></label>`:tg("sp-on:x","Connect Spotify",false,"Lets the Add to Spotify button save songs to your Liked Songs on this device")):`<p class="snote" style="margin:0">Spotify isn't set up for this site yet.</p>`}</div>
     <div class="sgrp"><h4>Add to my library</h4><p class="snote" style="margin:0 0 8px">After a round, show Apple Music and Spotify buttons for songs that aren't in your library yet. Saved on this device only.</p><div class="sradio">${[["","Off","No buttons"],["all","On","Buttons after every song"],["layla","I'm Layla","Buttons for songs not in Layla's library"],["yahya","I'm Yahya","Buttons for songs not in Yahya's library"]].map(([v,l,sub])=>`<button class="sopt srad${(SONG.mine||"")===v?" on":""}" data-k="song-mine:${v}"><span class="dot"></span><b>${l}<small>${sub}</small></b></button>`).join("")}</div></div>
     <div class="sgrp"><h4>Skip</h4>${tg("song-flow:x","Skip carries on",SONG.flow!==false,"The music keeps going from where it got to into the longer clip, instead of starting again")}</div>
@@ -1159,6 +1160,9 @@ function renderSettings(){const el=$("#settings");if(!el)return;const c=(GAMES.f
     if(g==="hp-src"){HPSET.src=k;try{localStorage.setItem("hpset",JSON.stringify(HPSET))}catch(e){}resetRounds("hp")}
     if(g==="sw"){if(SWOFF[k])delete SWOFF[k];else SWOFF[k]=true;try{localStorage.setItem("swshows",JSON.stringify(SWOFF))}catch(e){}
       resetRounds("sw")}
+    if(g==="am-on"){const msg=$("#am-msg");if(msg)msg.textContent="Opening Apple Music sign-in…";
+      amConnect().then(()=>{renderSettings();render()}).catch(e=>{const m2=$("#am-msg");if(m2)m2.textContent=(e&&e.message)||"Couldn't connect Apple Music"});return}
+    if(g==="am-off"){amDisconnect().then(()=>{renderSettings();render()});return}
     if(g==="sp-on"){spConnect();return}
     if(g==="sp-off"){spDisconnect()}
     if(g==="song-mine"){SONG.mine=k;try{localStorage.setItem("songcfg",JSON.stringify(SONG))}catch(e){}}
@@ -1167,7 +1171,7 @@ function renderSettings(){const el=$("#settings");if(!el)return;const c=(GAMES.f
     if(g==="song"){if(SONG.on[k])delete SONG.on[k];else SONG.on[k]=true;SONG.genre="All";try{localStorage.setItem("songcfg",JSON.stringify(SONG))}catch(e){}
       songStop();for(const m of GAMES.find(x=>x.id==="song").modes)delete S["song:"+m]}
     renderSettings();render()});
-  if(setTab==="song")wireSongImport();
+  if(setTab==="song"){wireSongImport();if(AM_TOKEN)amLoad().catch(()=>{})}
   {const sel=$("#sp-target");if(sel)spFillTargets(sel)}
   const close=()=>{el.hidden=true;document.body.classList.remove("noscroll")};
   $("#setclose").onclick=close;$("#setdone").onclick=close;el.onclick=e=>{if(e.target===el)close()}}
@@ -1389,7 +1393,7 @@ function renderSong(){
     <p class="meta" id="sg-status">${st.done?"Full preview":"Clip: "+len+"s"} · loading…</p></div>`;
   // Right column: stats, filters, guess box and buttons, then the guesses
   let r=`<div class="sg-stats"><div><b class="ac">${s0.streak}</b><span>Current streak</span></div><div><b>${s0.best||0}</b><span>Best streak</span></div><div><b>${s0.w}</b><span>Wins</span></div></div>`+filt;
-  if(st.done)r+=`<div class="win ${st.won?"":"lose"}"><img id="sg-art" class="av big" alt="" hidden><div><h3>${esc(t.name)}</h3><span class="meta">${esc(t.v[0])} · ${esc(t.v[1][1])}${t.v[2]!=="—"?" · "+esc(t.v[2]):""} · ${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span>${t.who?`<span class="sg-own${t.who.length>1?" both":""}">${t.who.length>1?"In both your libraries":"Only in "+esc(t.who[0])+"'s library"}</span>`:""}${st.won?(c=>`<span class="sg-got">Got it in ${c} second${c===1?"":"s"}</span>`)(CLIPS[Math.min(st.guesses.length-1,CLIPS.length-1)]):""}${SONG.mine==="all"||SONG.mine&&PLAY[SONG.mine]&&!PLAY[SONG.mine].some(r=>songKey(r.t,r.a)===songKey(t.name,t.v[0]))?`<div class="sg-links"><span>${SONG.mine==="all"?"Add it to your library:":"Not in your library yet. Add it:"}</span><a class="btn" id="lk-am" target="_blank" rel="noopener" href="https://music.apple.com/search?term=${encodeURIComponent(t.name+" "+t.v[0])}">Apple Music</a>${spLinked()?`<button class="btn" id="sp-add" type="button">Add to Spotify</button>`:`<a class="btn" target="_blank" rel="noopener" href="https://open.spotify.com/search/${encodeURIComponent(t.name+" "+t.v[0])}">Spotify</a>`}</div>`:""}</div></div>`+`${dly?dailyDone(st):`<div class="sg-btns"><button class="sg-btn primary" id="shuffle">Next song</button></div>`}`;
+  if(st.done)r+=`<div class="win ${st.won?"":"lose"}"><img id="sg-art" class="av big" alt="" hidden><div><h3>${esc(t.name)}</h3><span class="meta">${esc(t.v[0])} · ${esc(t.v[1][1])}${t.v[2]!=="—"?" · "+esc(t.v[2]):""} · ${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span>${t.who?`<span class="sg-own${t.who.length>1?" both":""}">${t.who.length>1?"In both your libraries":"Only in "+esc(t.who[0])+"'s library"}</span>`:""}${st.won?(c=>`<span class="sg-got">Got it in ${c} second${c===1?"":"s"}</span>`)(CLIPS[Math.min(st.guesses.length-1,CLIPS.length-1)]):""}${SONG.mine==="all"||SONG.mine&&PLAY[SONG.mine]&&!PLAY[SONG.mine].some(r=>songKey(r.t,r.a)===songKey(t.name,t.v[0]))?`<div class="sg-links"><span>${SONG.mine==="all"?"Add it to your library:":"Not in your library yet. Add it:"}</span>${amLinked()?`<button class="btn" id="am-add" type="button">Add to Apple Music</button><a id="lk-am" hidden href="#"></a>`:`<a class="btn" id="lk-am" target="_blank" rel="noopener" href="https://music.apple.com/search?term=${encodeURIComponent(t.name+" "+t.v[0])}">Apple Music</a>`}${spLinked()?`<button class="btn" id="sp-add" type="button">Add to Spotify</button>`:`<a class="btn" target="_blank" rel="noopener" href="https://open.spotify.com/search/${encodeURIComponent(t.name+" "+t.v[0])}">Spotify</a>`}</div>`:""}</div></div>`+`${dly?dailyDone(st):`<div class="sg-btns"><button class="sg-btn primary" id="shuffle">Next song</button></div>`}`;
   else r+=`<label class="sg-guess" for="guess">Your guess · ${nLeft} left</label><div class="search sg-search"><input id="guess" autocomplete="off" placeholder="${artistMode?"Type an artist…":"Type a song title…"}"><ul class="sugg" id="sugg" hidden></ul></div>
     <div class="sg-btns"><button class="sg-btn primary" id="skip">Skip${gap?" +"+gap+"s":""}</button><button class="sg-btn" id="giveup">Give up</button></div>`;
   const sfr=freshGuess(st),heads=artistMode?["Artist","Year"]:["Song","Artist","Year"];
@@ -1402,6 +1406,7 @@ function renderSong(){
   h+=`<div class="sg-layout">${left}<div class="sg-right">${r}</div></div>`;
   $("#stage").innerHTML=h;wireSongFilters();
   {const b=$("#sp-add");if(b)spWire(b,t)}
+  {const b=$("#am-add");if(b)amWire(b,t)}
   // audio
   const status=$("#sg-status"),play=$("#sg-play"),prevAudio=songAudio;songAudio=null;
   findPreview(t).then(p=>{if(!$("#sg-play"))return;if(p&&applyYear(t,p)){render();return}if(p&&p.none)p=null;
@@ -1412,7 +1417,7 @@ function renderSong(){
     if(!st.done&&!dly)(songAudio.readyState>=3?setTimeout(songPrefetch,300):songAudio.addEventListener("canplaythrough",songPrefetch,{once:true}));songAudio.volume=songVol;const going=songCarry&&!songAudio.paused;songCarry=false;if(going){status.textContent=(st.done?"Full preview":"Clip: "+len+"s")+" · playing";songKeep()}else status.textContent=(st.done?"Full preview":"Clip: "+len+"s")+" · press play";songAudio.onloadedmetadata=()=>{if(st.done&&songCtx&&songCtx.st===st&&isFinite(songAudio.duration)){songCtx.limit=songCtx.total=songAudio.duration;songDraw()}};if(songAudio.readyState>=1)songAudio.onloadedmetadata();
     // A win plays on from where the clip got to (still playing, or where it was paused), into the full preview
     if(st.done&&st.won&&!st.autoplayed){st.autoplayed=true;if(!going){status.textContent="Full preview · playing";songPlay()}}
-    if(st.done){const a=$("#sg-art");if(a&&p.art){a.src=p.art;a.hidden=false}const lk=$("#lk-am");if(lk&&p.link)lk.href=p.link}
+    if(st.done){const a=$("#sg-art");if(a&&p.art){a.src=p.art;a.hidden=false}const lk=$("#lk-am");if(lk&&p.link)lk.href=p.link;const ab=$("#am-add"),mi=p.link&&p.link.match(/[?&]i=(\d+)/);if(ab&&mi&&!ab.dataset.id)ab.dataset.id=mi[1]}
   }).catch(()=>{if(status)status.textContent="Couldn't reach the preview service. Song audio works on the GitHub Pages site."});
   const vol=$("#sg-vol");if(vol)vol.oninput=()=>{songVol=vol.value/100;if(songAudio)songAudio.volume=songVol;$("#sg-vol-out").textContent=vol.value+"%";try{localStorage.setItem("songvol",String(songVol))}catch(e){}};
   play.onclick=()=>{if(songAudio&&!songAudio.paused)songStop();else songPlay()};
@@ -1526,6 +1531,30 @@ function spWire(b,t){const T=spTarget();b.textContent=T.id?"Add to "+T.name:"Add
     if(T.id){await spApi(`/playlists/${T.id}/items`,{method:"POST",body:JSON.stringify({uris:[uri]})}).catch(e=>e.status===404||e.status===403?spApi(`/playlists/${T.id}/tracks`,{method:"POST",body:JSON.stringify({uris:[uri]})}):Promise.reject(e));if(spHave[T.id])spHave[T.id].add(id);set("Added to "+T.name+" ✓",1)}
     else{await spApi("/me/library?uris="+encodeURIComponent(uri),{method:"PUT"}).catch(e=>e.status===404||e.status===403?spApi("/me/tracks?ids="+id,{method:"PUT"}):Promise.reject(e));set("Added to Liked Songs ✓",1)}}catch(e){set("Couldn't add ("+(e.status||"?")+"). Try again");b.disabled=false;b.title=e.message;
       const m=b.parentNode.querySelector(".sp-err")||b.insertAdjacentElement("afterend",Object.assign(document.createElement("small"),{className:"sp-err"}));m.textContent=e.message}}}
+/* ---- Apple Music (one-tap "Add to Apple Music") via Apple's MusicKit: sign in once on this device, no server needed ----
+   AM_TOKEN is a MusicKit developer token made with tools/apple_token.py from the Apple Developer key (it lasts up to
+   6 months and only works on this site). While it's empty the button stays a plain "Apple Music" link. */
+const AM_TOKEN="";
+let amReady=null;
+function amLoad(){if(!AM_TOKEN)return Promise.reject(new Error("Apple Music isn't set up for this site yet"));
+  return amReady??=new Promise((res,rej)=>{if(window.MusicKit)return res();document.addEventListener("musickitloaded",()=>res(),{once:true});
+    const sc=document.createElement("script");sc.src="https://js-cdn.music.apple.com/musickit/v3/musickit.js";sc.async=true;sc.setAttribute("data-web-components","");
+    sc.onerror=()=>{amReady=null;rej(new Error("Couldn't load Apple Music"))};document.head.appendChild(sc)})
+    .then(()=>MusicKit.configure({developerToken:AM_TOKEN,app:{name:"Yahyadle",build:"1.0"}})).then(()=>MusicKit.getInstance())}
+const amLinked=()=>{try{return!!AM_TOKEN&&localStorage.getItem("am_linked")==="1"}catch(e){return false}};
+async function amConnect(){const m=await amLoad();await m.authorize();if(!m.isAuthorized)throw new Error("Apple Music sign-in was cancelled");try{localStorage.setItem("am_linked","1")}catch(e){}}
+async function amDisconnect(){try{localStorage.removeItem("am_linked")}catch(e){}try{const m=await amLoad();await m.unauthorize()}catch(e){}}
+// The Apple Music catalogue ID is the same number as the iTunes track ID Songdle already keeps for each song
+function amWire(b,t){const set=(txt,dis)=>{b.textContent=txt;b.disabled=!!dis};const id=()=>String(t.i||b.dataset.id||"");
+  amLoad().then(async m=>{if(!m.isAuthorized||!id())return;   // already in the library?
+    const r=await m.api.music(`/v1/catalog/${m.storefrontId}/songs/${id()}`,{relate:"library"});const d=((r&&r.data&&r.data.data)||[])[0];
+    const lib=d&&d.relationships&&d.relationships.library&&d.relationships.library.data;if(lib&&lib.length)set("In your Apple Music ✓",1)}).catch(()=>{});
+  b.onclick=async()=>{set("Adding…",1);try{const m=await amLoad();if(!m.isAuthorized){await m.authorize();try{localStorage.setItem("am_linked","1")}catch(e){}}
+      if(!id()){set("Not on Apple Music",1);return}
+      await m.api.music("/v1/me/library",{"ids[songs]":id()},{fetchOptions:{method:"POST"}});set("Added to Apple Music ✓",1)}
+    catch(e){set("Couldn't add. Try again");b.disabled=false;
+      const msg=b.parentNode.querySelector(".sp-err")||b.insertAdjacentElement("afterend",Object.assign(document.createElement("small"),{className:"sp-err"}));
+      msg.textContent=(e&&e.message)||"Apple Music didn't accept it (is the song available in your country?)"}}}
 // Back from Spotify's sign-in page: swap the code for tokens, then tidy the address bar
 (async()=>{const q=new URLSearchParams(location.search);if(!SPOTIFY_ID||!(q.get("code")||q.get("error")))return;
   history.replaceState(null,"",SP_REDIRECT+location.hash);if(q.get("error"))return;

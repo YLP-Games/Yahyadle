@@ -1,3 +1,5 @@
 __pycache__/
 *.pyc
 .DS_Store
+# Apple MusicKit keys are secret: never commit them (tools/apple_token.py only needs them locally)
+*.p8
