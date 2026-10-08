@@ -1018,16 +1018,26 @@ function makeDaily(day){
   // Walk a fixed shuffled order one step per day, so answers don't repeat until the whole list has come up
   const pool=[...dailyPool()].sort((a,b)=>dailyKey(a)<dailyKey(b)?-1:dailyKey(a)>dailyKey(b)?1:0);
   const order=shuffledIdx(pool.length,hash(cur.id+"|"+mode)),n=pool.length;
-  // Starwarsdle shows switched off: same daily as everyone unless it's one of the left-out characters, then the next one in the order
-  // Left-out ones (manga-only, shows switched off…) are taken out of the order first. Stepping past them to the next one
-  // instead used to hand out the next day's answer a day early, so the same answer came up two days running.
   const out=mode==="Classic"?x=>itemOut(x)||(cur.id==="plane"&&!x.img&&NOPHOTO.has(x.reg)):r=>clueOut(r);
-  // Days up to 7 Oct 2026 keep their old answers, so puzzles already played and "Yesterday's…" stay right
-  if(dayNum(day)<dayNum("2026-10-08")){let at=((dayNum(day)%n)+n)%n;for(let k=0;k<n&&out(pool[order[at]]);k++)at=(at+1)%n;return{date:day,target:pool[order[at]],guesses:[],done:false,won:false,rev:{}}}
-  const keep=order.filter(i=>!out(pool[i])),use=keep.length?keep:order,L=use.length;let at=((dayNum(day)%L)+L)%L;
-  // The changeover day: don't repeat 7 Oct's answer (the slot before it belongs to no day under this rule)
-  if(day==="2026-10-08"&&L>1&&pool[use[at]]===makeDaily("2026-10-07").target)at=(at-1+L)%L;
-  return{date:day,target:pool[use[at]],guesses:[],done:false,won:false,rev:{}}}
+  const mk=t=>({date:day,target:t,guesses:[],done:false,won:false,rev:{}}),dn=dayNum(day),slot=((dn%n)+n)%n;
+  // Up to 7 Oct 2026: the original rule (a left-out pick stepped on to the next one, i.e. the next day's answer)
+  if(dn<dayNum("2026-10-08")){let at=slot;for(let k=0;k<n&&out(pool[order[at]]);k++)at=(at+1)%n;return mk(pool[order[at]])}
+  // 8 Oct 2026 only: the rule used that day (already played, so it stays)
+  if(day==="2026-10-08"){const keep=order.filter(i=>!out(pool[i])),use=keep.length?keep:order,L=use.length;let at=((dn%L)+L)%L;
+    if(L>1&&pool[use[at]]===makeDaily("2026-10-07").target)at=(at-1+L)%L;return mk(pool[use[at]])}
+  // From 9 Oct: every day keeps its own slot in the shuffled order (so nothing shifts), and each slot whose pick is left
+  // out (manga-only, shows switched off…) is filled by the allowed one whose other turns are furthest away in the cycle.
+  return mk(pool[dailySchedule(pool,order,out)[slot]])}
+const schedCache=new Map();
+function dailySchedule(pool,order,out){
+  const n=order.length,lo=[],ok=[];for(let p=0;p<n;p++)(out(pool[order[p]])?lo:ok).push(p);
+  if(!lo.length||!ok.length)return order;
+  const key=cur.id+"|"+mode+"|"+n+"|"+lo.join(",");if(schedCache.has(key))return schedCache.get(key);
+  const s=order.slice(),uses=new Map(ok.map(p=>[order[p],[p]])),cd=(a,b)=>{const d=Math.abs(a-b)%n;return Math.min(d,n-d)};
+  for(const p of lo){let best=-1,bd=-1;   // the cycle wraps round (the last slot is followed by the first), hence circular distance
+    for(const q of ok){const u=uses.get(order[q]);let d=n;for(const x of u)d=Math.min(d,cd(x,p));if(d>bd){bd=d;best=order[q]}}
+    s[p]=best;uses.get(best).push(p)}
+  schedCache.set(key,s);return s}
 function restoreDaily(o){
   let target,guesses=o.g||[];
   if(cur.id==="song"){const all=new Map([...songSource(),...songDailyPool()].map(x=>[dailyKey(x),x]));target=all.get(o.t);
