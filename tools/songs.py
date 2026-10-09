@@ -244,6 +244,46 @@ def fill_genres(lists):
     if filled:
         print(f"filled {filled} missing genres from Apple", flush=True)
 
+REMOVED = os.path.join(ROOT, "playlists", "removed.json")
+
+def removals(data):
+    """Apply playlists/<who>/remove/*.txt and return ({who: {song keys}}, [files done])."""
+    try:
+        stored = json.load(open(REMOVED, encoding="utf-8"))
+    except (OSError, ValueError):
+        stored = {}
+    done, changed = [], False
+    for who in data:
+        for path in sorted(glob.glob(os.path.join(ROOT, "playlists", who, "remove", "*"))):
+            if not os.path.isfile(path):
+                continue
+            for line in open(path, encoding="utf-8-sig", errors="replace"):
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                parts = re.split(r"\s+[—–]\s+|\t|\s*\|\s*", line)   # "Title — Artist" (also tab or |)
+                if len(parts) < 2:
+                    continue
+                t, a = " — ".join(parts[:-1]).strip(), parts[-1].strip()
+                k = "\u0001".join(key({"t": t, "a": a}))
+                if k not in stored.setdefault(who, []):
+                    stored[who].append(k)
+                    changed = True
+                    print(f"  removing from {who}: {t} — {a}", flush=True)
+            done.append(path)
+    rem = {who: {tuple(k.split("\u0001")) for k in ks} for who, ks in stored.items()}
+    for who in data:
+        before = len(data[who])
+        data[who] = [s for s in data[who] if key(s) not in rem.get(who, set())]
+        if len(data[who]) != before:
+            print(f"removed {before - len(data[who])} songs from {who}'s library", flush=True)
+    if changed:
+        with open(REMOVED, "w", encoding="utf-8") as f:
+            json.dump({w: sorted(v) for w, v in stored.items()}, f, ensure_ascii=False, indent=1)
+    for path in done:
+        os.remove(path)
+    return rem, done
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--no-lookup", action="store_true")
@@ -252,10 +292,15 @@ def main():
 
     data, charts = load()
 
+    # 0. Removals: songs listed in playlists/<who>/remove/*.txt ("Title — Artist" per line, made by Songdle's
+    #    "Remove from my library" button) come out of that library and are remembered in playlists/removed.json,
+    #    so a later playlist import doesn't add them back.
+    removed, done = removals(data)
+
     # 1. CSV imports
     imported = []
     for who in data:
-        have = {key(s) for s in data[who]}
+        have = {key(s) for s in data[who]} | removed.get(who, set())
         for path in sorted(glob.glob(os.path.join(ROOT, "playlists", who, "*.csv"))):
             new = [s for s in read_csv(path) if key(s) not in have]   # duplicates within the CSV are merged by tidy()
             keys = {key(s) for s in new}

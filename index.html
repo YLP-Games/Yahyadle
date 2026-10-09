@@ -1159,6 +1159,7 @@ function settingsBody(id){
     <div class="sgrp"><h4>Look</h4><div class="sg-themes">${Object.entries(SG_THEMES).map(([k,[n,sub,ac,g2,bg,fg]])=>`<button class="sopt sg-th${(SG_THEMES[SONG.theme]?SONG.theme:"emerald")===k?" on":""}" data-k="song-theme:${k}" aria-pressed="${(SG_THEMES[SONG.theme]?SONG.theme:"emerald")===k}" style="--th-bg:${bg};--th-fg:${fg};--th-ac:${ac};--th-g2:${g2}"><span class="sw"><i></i><i></i></span><b>${n}<small>${sub}</small></b></button>`).join("")}</div></div>
     <div class="sgrp"><h4>Record</h4>${seg("song-spin",[["playing","Spin while playing"],["always","Always spin"],["still","Still"]],SONG.spin||"playing")}</div>
     <div class="sgrp"><h4>Libraries</h4>${L.map(([k,l,sub])=>tg("song:"+k,l,!!on[k],sub,on[k]&&n===1)).join("")}</div>
+    ${LIBGONE.length?`<div class="sgrp"><h4>Removed from Layla's library</h4><p class="snote" style="margin:0 0 8px">Hidden on this device. <a href="${esc(libGoneUrl())}" target="_blank" rel="noopener">Save ${LIBGONE.length} removal${LIBGONE.length===1?"":"s"} for everyone</a> (opens GitHub: tap Commit changes). They drop off this list once the site has updated.</p>${LIBGONE.map(x=>tg("lib-undo:"+x.k,x.t+" — "+x.a,true,"Switch off to put it back")).join("")}</div>`:""}
     <div class="sgrp"><h4>Apple Music</h4>${AM_TOKEN?(amLinked()?tg("am-off:x","Apple Music connected",true,"Switch off to disconnect this device."):tg("am-on:x","Connect Apple Music",false,"Lets the Add to Apple Music button save songs straight to your library on this device (needs an Apple Music subscription)"))+`<p class="snote" id="am-msg" style="margin:6px 0 0"></p>`:`<p class="snote" style="margin:0">One-tap adding to Apple Music isn't set up for this site yet.</p>`}</div>
     <div class="sgrp"><h4>Spotify</h4>${SPOTIFY_ID?(spLinked()?tg("sp-off:x","Spotify connected",true,"Switch off to disconnect this device.")+`<label class="sp-to"><b>Save songs to</b><select id="sp-target"><option value="">${esc(spTarget().name)}</option></select></label>`:tg("sp-on:x","Connect Spotify",false,"Lets the Add to Spotify button save songs to your Liked Songs on this device")):`<p class="snote" style="margin:0">Spotify isn't set up for this site yet.</p>`}</div>
     <div class="sgrp"><h4>Add to my library</h4><p class="snote" style="margin:0 0 8px">After a round, show Apple Music and Spotify buttons for songs that aren't in your library yet. Saved on this device only.</p><div class="sradio">${[["","Off","No buttons"],["all","On","Buttons after every song"],["layla","I'm Layla","Buttons for songs not in Layla's library"],["yahya","I'm Yahya","Buttons for songs not in Yahya's library"]].map(([v,l,sub])=>`<button class="sopt srad${(SONG.mine||"")===v?" on":""}" data-k="song-mine:${v}"><span class="dot"></span><b>${l}<small>${sub}</small></b></button>`).join("")}</div></div>
@@ -1184,6 +1185,7 @@ function renderSettings(){const el=$("#settings");if(!el)return;const c=(GAMES.f
     if(g==="hp-src"){HPSET.src=k;try{localStorage.setItem("hpset",JSON.stringify(HPSET))}catch(e){}resetRounds("hp")}
     if(g==="sw"){if(SWOFF[k])delete SWOFF[k];else SWOFF[k]=true;try{localStorage.setItem("swshows",JSON.stringify(SWOFF))}catch(e){}
       resetRounds("sw")}
+    if(g==="lib-undo"){LIBGONE=LIBGONE.filter(x=>x.k!==k);libGoneSave();bothCache=null}
     if(g==="am-on"){const msg=$("#am-msg");if(msg)msg.textContent="Opening Apple Music sign-in…";
       amConnect().then(()=>{renderSettings();render()}).catch(e=>{const m2=$("#am-msg");if(m2)m2.textContent=(e&&e.message)||"Couldn't connect Apple Music"});return}
     if(g==="am-off"){amDisconnect().then(()=>{renderSettings();render()});return}
@@ -1290,7 +1292,8 @@ function songSource(){
   if(on.layla&&on.yahya)out.push(...bothSongs().map(r=>{const x=mkSong(r.t,r.a,r.y,r.g,r.who.length>1?"Both":r.who[0],r.i,r.c);x.who=r.who;return x}));
   else for(const w of ["layla","yahya"])if(on[w])out.push(...PLAY[w].map(r=>mkSong(r.t,r.a,r.y,r.g,w==="layla"?"Layla":"Yahya",r.i,r.c)));
   if(on.charts){const have=new Set(out.map(x=>songKey(x.name,x.v[0])));for(const r of CHARTS)if(!have.has(songKey(r[0],r[1])))out.push(mkSong(r[0],r[1],r[2],r[3],"Charts",r[4],r[5]))}
-  return out.filter(x=>!songBlocked(x.v[0],x.name));
+  const gone=LIBGONE.length?libGoneKeys():null;
+  return out.filter(x=>!songBlocked(x.v[0],x.name)&&!(gone&&gone.has(songKey(x.name,x.v[0]))));
 }
 // Daily song: the same for everyone, so it comes from the shared libraries (playlists.json, never a playlist imported on
 // one device) plus Charts, whatever is switched on in Settings, and only songs with a clip
@@ -1306,6 +1309,17 @@ function songDailyPool(){
   for(const r of CHARTS)if(!m.has(songKey(r[0],r[1])))out.push(mkSong(r[0],r[1],r[2],r[3],"Charts",r[4],r[5]));
   return dailySongs=out.filter(x=>x.i&&!songBlocked(x.v[0],x.name))}
 const sameSong=(a,b)=>songKey(a.name,a.v[0])===songKey(b.name,b.v[0]);
+// "Remove from my library" (Layla-only songs): gone from Songdle on this device straight away, and queued until it's
+// saved for everyone with one GitHub commit (playlists/layla/remove/…; tools/songs.py then takes it out of the library).
+let LIBGONE=[];try{LIBGONE=JSON.parse(localStorage.getItem("songgone")||"[]")}catch(e){}
+const libGoneSave=()=>{try{localStorage.setItem("songgone",JSON.stringify(LIBGONE))}catch(e){}};
+const libGoneKeys=()=>new Set(LIBGONE.map(x=>x.k));
+let sharedSets=null;
+function laylaOnly(t){if(!SHARED.layla.length)return null;
+  if(!sharedSets||sharedSets.l!==SHARED.layla||sharedSets.y!==SHARED.yahya){const m=new Map();for(const r of SHARED.layla)m.set(songKey(r.t,r.a),r);sharedSets={l:SHARED.layla,y:SHARED.yahya,lay:m,yah:new Set(SHARED.yahya.map(r=>songKey(r.t,r.a)))}}
+  const k=songKey(t.name,t.v[0]);return sharedSets.lay.has(k)&&!sharedSets.yah.has(k)?sharedSets.lay.get(k):null}
+const libGoneUrl=()=>"https://github.com/YLP-Games/Yahyadle/new/main/playlists/layla/remove?filename="+encodeURIComponent("songs-"+dayStr()+"-"+Date.now().toString(36)+".txt")
+  +"&value="+encodeURIComponent(LIBGONE.map(x=>x.t+" — "+x.a).join("\n")+"\n")+"&message="+encodeURIComponent("Songdle: remove "+LIBGONE.length+" song"+(LIBGONE.length===1?"":"s")+" from Layla's library");
 // The right answer: the same song with exactly the same artists. Same title and main artist but only some of the
 // artists (e.g. the solo version vs the one with a guest) is only partly right.
 const songMatch=(g,t)=>!sameSong(g,t)?"miss":artistMatch(g,t)==="hit"?"hit":"near";
@@ -1417,7 +1431,7 @@ function renderSong(){
     <p class="meta" id="sg-status">${st.done?"Full preview":"Clip: "+len+"s"} · loading…</p></div>`;
   // Right column: stats, filters, guess box and buttons, then the guesses
   let r=`<div class="sg-stats"><div><b class="ac">${s0.streak}</b><span>Current streak</span></div><div><b>${s0.best||0}</b><span>Best streak</span></div><div><b>${s0.w}</b><span>Wins</span></div></div>`+filt;
-  if(st.done)r+=`<div class="win ${st.won?"":"lose"}"><img id="sg-art" class="av big" alt="" hidden><div><h3>${esc(t.name)}</h3><span class="meta">${esc(t.v[0])} · ${esc(t.v[1][1])}${t.v[2]!=="—"?" · "+esc(t.v[2]):""} · ${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span>${t.who?`<span class="sg-own${t.who.length>1?" both":""}">${t.who.length>1?"In both your libraries":"Only in "+esc(t.who[0])+"'s library"}</span>`:""}${st.won?(c=>`<span class="sg-got">Got it in ${c} second${c===1?"":"s"}</span>`)(CLIPS[Math.min(st.guesses.length-1,CLIPS.length-1)]):""}${SONG.mine==="all"||SONG.mine&&PLAY[SONG.mine]&&!PLAY[SONG.mine].some(r=>songKey(r.t,r.a)===songKey(t.name,t.v[0]))?`<div class="sg-links"><span>${SONG.mine==="all"?"Add it to your library:":"Not in your library yet. Add it:"}</span>${amLinked()?`<button class="btn" id="am-add" type="button">Add to Apple Music</button><a id="lk-am" hidden href="#"></a>`:`<a class="btn" id="lk-am" target="_blank" rel="noopener" href="https://music.apple.com/search?term=${encodeURIComponent(t.name+" "+t.v[0])}">Apple Music</a>`}${spLinked()?`<button class="btn" id="sp-add" type="button">Add to Spotify</button>`:`<a class="btn" target="_blank" rel="noopener" href="https://open.spotify.com/search/${encodeURIComponent(t.name+" "+t.v[0])}">Spotify</a>`}</div>`:""}${spLinked()?`<div class="sg-links sp-rmrow" hidden><button class="btn" id="sp-rm" type="button">Remove from Spotify</button></div>`:""}</div></div>`+`${dly?dailyDone(st):`<div class="sg-btns"><button class="sg-btn primary" id="shuffle">Next song</button></div>`}`;
+  if(st.done)r+=`<div class="win ${st.won?"":"lose"}"><img id="sg-art" class="av big" alt="" hidden><div><h3>${esc(t.name)}</h3><span class="meta">${esc(t.v[0])} · ${esc(t.v[1][1])}${t.v[2]!=="—"?" · "+esc(t.v[2]):""} · ${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span>${t.who?`<span class="sg-own${t.who.length>1?" both":""}">${t.who.length>1?"In both your libraries":"Only in "+esc(t.who[0])+"'s library"}</span>`:""}${st.won?(c=>`<span class="sg-got">Got it in ${c} second${c===1?"":"s"}</span>`)(CLIPS[Math.min(st.guesses.length-1,CLIPS.length-1)]):""}${SONG.mine==="all"||SONG.mine&&PLAY[SONG.mine]&&!PLAY[SONG.mine].some(r=>songKey(r.t,r.a)===songKey(t.name,t.v[0]))?`<div class="sg-links"><span>${SONG.mine==="all"?"Add it to your library:":"Not in your library yet. Add it:"}</span>${amLinked()?`<button class="btn" id="am-add" type="button">Add to Apple Music</button><a id="lk-am" hidden href="#"></a>`:`<a class="btn" id="lk-am" target="_blank" rel="noopener" href="https://music.apple.com/search?term=${encodeURIComponent(t.name+" "+t.v[0])}">Apple Music</a>`}${spLinked()?`<button class="btn" id="sp-add" type="button">Add to Spotify</button>`:`<a class="btn" target="_blank" rel="noopener" href="https://open.spotify.com/search/${encodeURIComponent(t.name+" "+t.v[0])}">Spotify</a>`}</div>`:""}${SONG.mine!=="yahya"&&laylaOnly(t)?`<div class="sg-links lib-rmrow"><button class="btn" id="lib-rm" type="button">Remove from my library</button></div>`:""}${spLinked()?`<div class="sg-links sp-rmrow" hidden><button class="btn" id="sp-rm" type="button">Remove from Spotify</button></div>`:""}</div></div>`+`${dly?dailyDone(st):`<div class="sg-btns"><button class="sg-btn primary" id="shuffle">Next song</button></div>`}`;
   else r+=`<label class="sg-guess" for="guess">Your guess · ${nLeft} left</label><div class="search sg-search"><input id="guess" autocomplete="off" placeholder="${artistMode?"Type an artist…":"Type a song title…"}"><ul class="sugg" id="sugg" hidden></ul></div>
     <div class="sg-btns"><button class="sg-btn primary" id="skip">Skip${gap?" +"+gap+"s":""}</button><button class="sg-btn" id="giveup">Give up</button></div>`;
   const sfr=freshGuess(st),heads=artistMode?["Artist","Year"]:["Song","Artist","Year"];
@@ -1432,6 +1446,7 @@ function renderSong(){
   {const b=$("#sp-add");if(b)spWire(b,t)}
   {const b=$("#am-add");if(b)amWire(b,t)}
   {const b=$("#sp-rm");if(b)spRmWire(b,t)}
+  {const b=$("#lib-rm");if(b)libRmWire(b,t)}
   // audio
   const status=$("#sg-status"),play=$("#sg-play"),prevAudio=songAudio;songAudio=null;
   findPreview(t).then(p=>{if(!$("#sg-play"))return;if(p&&applyYear(t,p)){render();return}if(p&&p.none)p=null;
@@ -1580,6 +1595,13 @@ function amWire(b,t){const set=(txt,dis)=>{b.textContent=txt;b.disabled=!!dis};c
     catch(e){set("Couldn't add. Try again");b.disabled=false;
       const msg=b.parentNode.querySelector(".sp-err")||b.insertAdjacentElement("afterend",Object.assign(document.createElement("small"),{className:"sp-err"}));
       msg.textContent=(e&&e.message)||"Apple Music didn't accept it (is the song available in your country?)"}}}
+// "Remove from my library" (Layla-only songs): two taps, then a link to save the removals for everyone
+function libRmWire(b,t){const row=b.parentNode;let armed=false;const set=(x,d)=>{b.textContent=x;b.disabled=!!d};
+  const k=songKey(t.name,t.v[0]);
+  const saved=()=>{set("Removed from your library ✓",1);row.insertAdjacentHTML("beforeend",`<span>Gone from Songdle on this device. <a class="btn" target="_blank" rel="noopener" href="${esc(libGoneUrl())}">Save ${LIBGONE.length} removal${LIBGONE.length===1?"":"s"} for everyone</a> opens GitHub: tap <b>Commit changes</b> there.</span>`)};
+  if(LIBGONE.some(x=>x.k===k)){saved();return}
+  b.onclick=()=>{if(!armed){armed=true;set("Tap again to remove it from your library");setTimeout(()=>{if(armed&&b.isConnected){armed=false;set("Remove from my library")}},4000);return}
+    const r=laylaOnly(t);if(!r)return;LIBGONE.push({k,t:r.t,a:r.a});libGoneSave();bothCache=null;saved()}}
 // "Remove from Spotify": shows after a round when the song is in Liked Songs (or the playlist chosen in Settings).
 // Two taps (the first one asks to confirm), and the Add button works again afterwards in case it was a mistake.
 function spRmWire(b,t){const T=spTarget(),row=b.parentNode,where=T.id?T.name:"Liked Songs";const set=(x,d)=>{b.textContent=x;b.disabled=!!d};let id=null,armed=false;
@@ -1605,6 +1627,7 @@ function spRmWire(b,t){const T=spTarget(),row=b.parentNode,where=T.id?T.name:"Li
 // so they don't compete with the first game's pictures
 var playlistsReq=null,playlistsReady=false;   // Songdle's count shows once the libraries are in
 function loadPlaylists(){return playlistsReq??=fetch("playlists.json",{cache:"no-cache"}).then(r=>r.ok?r.json():null).then(p=>{playlistsReady=true;if(!p)return renderCarts();for(const w of ["layla","yahya"])if(Array.isArray(p[w])&&p[w].length){SHARED[w]=p[w];dailySongs=null;if(!PLAY[w].length)PLAY[w]=p[w]}
+  if(LIBGONE.length&&SHARED.layla.length){const have=new Set(SHARED.layla.map(r=>songKey(r.t,r.a))),n=LIBGONE.length;LIBGONE=LIBGONE.filter(x=>have.has(x.k));if(LIBGONE.length!==n)libGoneSave()}
   // A round dealt before the playlists arrived may have had nothing to pick from; deal it again
   for(const k in S)if(k.startsWith("song:")&&S[k]&&!S[k].target)delete S[k];
   if(cur.id==="song")render();else renderCarts()}).catch(()=>{playlistsReady=true;renderCarts()})}
