@@ -1417,7 +1417,7 @@ function renderSong(){
     <p class="meta" id="sg-status">${st.done?"Full preview":"Clip: "+len+"s"} · loading…</p></div>`;
   // Right column: stats, filters, guess box and buttons, then the guesses
   let r=`<div class="sg-stats"><div><b class="ac">${s0.streak}</b><span>Current streak</span></div><div><b>${s0.best||0}</b><span>Best streak</span></div><div><b>${s0.w}</b><span>Wins</span></div></div>`+filt;
-  if(st.done)r+=`<div class="win ${st.won?"":"lose"}"><img id="sg-art" class="av big" alt="" hidden><div><h3>${esc(t.name)}</h3><span class="meta">${esc(t.v[0])} · ${esc(t.v[1][1])}${t.v[2]!=="—"?" · "+esc(t.v[2]):""} · ${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span>${t.who?`<span class="sg-own${t.who.length>1?" both":""}">${t.who.length>1?"In both your libraries":"Only in "+esc(t.who[0])+"'s library"}</span>`:""}${st.won?(c=>`<span class="sg-got">Got it in ${c} second${c===1?"":"s"}</span>`)(CLIPS[Math.min(st.guesses.length-1,CLIPS.length-1)]):""}${SONG.mine==="all"||SONG.mine&&PLAY[SONG.mine]&&!PLAY[SONG.mine].some(r=>songKey(r.t,r.a)===songKey(t.name,t.v[0]))?`<div class="sg-links"><span>${SONG.mine==="all"?"Add it to your library:":"Not in your library yet. Add it:"}</span>${amLinked()?`<button class="btn" id="am-add" type="button">Add to Apple Music</button><a id="lk-am" hidden href="#"></a>`:`<a class="btn" id="lk-am" target="_blank" rel="noopener" href="https://music.apple.com/search?term=${encodeURIComponent(t.name+" "+t.v[0])}">Apple Music</a>`}${spLinked()?`<button class="btn" id="sp-add" type="button">Add to Spotify</button>`:`<a class="btn" target="_blank" rel="noopener" href="https://open.spotify.com/search/${encodeURIComponent(t.name+" "+t.v[0])}">Spotify</a>`}</div>`:""}</div></div>`+`${dly?dailyDone(st):`<div class="sg-btns"><button class="sg-btn primary" id="shuffle">Next song</button></div>`}`;
+  if(st.done)r+=`<div class="win ${st.won?"":"lose"}"><img id="sg-art" class="av big" alt="" hidden><div><h3>${esc(t.name)}</h3><span class="meta">${esc(t.v[0])} · ${esc(t.v[1][1])}${t.v[2]!=="—"?" · "+esc(t.v[2]):""} · ${st.guesses.length} guess${st.guesses.length===1?"":"es"}</span>${t.who?`<span class="sg-own${t.who.length>1?" both":""}">${t.who.length>1?"In both your libraries":"Only in "+esc(t.who[0])+"'s library"}</span>`:""}${st.won?(c=>`<span class="sg-got">Got it in ${c} second${c===1?"":"s"}</span>`)(CLIPS[Math.min(st.guesses.length-1,CLIPS.length-1)]):""}${SONG.mine==="all"||SONG.mine&&PLAY[SONG.mine]&&!PLAY[SONG.mine].some(r=>songKey(r.t,r.a)===songKey(t.name,t.v[0]))?`<div class="sg-links"><span>${SONG.mine==="all"?"Add it to your library:":"Not in your library yet. Add it:"}</span>${amLinked()?`<button class="btn" id="am-add" type="button">Add to Apple Music</button><a id="lk-am" hidden href="#"></a>`:`<a class="btn" id="lk-am" target="_blank" rel="noopener" href="https://music.apple.com/search?term=${encodeURIComponent(t.name+" "+t.v[0])}">Apple Music</a>`}${spLinked()?`<button class="btn" id="sp-add" type="button">Add to Spotify</button>`:`<a class="btn" target="_blank" rel="noopener" href="https://open.spotify.com/search/${encodeURIComponent(t.name+" "+t.v[0])}">Spotify</a>`}</div>`:""}${spLinked()?`<div class="sg-links sp-rmrow" hidden><button class="btn" id="sp-rm" type="button">Remove from Spotify</button></div>`:""}</div></div>`+`${dly?dailyDone(st):`<div class="sg-btns"><button class="sg-btn primary" id="shuffle">Next song</button></div>`}`;
   else r+=`<label class="sg-guess" for="guess">Your guess · ${nLeft} left</label><div class="search sg-search"><input id="guess" autocomplete="off" placeholder="${artistMode?"Type an artist…":"Type a song title…"}"><ul class="sugg" id="sugg" hidden></ul></div>
     <div class="sg-btns"><button class="sg-btn primary" id="skip">Skip${gap?" +"+gap+"s":""}</button><button class="sg-btn" id="giveup">Give up</button></div>`;
   const sfr=freshGuess(st),heads=artistMode?["Artist","Year"]:["Song","Artist","Year"];
@@ -1431,6 +1431,7 @@ function renderSong(){
   $("#stage").innerHTML=h;wireSongFilters();
   {const b=$("#sp-add");if(b)spWire(b,t)}
   {const b=$("#am-add");if(b)amWire(b,t)}
+  {const b=$("#sp-rm");if(b)spRmWire(b,t)}
   // audio
   const status=$("#sg-status"),play=$("#sg-play"),prevAudio=songAudio;songAudio=null;
   findPreview(t).then(p=>{if(!$("#sg-play"))return;if(p&&applyYear(t,p)){render();return}if(p&&p.none)p=null;
@@ -1579,6 +1580,21 @@ function amWire(b,t){const set=(txt,dis)=>{b.textContent=txt;b.disabled=!!dis};c
     catch(e){set("Couldn't add. Try again");b.disabled=false;
       const msg=b.parentNode.querySelector(".sp-err")||b.insertAdjacentElement("afterend",Object.assign(document.createElement("small"),{className:"sp-err"}));
       msg.textContent=(e&&e.message)||"Apple Music didn't accept it (is the song available in your country?)"}}}
+// "Remove from Spotify": shows after a round when the song is in Liked Songs (or the playlist chosen in Settings).
+// Two taps (the first one asks to confirm), and the Add button works again afterwards in case it was a mistake.
+function spRmWire(b,t){const T=spTarget(),row=b.parentNode,where=T.id?T.name:"Liked Songs";const set=(x,d)=>{b.textContent=x;b.disabled=!!d};let id=null,armed=false;
+  spFind(t).then(async x=>{if(!x)return;id=x.id;let has=false;
+    if(T.id){const h=await spInPlaylist(T.id).catch(()=>null);has=!!(h&&h.has(id))}
+    else{const c=await spApi("/me/tracks/contains?ids="+id).catch(()=>null);has=!!(c&&c[0])}
+    if(has&&b.isConnected){row.hidden=false;set("Remove from "+where)}}).catch(()=>{});
+  b.onclick=async()=>{if(!id)return;
+    if(!armed){armed=true;set("Tap again to remove from "+where);setTimeout(()=>{if(armed&&b.isConnected){armed=false;set("Remove from "+where)}},4000);return}
+    armed=false;set("Removing…",1);const uri="spotify:track:"+id,retry=e=>e.status===404||e.status===403||e.status===400;
+    try{if(T.id){await spApi(`/playlists/${T.id}/items`,{method:"DELETE",body:JSON.stringify({items:[{uri}]})}).catch(e=>retry(e)?spApi(`/playlists/${T.id}/tracks`,{method:"DELETE",body:JSON.stringify({tracks:[{uri}]})}):Promise.reject(e));if(spHave[T.id])spHave[T.id].delete(id)}
+      else await spApi("/me/library?uris="+encodeURIComponent(uri),{method:"DELETE"}).catch(e=>retry(e)?spApi("/me/tracks?ids="+id,{method:"DELETE"}):Promise.reject(e));
+      set("Removed from "+where+" ✓",1);const add=$("#sp-add");if(add){add.disabled=false;add.textContent=T.id?"Add to "+T.name:"Add to Spotify"}}
+    catch(e){set("Couldn't remove. Try again");b.disabled=false;
+      const m=row.querySelector(".sp-err")||b.insertAdjacentElement("afterend",Object.assign(document.createElement("small"),{className:"sp-err"}));m.textContent=e.message}}}
 // Back from Spotify's sign-in page: swap the code for tokens, then tidy the address bar
 (async()=>{const q=new URLSearchParams(location.search);if(!SPOTIFY_ID||!(q.get("code")||q.get("error")))return;
   history.replaceState(null,"",SP_REDIRECT+location.hash);if(q.get("error"))return;
