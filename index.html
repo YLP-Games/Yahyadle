@@ -1027,7 +1027,14 @@ function makeDaily(day){
     if(L>1&&pool[use[at]]===makeDaily("2026-10-07").target)at=(at-1+L)%L;return mk(pool[use[at]])}
   // From 9 Oct: every day keeps its own slot in the shuffled order (so nothing shifts), and each slot whose pick is left
   // out (manga-only, shows switched off…) is filled by the allowed one whose other turns are furthest away in the cycle.
-  return mk(pool[dailySchedule(pool,order,out)[slot]])}
+  const sched=dailySchedule(pool,order,out),at=d=>pool[sched[((d%n)+n)%n]],d9=dayNum("2026-10-09");let t=at(dn);
+  // Safety net (from 10 Oct; 9 Oct is already played): never the same answer as any of the 7 days before or the 7 planned
+  // after. Settings changes, the old rules up to 8 Oct or a newly missing plane photo can't make an answer come straight back.
+  if(dn>d9){const near=new Set(),dd=new Date(Date.UTC(1970,0,1+dn));
+    for(let k=1;k<=7;k++){const pd=new Date(dd);pd.setUTCDate(pd.getUTCDate()-k);const ps=pd.toISOString().slice(0,10);
+      near.add(dn-k>=d9?at(dn-k):makeDaily(ps).target);near.add(at(dn+k))}
+    if(near.has(t))for(let j=0;j<n;j++){const c=pool[sched[(slot+Math.floor(n/2)+j)%n]];if(!out(c)&&!near.has(c)){t=c;break}}}
+  return mk(t)}
 const schedCache=new Map();
 function dailySchedule(pool,order,out){
   const n=order.length,lo=[],ok=[];for(let p=0;p<n;p++)(out(pool[order[p]])?lo:ok).push(p);
