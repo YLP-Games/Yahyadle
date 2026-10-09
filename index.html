@@ -1161,7 +1161,7 @@ function settingsBody(id){
     <div class="sgrp"><h4>Libraries</h4>${L.map(([k,l,sub])=>tg("song:"+k,l,!!on[k],sub,on[k]&&n===1)).join("")}</div>
     ${LIBGONE.length?`<div class="sgrp"><h4>Removed from Layla's library</h4><p class="snote" style="margin:0 0 8px">Hidden on this device. <a href="${esc(libGoneUrl())}" target="_blank" rel="noopener">Save ${LIBGONE.length} removal${LIBGONE.length===1?"":"s"} for everyone</a> (opens GitHub: tap Commit changes). They drop off this list once the site has updated.</p>${LIBGONE.map(x=>tg("lib-undo:"+x.k,x.t+" — "+x.a,true,"Switch off to put it back")).join("")}</div>`:""}
     <div class="sgrp"><h4>Apple Music</h4>${AM_TOKEN?(amLinked()?tg("am-off:x","Apple Music connected",true,"Switch off to disconnect this device."):tg("am-on:x","Connect Apple Music",false,"Lets the Add to Apple Music button save songs straight to your library on this device (needs an Apple Music subscription)"))+`<p class="snote" id="am-msg" style="margin:6px 0 0"></p>`:`<p class="snote" style="margin:0">One-tap adding to Apple Music isn't set up for this site yet.</p>`}</div>
-    <div class="sgrp"><h4>Spotify</h4>${SPOTIFY_ID?(spLinked()?tg("sp-off:x","Spotify connected",true,"Switch off to disconnect this device.")+`<label class="sp-to"><b>Save songs to</b><select id="sp-target"><option value="">${esc(spTarget().name)}</option></select></label>`:tg("sp-on:x","Connect Spotify",false,"Lets the Add to Spotify button save songs to your Liked Songs on this device")):`<p class="snote" style="margin:0">Spotify isn't set up for this site yet.</p>`}</div>
+    <div class="sgrp"><h4>Spotify</h4>${SPOTIFY_ID?(spLinked()?tg("sp-off:x","Spotify connected",true,"Switch off to disconnect this device.")+`<label class="sp-to"><b>Save songs to</b><select id="sp-target"><option value="">${esc(spTarget().name)}</option></select></label><label class="sp-to"><b>Remove songs from</b><select id="sp-rmtarget"><option value="">${esc((spRmStored()||{name:"Everything"}).name)}</option></select></label>`:tg("sp-on:x","Connect Spotify",false,"Lets the Add to Spotify button save songs to your Liked Songs on this device")):`<p class="snote" style="margin:0">Spotify isn't set up for this site yet.</p>`}</div>
     <div class="sgrp"><h4>Add to my library</h4><p class="snote" style="margin:0 0 8px">After a round, show Apple Music and Spotify buttons for songs that aren't in your library yet. Saved on this device only.</p><div class="sradio">${[["","Off","No buttons"],["all","On","Buttons after every song"],["layla","I'm Layla","Buttons for songs not in Layla's library"],["yahya","I'm Yahya","Buttons for songs not in Yahya's library"]].map(([v,l,sub])=>`<button class="sopt srad${(SONG.mine||"")===v?" on":""}" data-k="song-mine:${v}"><span class="dot"></span><b>${l}<small>${sub}</small></b></button>`).join("")}</div></div>
     <div class="sgrp"><h4>Skip</h4>${tg("song-flow:x","Skip carries on",SONG.flow!==false,"The music keeps going from where it got to into the longer clip, instead of starting again")}</div>
     <div class="sgrp"><h4>Import</h4>${songImport()}</div>`}
@@ -1199,6 +1199,7 @@ function renderSettings(){const el=$("#settings");if(!el)return;const c=(GAMES.f
     renderSettings();render()});
   if(setTab==="song"){wireSongImport();if(AM_TOKEN)amLoad().catch(()=>{})}
   {const sel=$("#sp-target");if(sel)spFillTargets(sel)}
+  {const sel=$("#sp-rmtarget");if(sel)spFillRmTargets(sel)}
   const close=()=>{el.hidden=true;document.body.classList.remove("noscroll")};
   $("#setclose").onclick=close;$("#setdone").onclick=close;el.onclick=e=>{if(e.target===el)close()}}
 function openSettings(){let el=$("#settings");if(!el){el=document.createElement("div");el.id="settings";el.className="scrim";document.body.appendChild(el);
@@ -1559,6 +1560,15 @@ async function spFillTargets(sel){try{
   const curT=spTarget().id;sel.innerHTML=`<option value="">Liked Songs</option>`+lists.map(p=>`<option value="${esc(p.id)}"${p.id===curT?" selected":""}>${esc(p.name)}</option>`).join("");
   sel.onchange=()=>{const o=sel.options[sel.selectedIndex];try{localStorage.setItem("spotify_target",JSON.stringify({id:sel.value,name:sel.value?o.textContent:"Liked Songs"}))}catch(e){}if(cur.id==="song")render()}
 }catch(e){sel.innerHTML=`<option>Couldn't load your playlists</option>`}}
+// Where "Remove from Spotify" removes from: chosen under Settings > Songdle > Spotify, otherwise the playlist called
+// "Everything" (Liked Songs if there's no such playlist). Separate from where Add to Spotify saves.
+const spRmStored=()=>{try{return JSON.parse(localStorage.getItem("spotify_rmtarget")||"null")}catch(e){return null}};
+async function spRmTarget(){const s=spRmStored();if(s)return s;await spFillTargets(document.createElement("select")).catch(()=>{});
+  const L=spLists?await spLists.catch(()=>[]):[];const e=L.find(p=>String(p.name).trim().toLowerCase()==="everything");return e?{id:e.id,name:e.name}:{id:"",name:"Liked Songs"}}
+async function spFillRmTargets(sel){try{await spFillTargets(document.createElement("select"));const lists=await spLists,T=await spRmTarget();
+  sel.innerHTML=`<option value="">Liked Songs</option>`+lists.map(p=>`<option value="${esc(p.id)}"${p.id===T.id?" selected":""}>${esc(p.name)}</option>`).join("");
+  sel.onchange=()=>{const o=sel.options[sel.selectedIndex];try{localStorage.setItem("spotify_rmtarget",JSON.stringify({id:sel.value,name:sel.value?o.textContent:"Liked Songs"}))}catch(e){}if(cur.id==="song")render()}
+}catch(e){sel.innerHTML=`<option>Couldn't load your playlists</option>`}}
 // Songs already in the chosen playlist (read once per visit, so the button can say "Already in …")
 async function spInPlaylist(pid){if(spHave[pid])return spHave[pid];const ids=new Set();let url=`/playlists/${pid}/items?limit=100`;let n=0;
   const first=await spApi(url).catch(e=>e.status===404||e.status===403?(url=`/playlists/${pid}/tracks?limit=100`,null):Promise.reject(e));
@@ -1606,8 +1616,8 @@ function libRmWire(b,t){const row=b.parentNode;let armed=false;const set=(x,d)=>
     const r=laylaOnly(t);if(!r)return;LIBGONE.push({k,t:r.t,a:r.a});libGoneSave();bothCache=null;saved()}}
 // "Remove from Spotify": shows after a round when the song is in Liked Songs (or the playlist chosen in Settings).
 // Two taps (the first one asks to confirm), and the Add button works again afterwards in case it was a mistake.
-function spRmWire(b,t){const T=spTarget(),row=b.parentNode,where=T.id?T.name:"Liked Songs";const set=(x,d)=>{b.textContent=x;b.disabled=!!d};let id=null,armed=false;
-  spFind(t).then(async x=>{if(!x)return;id=x.id;let has=false;
+function spRmWire(b,t){let T={id:"",name:"Liked Songs"},where="Liked Songs";const row=b.parentNode;const set=(x,d)=>{b.textContent=x;b.disabled=!!d};let id=null,armed=false;
+  spRmTarget().then(r=>{T=r;where=r.id?r.name:"Liked Songs";return spFind(t)}).then(async x=>{if(!x)return;id=x.id;let has=false;
     if(T.id){const h=await spInPlaylist(T.id).catch(()=>null);has=!!(h&&h.has(id))}
     else{const c=await spApi("/me/tracks/contains?ids="+id).catch(()=>null);has=!!(c&&c[0])}
     if(has&&b.isConnected){row.hidden=false;set("Remove from "+where)}}).catch(()=>{});
@@ -1616,7 +1626,7 @@ function spRmWire(b,t){const T=spTarget(),row=b.parentNode,where=T.id?T.name:"Li
     armed=false;set("Removing…",1);const uri="spotify:track:"+id,retry=e=>e.status===404||e.status===403||e.status===400;
     try{if(T.id){await spApi(`/playlists/${T.id}/items`,{method:"DELETE",body:JSON.stringify({items:[{uri}]})}).catch(e=>retry(e)?spApi(`/playlists/${T.id}/tracks`,{method:"DELETE",body:JSON.stringify({tracks:[{uri}]})}):Promise.reject(e));if(spHave[T.id])spHave[T.id].delete(id)}
       else await spApi("/me/library?uris="+encodeURIComponent(uri),{method:"DELETE"}).catch(e=>retry(e)?spApi("/me/tracks?ids="+id,{method:"DELETE"}):Promise.reject(e));
-      set("Removed from "+where+" ✓",1);const add=$("#sp-add");if(add){add.disabled=false;add.textContent=T.id?"Add to "+T.name:"Add to Spotify"}}
+      set("Removed from "+where+" ✓",1);const add=$("#sp-add"),A=spTarget();if(add&&A.id===T.id){add.disabled=false;add.textContent=A.id?"Add to "+A.name:"Add to Spotify"}}
     catch(e){set("Couldn't remove. Try again");b.disabled=false;
       const m=row.querySelector(".sp-err")||b.insertAdjacentElement("afterend",Object.assign(document.createElement("small"),{className:"sp-err"}));m.textContent=e.message}}}
 // Back from Spotify's sign-in page: swap the code for tokens, then tidy the address bar
