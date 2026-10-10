@@ -1015,6 +1015,14 @@ let DLY={};try{DLY=JSON.parse(localStorage.getItem("yahyadle-daily")||"{}")}catc
 // Every daily played, by game:mode and date (the last 30 days), so a missed day stays playable after midnight
 let DLYH={};try{DLYH=JSON.parse(localStorage.getItem("yahyadle-dailyh")||"{}")}catch(e){}
 for(const [k,o] of Object.entries(DLY))if(o&&o.date){(DLYH[k]=DLYH[k]||{});if(!DLYH[k][o.date])DLYH[k][o.date]=o}
+// 10 and 11 Oct 2026 were re-dealt with new answers: once, forget any progress on those two days. The entry is kept
+// as an empty stub (not deleted) so the day still counts as one this game was played from and stays in the backlog.
+const REDEAL=new Set(["2026-10-10","2026-10-11"]);
+try{if(!localStorage.getItem("yahyadle-redeal1")){
+  for(const H of Object.values(DLYH))for(const d of REDEAL)if(H&&H[d])H[d]={};
+  for(const k of Object.keys(DLY))if(DLY[k]&&REDEAL.has(DLY[k].date))delete DLY[k];
+  localStorage.setItem("yahyadle-daily",JSON.stringify(DLY));localStorage.setItem("yahyadle-dailyh",JSON.stringify(DLYH));
+  localStorage.setItem("yahyadle-redeal1","1")}}catch(e){}
 const dlyDone=(key,d)=>{const o=(DLYH[key]||{})[d];return!!(o&&o.done)};
 // Days that can be played: today, plus up to 7 days back from the first daily you played in this game and mode
 function dailyDays(key){const today=dayStr(),first=Object.keys(DLYH[key]||{}).sort()[0],out=[];
@@ -1033,19 +1041,34 @@ const NOPHOTO=new Set((()=>{try{return JSON.parse(localStorage.getItem("plnophot
 // don't reshuffle the dailies (stepping through a shuffled list did). 8 and 9 Oct were already played and stay.
 const SONG_PINNED={"2026-10-08":"Night Changes|One Direction","2026-10-09":"100M's|Dave"};
 const songPickMemo=new WeakMap();
-function songDailyPick(day){const pool=songDailyPool();let memo=songPickMemo.get(pool);if(!memo)songPickMemo.set(pool,memo=new Map());
-  if(memo.has(day))return memo.get(day);
+// orig = the pick as first dealt (before 10/11 Oct were re-dealt); the re-dealt days and the 30 days after them keep
+// both the old and the new answer out, so neither comes straight back.
+function songDailyPick(day,orig){const pool=songDailyPool();let memo=songPickMemo.get(pool);if(!memo)songPickMemo.set(pool,memo=new Map());
+  const mk=(orig?"o:":"")+day;if(memo.has(mk))return memo.get(mk);
   let t=SONG_PINNED[day]?pool.find(x=>dailyKey(x)===SONG_PINNED[day])||null:null;
-  if(!t){const recent=new Set(),dd=new Date(day+"T00:00:00Z");
-    for(let k=1;k<=30;k++){const pd=new Date(dd);pd.setUTCDate(pd.getUTCDate()-k);const ps=pd.toISOString().slice(0,10);if(ps<"2026-10-08")break;const x=songDailyPick(ps);if(x)recent.add(dailyKey(x))}
+  if(!t){const recent=new Set(),dd=new Date(day+"T00:00:00Z"),add=x=>{if(x)recent.add(dailyKey(x))};
+    for(let k=1;k<=30;k++){const pd=new Date(dd);pd.setUTCDate(pd.getUTCDate()-k);const ps=pd.toISOString().slice(0,10);if(ps<"2026-10-08")break;add(songDailyPick(ps,orig));if(!orig&&REDEAL.has(ps))add(songDailyPick(ps,true))}
+    const re=!orig&&REDEAL.has(day);if(re)for(const r of REDEAL)add(songDailyPick(r,true));
     // score = a mix of the song's own hash and the day's: quick enough to run for years of days
     let kh=songKeyHash.get(pool);if(!kh)songKeyHash.set(pool,kh=pool.map(x=>hash(dailyKey(x))));
-    const dh=hash(day);let bs=Infinity;for(let i=0;i<pool.length;i++){let h=kh[i]^dh;h^=h>>>16;h=Math.imul(h,0x85ebca6b);h^=h>>>13;h=Math.imul(h,0xc2b2ae35);h=(h^h>>>16)>>>0;
+    const dh=hash(re?day+"|redeal":day);let bs=Infinity;for(let i=0;i<pool.length;i++){let h=kh[i]^dh;h^=h>>>16;h=Math.imul(h,0x85ebca6b);h^=h>>>13;h=Math.imul(h,0xc2b2ae35);h=(h^h>>>16)>>>0;
       if(h<bs&&!recent.has(dailyKey(pool[i]))){bs=h;t=pool[i]}}}
-  memo.set(day,t);return t}
+  memo.set(mk,t);return t}
 const songKeyHash=new WeakMap();
 function makeDaily(day){
   if(cur.id==="song"&&day>="2026-10-08")return{date:day,target:songDailyPick(day),guesses:[],done:false,won:false,rev:{}};
+  const b=baseDaily(day);if(!REDEAL.has(day)||!b.target)return b;
+  // Re-dealt day: never either day's original answer, and the allowed answer that's furthest (within two months either
+  // side) from every other day's answer. 11 Oct also steers clear of 10 Oct's new one. Other days don't change.
+  const pool=dailyPool(),out=mode==="Classic"?x=>itemOut(x)||(cur.id==="plane"&&!x.img&&NOPHOTO.has(x.reg)):r=>clueOut(r);
+  const ban=new Set([...REDEAL].map(r=>dailyKey(baseDaily(r).target))),dist=new Map(),dd=new Date(day+"T00:00:00Z");
+  const seen=(x,k)=>{if(!x)return;const q=dailyKey(x);if(!dist.has(q)||dist.get(q)>k)dist.set(q,k)};
+  for(let k=1;k<=60;k++)for(const s of[-1,1]){const pd=new Date(dd);pd.setUTCDate(pd.getUTCDate()+s*k);const ps=pd.toISOString().slice(0,10);
+    if(REDEAL.has(ps)){if(ps<day)seen(makeDaily(ps).target,k)}else seen(baseDaily(ps).target,k)}
+  let t=null,bd=-1,bh=0;for(const c of pool){const q=dailyKey(c);if(out(c)||ban.has(q))continue;const d=dist.has(q)?dist.get(q):999,h=hash(day+"|"+q);
+    if(d>bd||(d===bd&&h<bh)){t=c;bd=d;bh=h}}
+  return t?{...b,target:t}:b}
+function baseDaily(day){
   // Walk a fixed shuffled order one step per day, so answers don't repeat until the whole list has come up
   const pool=[...dailyPool()].sort((a,b)=>dailyKey(a)<dailyKey(b)?-1:dailyKey(a)>dailyKey(b)?1:0);
   const order=shuffledIdx(pool.length,hash(cur.id+"|"+mode)),n=pool.length;
@@ -1077,6 +1100,7 @@ function dailySchedule(pool,order,out){
     s[p]=best;uses.get(best).push(p)}
   schedCache.set(key,s);return s}
 function restoreDaily(o){
+  if(!o||o.t==null)return null;
   let target,guesses=o.g||[];
   if(cur.id==="song"){const all=new Map([...songSource(),...songDailyPool()].map(x=>[dailyKey(x),x]));target=all.get(o.t);
     guesses=guesses.map(k=>k==="~skip"?{skip:1}:all.get(k)).filter(Boolean)}
