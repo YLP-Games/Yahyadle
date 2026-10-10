@@ -1026,7 +1026,10 @@ try{if(!localStorage.getItem("yahyadle-redeal1")){
 const dlyDone=(key,d)=>{const o=(DLYH[key]||{})[d];return!!(o&&o.done)};
 // Days that can be played: today, plus up to 7 days back from the first daily you played in this game and mode
 function dailyDays(key){const today=dayStr(),first=Object.keys(DLYH[key]||{}).sort()[0],out=[];
-  for(let i=7;i>=1;i--){const d=new Date();d.setDate(d.getDate()-i);const ds=dayStr(d);if(first&&ds>=first)out.push(ds)}
+  // 10/11 Oct were re-dealt for everyone, so they're offered to anyone who's played this game before, even if the
+  // version from before the update had already saved over their history with a Sunday round
+  const gid=key.split(":")[0],played=!!store[gid]||Object.entries(DLYH).some(([k,H])=>k.startsWith(gid+":")&&Object.keys(H||{}).some(d=>d<today));
+  for(let i=7;i>=1;i--){const d=new Date();d.setDate(d.getDate()-i);const ds=dayStr(d);if((first&&ds>=first)||(played&&REDEAL.has(ds)))out.push(ds)}
   out.push(today);return out}
 function dailyFor(key,day){const o=(DLYH[key]||{})[day];return(o&&restoreDaily({...o,date:day}))||makeDaily(day)}
 // A round nobody has guessed in yet can be dealt again (settings changed, a plane photo went missing…)
