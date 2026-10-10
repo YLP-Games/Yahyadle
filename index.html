@@ -387,6 +387,9 @@ table.g td.name .nm{text-align:center}
 .dtoggle button{background:transparent;border:0;color:var(--muted);font:700 13px var(--body);padding:6px 12px;border-radius:999px;cursor:pointer}
 .dtoggle button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent,#1a1020)}
 .dbar{display:flex;justify-content:center;align-items:center;gap:8px;margin:-4px 0 12px;font:600 13px var(--body);color:var(--muted)}
+.dchips{display:flex;justify-content:center;flex-wrap:wrap;gap:6px;margin:-4px 0 12px}
+.dchips button{background:var(--panel2);border:1px solid var(--line);color:var(--fg);font:700 12px var(--body);padding:5px 11px;border-radius:999px;cursor:pointer}
+.dchips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent,#1a1020)}
 .yday{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:6px;margin:-6px 0 12px;font:600 13px var(--body);color:var(--muted)}
 .spoil{border:0;border-radius:6px;padding:3px 10px;font:700 13px var(--body);cursor:pointer;background:var(--accent);color:var(--on-accent,#1a1020);max-width:100%;overflow-wrap:anywhere}
 .spoil:not(.shown){color:transparent;text-shadow:none;user-select:none}
@@ -1009,6 +1012,17 @@ const hash=str=>{let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeA
 function shuffledIdx(n,seed){let a=seed||1;const rnd=()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
   const o=[...Array(n).keys()];for(let i=n-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[o[i],o[j]]=[o[j],o[i]]}return o}
 let DLY={};try{DLY=JSON.parse(localStorage.getItem("yahyadle-daily")||"{}")}catch(e){}
+// Every daily played, by game:mode and date (the last 30 days), so a missed day stays playable after midnight
+let DLYH={};try{DLYH=JSON.parse(localStorage.getItem("yahyadle-dailyh")||"{}")}catch(e){}
+for(const [k,o] of Object.entries(DLY))if(o&&o.date){(DLYH[k]=DLYH[k]||{});if(!DLYH[k][o.date])DLYH[k][o.date]=o}
+const dlyDone=(key,d)=>{const o=(DLYH[key]||{})[d];return!!(o&&o.done)};
+// Days that can be played: today, plus up to 7 days back from the first daily you played in this game and mode
+function dailyDays(key){const today=dayStr(),first=Object.keys(DLYH[key]||{}).sort()[0],out=[];
+  for(let i=7;i>=1;i--){const d=new Date();d.setDate(d.getDate()-i);const ds=dayStr(d);if(first&&ds>=first)out.push(ds)}
+  out.push(today);return out}
+function dailyFor(key,day){const o=(DLYH[key]||{})[day];return(o&&restoreDaily({...o,date:day}))||makeDaily(day)}
+// A round nobody has guessed in yet can be dealt again (settings changed, a plane photo went missing…)
+function dlyDropUnstarted(k){delete DLY[k];const H=DLYH[k];if(H)for(const d of Object.keys(H)){const o=H[d];if(!o.done&&!(o.g||[]).length)delete H[d]}}
 const DS={}; // live daily rounds by game:mode
 const dailyPool=()=>cur.id==="song"?songDailyPool():mode!=="Classic"?cur.clues[mode].items:cur.id==="plane"?cur.items.filter(x=>x.img||x.reg):cur.items;
 const dailyKey=x=>Array.isArray(x)?x[0]+"|"+x[1]:cur.id==="song"?x.name+"|"+x.v[0]:cur.id==="plane"?x.img||x.reg:x.name;
@@ -1073,7 +1087,7 @@ function restoreDaily(o){
 function dailyState(key){
   const today=dayStr();let st=DS[key];
   if(st&&st.date!==today&&st.done&&!st.doneHere)st=null;      // an older day that's finished: on to today's
-  if(!st){const o=DLY[key];if(o&&(o.date===today||!o.done))st=restoreDaily(o);if(!st)st=makeDaily(today)}
+  if(!st){const next=dailyDays(key).find(d=>!dlyDone(key,d))||today;st=dailyFor(key,next)}
   return DS[key]=st}
 function saveDaily(){
   const key=cur.id+":"+mode,st=DS[key];if(!st)return;const t=st.target;
@@ -1082,25 +1096,32 @@ function saveDaily(){
     :mode!=="Classic"?{date:st.date,t,g:st.guesses,done:st.done,won:st.won}
     :cur.id==="plane"?{date:st.date,t:t.img||t.reg,g:st.guesses,done:st.done,won:st.won,sel:st.sel,f:st.f}
     :{date:st.date,t:t.name,g:st.guesses.map(g=>g.name),done:st.done,won:st.won,rev:st.rev};
-  try{localStorage.setItem("yahyadle-daily",JSON.stringify(DLY))}catch(e){}}
+  const H=DLYH[key]=DLYH[key]||{};H[st.date]=DLY[key];
+  const cut=(()=>{const d=new Date();d.setDate(d.getDate()-30);return dayStr(d)})();for(const d of Object.keys(H))if(d<cut)delete H[d];
+  try{localStorage.setItem("yahyadle-daily",JSON.stringify(DLY));localStorage.setItem("yahyadle-dailyh",JSON.stringify(DLYH))}catch(e){}}
 const untilMidnight=()=>{const n=new Date(),m=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1);return m-n};
 const hms=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return[Math.floor(s/3600),Math.floor(s/60)%60,s%60].map(x=>String(x).padStart(2,"0")).join(":")};
 // Yesterday's answer (worked out the same way as every daily), covered until it's clicked
 const ydShown={};
 function yesterdayLine(st){
   if(st.date!==dayStr())return"";          // still on an older puzzle: yesterday's answer could be the one they're playing
-  const d=new Date();d.setDate(d.getDate()-1);let t;try{t=makeDaily(dayStr(d)).target}catch(e){return""}if(!t)return"";
+  const d=new Date();d.setDate(d.getDate()-1);
+  {const key=cur.id+":"+mode,yd=dayStr(d);if(dailyDays(key).includes(yd)&&!dlyDone(key,yd))return""}   // yesterday's still waiting to be played
+  let t;try{t=makeDaily(dayStr(d)).target}catch(e){return""}if(!t)return"";
   const name=cur.id==="song"?t.name+" — "+t.v[0]:Array.isArray(t)?t[0]:cur.id==="plane"?t.v[0]+" "+t.v[1]:t.name;
   const noun=cur.id==="song"?"song":cur.id==="plane"?"plane":mode==="Spell"?"spell":mode==="Location"?"place":"character";
   const k=cur.id+":"+mode+":"+st.date,on=!!ydShown[k];
   return`<div class="yday">Yesterday's ${noun} was <button type="button" class="spoil${on?" shown":""}" id="yday" data-k="${esc(k)}" aria-expanded="${on}" aria-label="${on?esc(name):"Show yesterday's "+noun}">${on?esc(name):`<span aria-hidden="true">${esc(name.replace(/\S/g,"x"))}</span>`}</button></div>`}
-function dailyBar(st){const today=dayStr(),old=st.date!==today;
-  return`<div class="dbar${old&&!st.done?" old":""}"><span class="dtag">Daily</span>${esc(dayLabel(st.date))}${old&&!st.done?" · finish it to unlock today's":""}</div>`+yesterdayLine(st)}
-function dailyDone(st){
-  if(st.date!==dayStr())return`<div class="bar dnext"><button class="btn primary" id="dnext">Play today's daily</button></div>`;
+function dailyBar(st){const today=dayStr(),old=st.date!==today,key=cur.id+":"+mode;
+  const days=dailyDays(key).filter(d=>d===st.date||!dlyDone(key,d));
+  const chips=days.length>1?`<div class="dchips" role="group" aria-label="Dailies to play">${days.map(d=>`<button type="button" data-dday="${d}" aria-pressed="${d===st.date}">${d===today?"Today":esc(dayLabel(d))}</button>`).join("")}</div>`:"";
+  return`<div class="dbar${old&&!st.done?" old":""}"><span class="dtag">Daily</span>${esc(dayLabel(st.date))}${old&&!st.done?" · missed, still playable":""}</div>`+chips+yesterdayLine(st)}
+function dailyDone(st){const key=cur.id+":"+mode,next=dailyDays(key).find(d=>d!==st.date&&!dlyDone(key,d));
+  if(next)return`<div class="bar dnext"><button class="btn primary" id="dnext">Play ${next===dayStr()?"today's":esc(dayLabel(next))+"'s"} daily</button></div>`;
   return`<div class="bar dnext"><span class="dcount">Next daily in <b id="dcount">${hms(untilMidnight())}</b></span><button class="btn" id="dunl">Play unlimited</button></div>`}
 function wireDaily(){
   const n=$("#dnext");if(n)n.onclick=()=>{DS[cur.id+":"+mode]=null;render()};
+  document.querySelectorAll("[data-dday]").forEach(b=>b.onclick=()=>{const key=cur.id+":"+mode;DS[key]=dailyFor(key,b.dataset.dday);render()});
   const u=$("#dunl");if(u)u.onclick=()=>{daily=false;store.daily=false;save();render()};
   const y=$("#yday");if(y)y.onclick=()=>{ydShown[y.dataset.k]=!ydShown[y.dataset.k];render()}}
 setInterval(()=>{const c=$("#dcount");if(!c)return;const ms=untilMidnight();c.textContent=hms(ms);if(ms<1000)setTimeout(render,1200)},1000);
@@ -1168,7 +1189,7 @@ function settingsBody(id){
   return""}
 // After a setting changes: rounds nobody has guessed in yet are re-dealt (an unstarted daily re-picks from what's switched on)
 function resetRounds(g){for(const k of Object.keys(S))if(k.startsWith(g+":")){const st=S[k];if(st&&!st.guesses.length)delete S[k]}
-  for(const k of Object.keys(DS))if(k.startsWith(g+":")){const d=DS[k];if(d&&!d.done&&!d.guesses.length){delete DS[k];delete DLY[k]}}}
+  for(const k of Object.keys(DS))if(k.startsWith(g+":")){const d=DS[k];if(d&&!d.done&&!d.guesses.length){delete DS[k];dlyDropUnstarted(k)}}}
 function renderSettings(){const el=$("#settings");if(!el)return;const c=(GAMES.find(g=>g.id===setTab)||{}).c||"var(--accent)";
   el.innerHTML=`<div class="sett" role="dialog" aria-modal="true" aria-label="Settings" style="--c:${c}"><header><h2>⚙ Settings</h2><button class="sx" id="setclose" aria-label="Close">✕</button></header>
   <nav class="stabs">${SETTABS.map(([id,n])=>{const g=GAMES.find(x=>x.id===id);return`<button class="stab${id===setTab?" on":""}" data-tab="${id}"><i style="background:${g?g.c:"#888"}"></i>${n}</button>`}).join("")}</nav>
@@ -1686,7 +1707,7 @@ function renderPlane(){
   (t.img?Promise.resolve({src:t.img,by:t.credit,link:t.clink,ps:1}):loadPhoto(t.reg)).then(p=>{const f=$("#pframe"),c=$("#pcredit");if(!f)return;
     if(p){const prev=st.pz||{z:PZ[0],fx:st.f.x,fy:st.f.y};f.style.setProperty('--z',prev.z);f.style.setProperty('--fx',prev.fx+'%');f.style.setProperty('--fy',prev.fy+'%');f.innerHTML=`<img src="${esc(p.src)}" alt="Mystery aircraft" draggable="false">`;requestAnimationFrame(()=>requestAnimationFrame(()=>{f.style.setProperty('--z',z);f.style.setProperty('--fx',fx+'%');f.style.setProperty('--fy',fy+'%');st.pz={z,fx,fy};}));c.innerHTML=!st.done&&creditLeaks(t,(p.by||"")+" "+(p.link||""))?`Photo credit appears after this round (it names the plane).`:p.ps?`Photo: ${p.link?`<a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.by||"Wikimedia Commons")}</a>`:esc(p.by)} · via Planespottle / Wikimedia Commons`:`Photo © <a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.by)}</a> via Planespotters.net`;}
     else if(p===null){const k=cur.id+":"+mode;
-      if(isDaily()&&!st.guesses.length&&!st.done&&t.reg&&DS[k]===st){NOPHOTO.add(t.reg);try{localStorage.setItem("plnophoto",JSON.stringify([...NOPHOTO]))}catch(e){}delete DS[k];delete DLY[k];render();return}
+      if(isDaily()&&!st.guesses.length&&!st.done&&t.reg&&DS[k]===st){NOPHOTO.add(t.reg);try{localStorage.setItem("plnophoto",JSON.stringify([...NOPHOTO]))}catch(e){}delete DS[k];dlyDropUnstarted(k);render();return}
       if(!st.guesses.length&&S[cur.id+":"+mode]===st){S[cur.id+":"+mode]=newRound();render();return}f.innerHTML='<p class="meta">Planespotters has no photo of this aircraft yet. Press Shuffle.</p>';}
     else f.innerHTML='<p class="meta">Photos load on the GitHub Pages site. They can\'t load in this preview.</p>';});
   const sh=$("#shuffle");if(sh)sh.onclick=()=>{lastAns[cur.id+mode]=t.v[0]+" "+t.v[1]+" ("+t.v[2]+")";S[cur.id+":"+mode]=newRound();render()};
@@ -1812,7 +1833,7 @@ fetch("quotes.json",{cache:"no-cache"}).then(r=>r.ok?r.json():null).then(q=>{if(
   const rows=o=>Object.entries(o||{}).flatMap(([n,v])=>(Array.isArray(v)?v:[v]).filter(t=>typeof t==="string"&&t.trim()).map(t=>[n,t.trim()]));
   const qs=rows(q.hp_quotes),ds=rows(q.hp_descriptions);
   // Re-deal a round with the new text, unless someone has already started guessing in it
-  const fresh=k=>{if(!(S[k]&&S[k].guesses.length))delete S[k];const o=DLY[k];if(o&&!o.done&&!(o.g||[]).length){delete DLY[k];delete DS[k]}};
+  const fresh=k=>{if(!(S[k]&&S[k].guesses.length))delete S[k];const o=DLY[k];if(o&&!o.done&&!(o.g||[]).length){dlyDropUnstarted(k);delete DS[k]}};
   if(qs.length){hp.clues.Quote.items=qs;hp.clues.Quote.k="Who said it?";fresh("hp:Quote");}
   if(ds.length){hp.clues.Description.items=ds;fresh("hp:Description");}
   if(qs.length||ds.length)hpHints();
