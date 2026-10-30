@@ -17,6 +17,7 @@ Every "dle" guessing game Layla and Yahya play, in one page. Each game has a **D
 | Harry Potterdle | Characters, spells, places, quotes, descriptions | 121 characters | Classic, Spell, Location, Quote, Description |
 | Planespottle | Aircraft from a zoomed-in photo | 454 | Make, model and airline |
 | Songdle | Songs from a short audio clip | 2,099 + 1,488 library songs, 619 chart songs | Song |
+| Flagdle | Countries from a zoomed-in flag | 197 countries (233 with territories) | Classic |
 
 ## How to play
 
@@ -30,6 +31,10 @@ Every "dle" guessing game Layla and Yahya play, in one page. Each game has a **D
   - Each guess shows the song, artist and year. The artist box is green for exactly the same artists, orange when at least one artist matches and red otherwise.
   - Genre and Era filters choose which songs come up. Genres are grouped into one shared set (Pop, Hip-Hop/Rap, R&B/Soul, Dance/Electronic, Rock/Alternative, K-Pop, J-Pop, Anime, Soundtrack, Latin, Afrobeats, Reggae, Country, World, Other), whether the song came from Apple Music, Spotify or the charts.
   - After a round you see which library the song is in, how many seconds of clip you needed, and optional Apple Music / Spotify buttons to save it.
+- **Flagdle:**
+  - The flag starts zoomed in on one spot and pans out with each guess; you get 6 guesses. In Daily you both see the same spot.
+  - Each guess shows its continent, how far it is from the answer (with an arrow pointing towards it), and its population and area (arrows for more / less). Amber means close: under 1,500 km away, or within 25% of the answer's population or area.
+  - Countries can be typed by their other names too ("USA", "Holland", "Burma", "Ivory Coast").
 - **Colour-blind colours** (under the guess grid) swaps green / amber / red for blue / orange / grey.
 
 ## Daily and Unlimited
@@ -56,6 +61,7 @@ The gear button opens Settings, with a tab per game. Everything is saved on your
   - Add to my library buttons;
   - whether Skip carries on playing from where the music got to;
   - importing your own playlist.
+- **Flagdle:** Countries only (default: the 193 UN members plus Vatican City, Palestine, Kosovo and Taiwan) or Countries + territories (Greenland, Hong Kong, Puerto Rico, Scotland and others with a flag of their own).
 
 Changing a setting re-deals rounds nobody has guessed in yet. The Daily keeps the shared answer unless it's been switched off, then moves to the next one.
 
@@ -113,6 +119,7 @@ Pushing to `main` deploys the site to GitHub Pages automatically (`.github/workf
   - 242 photos from Planespottle's list: Wikimedia Commons photos, credited to each photographer.
   - 212 more aircraft by registration, with photos from the [Planespotters.net Photo API](https://planespotters.net/photo/api).
 - **Series logos:** in `logos/`, from Wikimedia Commons, where they're listed as public domain because they're simple text logos. They're cropped and recoloured for the dark theme, and remain trademarks of their owners: [Bleach](https://commons.wikimedia.org/wiki/File:Bleach_(manga)_Logo.png), [Jujutsu Kaisen](https://commons.wikimedia.org/wiki/File:Jujutsu_Kaisen_logo.svg), [Black Clover](https://commons.wikimedia.org/wiki/File:Black_Clover_English_logo.png), [Hunter x Hunter](https://commons.wikimedia.org/wiki/File:Hunter_x_hunter.png), [Star Wars](https://commons.wikimedia.org/wiki/File:Star_wars_logo_alternate.svg), [Marvel](https://commons.wikimedia.org/wiki/File:Marvel_Studios_2016_logo.svg), [Harry Potter](https://commons.wikimedia.org/wiki/File:Harry_Potter_wordmark.svg). The "dle" beside each logo uses the closest free Google Font.
+- **Flagdle:** flag images from [flagcdn.com](https://flagcdn.com). Continents, locations and areas come from the [mledoze/countries](https://github.com/mledoze/countries) dataset; populations are rounded recent estimates (mostly UN 2024). Distances are measured between each country's centre point.
 - **Song previews and IDs:** from the iTunes Search API.
 - **Fonts:** Bungee and Bricolage Grotesque (in `fonts/`) and the other fonts from Google Fonts, all under the SIL Open Font License.
 
