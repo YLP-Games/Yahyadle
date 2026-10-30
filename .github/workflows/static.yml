@@ -33,6 +33,9 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup Pages
         uses: actions/configure-pages@v5
+      - name: Stamp the script version
+        # index.html loads app.js?v=...; a new value on every deploy means a browser never pairs a new page with a cached old app.js
+        run: sed -i "s/app\.js?v=[A-Za-z0-9]*/app.js?v=${GITHUB_SHA::8}/" index.html
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

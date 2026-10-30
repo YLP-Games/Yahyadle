@@ -5,13 +5,13 @@ data changes, and can be run by hand:  python3 tools/songs.py
 1. Imports playlist CSVs dropped into playlists/layla/ or playlists/yahya/ (Exportify, TuneMyMusic or any CSV
    with title and artist columns). New songs are added to that person's library; songs already there are skipped.
    Each CSV then moves to an imported/ subfolder, so it isn't imported again (and deleted songs stay deleted).
-2. Sorts every genre into one shared set of categories (the same rules as genreCat() in index.html).
+2. Sorts every genre into one shared set of categories (the same rules as genreCat() in app.js).
 3. Merges duplicates within each list: same title and main artist, ignoring feat. credits and remaster/edit tags.
 4. Adds iTunes track IDs (and original release years) to songs that don't have one yet, including Charts.
 5. Fills in missing genres from Apple's genre for each song.
 Songs by (or featuring) the artists in BLOCKED_ARTISTS are dropped from every list, CSV imports included.
 
-Files: playlists.json ({"layla": [...], "yahya": [...]}) and the CHARTS list inside index.html.
+Files: playlists.json ({"layla": [...], "yahya": [...]}) and the CHARTS list inside app.js.
 Options: --no-lookup (tidy only, no network), --retry-missing (look again for songs not found before).
 """
 import argparse, csv, glob, io, json, os, re, sys, unicodedata
@@ -20,10 +20,10 @@ import itunes_ids as T
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PLAYLISTS = os.path.join(ROOT, "playlists.json")
-INDEX = os.path.join(ROOT, "index.html")
+APP = os.path.join(ROOT, "app.js")
 CHARTS_RE = re.compile(r"const CHARTS=(\[\[.*?\]\]);", re.S)
 
-# ---- Genre categories (keep in step with GENRE_CATS in index.html) ----
+# ---- Genre categories (keep in step with GENRE_CATS in app.js) ----
 # First match wins, so the specific ones come before the broad ones (e.g. "pop latino" is Latin, "pop rap" is Hip-Hop/Rap).
 CATS = [
     ("K-Pop", r"k-?pop|korean"),
@@ -56,7 +56,7 @@ def genre_category(g):
             return name
     return "Other"
 
-# ---- CSV import (same rules as parseCSV / joinArtists in index.html) ----
+# ---- CSV import (same rules as parseCSV / joinArtists in app.js) ----
 def join_artists(s):
     s = str(s or "")
     parts = [p.strip() for p in re.split(r"\s*;\s*" if ";" in s else r"\s*\|\s*", s) if p.strip()]
@@ -127,8 +127,8 @@ def merge(a, b):
         else:
             a.pop("c", None)
 
-# Artists left out of Songdle altogether, including songs they're featured on (index.html filters the same names).
-# Credits are compared like artistSet() in index.html, so "P!nk" becomes "p nk"; Pink Floyd, Blackpink etc. are unaffected.
+# Artists left out of Songdle altogether, including songs they're featured on (app.js filters the same names).
+# Credits are compared like artistSet() in app.js, so "P!nk" becomes "p nk"; Pink Floyd, Blackpink etc. are unaffected.
 BLOCKED_ARTISTS = {"ed sheeran", "pink", "p nk"}
 SPLIT_CREDITS = re.compile(r"\s*(?:&|,|;|\bx\b|\bfeat\.?|\bft\.?|\bwith\b|\band\b)\s*")
 
@@ -165,7 +165,7 @@ by_year = lambda s: (s.get("y") or 0, str(s["a"]).lower(), str(s["t"]).lower())
 # ---- Files ----
 def load():
     data = json.load(open(PLAYLISTS, encoding="utf-8"))
-    html = open(INDEX, encoding="utf-8").read()
+    html = open(APP, encoding="utf-8").read()
     m = CHARTS_RE.search(html)
     # A chart row is [title, artist, year, genre, iTunes ID?, "GB"?]: no ID = not looked up yet, 0 = looked up, not found
     charts = [dict(zip(("t", "a", "y", "g", "i", "c"), r)) for r in json.loads(m.group(1))] if m else []
@@ -176,13 +176,13 @@ def save(data, charts):
     text = "{" + ",\n".join(f'"{who}":[\n{rows(songs)}\n]' for who, songs in data.items()) + "}\n"
     if open(PLAYLISTS, encoding="utf-8").read() != text:
         open(PLAYLISTS, "w", encoding="utf-8").write(text)
-    html = open(INDEX, encoding="utf-8").read()
+    html = open(APP, encoding="utf-8").read()
     if CHARTS_RE.search(html):
         arr = [[c["t"], c["a"], c.get("y") or 0, c.get("g") or ""] + ([c["i"]] if "i" in c else []) + (["GB"] if c.get("i") and c.get("c") == "GB" else [])
                for c in charts]
         new = CHARTS_RE.sub(lambda _: "const CHARTS=" + json.dumps(arr, ensure_ascii=False, separators=(",", ":")) + ";", html, count=1)
         if new != html:
-            open(INDEX, "w", encoding="utf-8").write(new)
+            open(APP, "w", encoding="utf-8").write(new)
 
 # ---- iTunes ----
 def lookup_ids(lists, retry, hints=None):

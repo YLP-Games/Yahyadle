@@ -21,7 +21,7 @@ from concurrent.futures import ThreadPoolExecutor
 ROOT = __file__.rsplit("/tools/", 1)[0]
 PLAYLISTS = ROOT + "/playlists.json"
 
-# Same matching rules as songKey / mainArtist in index.html
+# Same matching rules as songKey / mainArtist in app.js
 VARIANT = re.compile(r"\b(remix|edit|mix|version|slowed|sped|nightcore|live|acoustic|instrumental|cover|karaoke|rework|bootleg|vip|flip|mashup)\b", re.I)
 SPLIT = r"\s*(?:&|,|;|\bx\b|\bfeat\.?|\bft\.?|\bwith\b|\band\b)\s*"
 # Versions that are a different recording (an acoustic or remix never gets the original's clip, and vice versa).

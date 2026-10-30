@@ -2,7 +2,7 @@
 
 **Play it here: https://ylp-games.github.io/Yahyadle/**
 
-Every "dle" guessing game Layla and Yahya play, in one page. Each game has a **Daily** puzzle (the same one for both of you) and an **Unlimited** mode, a sortable, filterable list of every answer, and its own look and series logo.
+Every "dle" guessing game Layla and Yahya play, in one page. Each game has a **Daily** puzzle (the same one for both of you) and an **Unlimited** mode, a sortable, filterable list of every answer (except Flagdle), and its own look and series logo.
 
 ## Games
 
@@ -81,7 +81,8 @@ Pushing to `main` deploys the site to GitHub Pages automatically (`.github/workf
 
 | File | What's in it |
 |---|---|
-| `index.html` | The whole site: page, styles, game logic and the character, spell, aircraft and chart data |
+| `index.html` | The page and its styles |
+| `app.js` | The game logic and the character, spell, aircraft, country and chart data. Each deploy stamps `app.js?v=` in `index.html` with the commit, so browsers never pair a new page with an old cached script |
 | `quotes.json` | Marveldle quotes, plus Harry Potterdle quotes, descriptions and locations (edit these without touching the code) |
 | `playlists.json` | Songdle libraries: `{"layla": [...], "yahya": [...]}`, each song `{"t": title, "a": artist, "y": year, "g": genre, "i": iTunes ID, "c": "GB" if UK-only}` |
 | `logos/` | Series logos used for each game's title |

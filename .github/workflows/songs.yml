@@ -5,7 +5,7 @@ name: Update Songdle songs
 on:
   push:
     branches: ["main"]
-    paths: ["playlists.json", "playlists/**", "index.html", "tools/**"]
+    paths: ["playlists.json", "playlists/**", "app.js", "tools/**"]
   workflow_dispatch:
     inputs:
       retry_missing:
@@ -44,7 +44,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          git add -A playlists.json index.html playlists
+          git add -A playlists.json app.js playlists
           if git diff --cached --quiet; then echo "Song lists already up to date"; exit 0; fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
