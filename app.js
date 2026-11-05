@@ -262,7 +262,7 @@ const GAMES=[
 {id:"hxh",name:"Hunterdle",tag:"Nen users",c:"#43a7d9",src:"animedle.org",
  attrs:[["Gender"],["Age","ord"],["Hair color"],["Nen type"],["Affiliation"],["Race"],["First appearance","ord"]],items:HXH},
 {id:"sw",name:"Starwarsdle",tag:"A galaxy far away",c:"#f2c94c",src:"fandomdle.com",
- attrs:[["Gender"],["Species"],["Affiliation"],["Origin"],["Appearances","multi"],["Weapon"]],items:SW,
+ attrs:[["Gender"],["Species","kin"],["Affiliation"],["Origin"],["Appearances","multi"],["Weapon"]],items:SW,
  hints:[[4,"Appearances","m"],[7,"Quote","q"],[8,"Actor","a"]]},
 {id:"marvel",name:"Marveldle",tag:"MCU",c:"#e62429",src:"marveldle.com",
  attrs:[["Gender"],["Type"],["Specie(s)","multi"],["Power type(s)","multi"],["Origin"],["Affiliations","multi"],["Appearance type(s)","multi"]],items:MARVEL,
@@ -945,6 +945,8 @@ function fmt(a,val){return Array.isArray(val)?val[1]:String(val).replaceAll(";",
 function cmp(a,g,t){
   if(a[1]==="num"||a[1]==="ord"){const x=+g[0],y=+t[0];if(x===y||(isNaN(x)&&isNaN(y)))return["hit",""];if(isNaN(x)||isNaN(y))return["miss",""];return["miss",y>x?"↑":"↓"]}
   if(a[1]==="multi"){const A=g.split(";"),B=t.split(";");if(A.length===B.length&&A.every(x=>B.includes(x)))return["hit",""];return[A.some(x=>B.includes(x))?"near":"miss",""]}
+  // Variants of one species are a partial match: Human, Human (Clone), Human (Cyborg) and Human/Twi'lek all share Human
+  if(a[1]==="kin"&&g!==t){const k=x=>x.replace(/\s*\(.*?\)/g,"").split("/"),B=k(t);return[k(g).some(x=>B.includes(x))?"near":"miss",""]}
   return[g===t?"hit":"miss",""];
 }
 function bump(win){const s=store[cur.id]||(store[cur.id]={w:0,streak:0,best:0});if(win){s.w++;s.streak++;s.best=Math.max(s.best||0,s.streak)}else s.streak=0;save()}

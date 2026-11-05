@@ -22,6 +22,7 @@ Every "dle" guessing game Layla and Yahya play, in one page. Each game has a **D
 ## How to play
 
 - **Classic:** guess a character and every column turns green (match), amber (partial match) or red (miss). Arrows point towards the answer for numbers and dates (higher / later, lower / earlier).
+- **Starwarsdle species:** variants of a species are a partial match, so Human and Human (Clone) show amber.
 - **Hints:** Starwarsdle and Marveldle unlock hints after a set number of guesses; click one to reveal it.
 - **Harry Potterdle:** also has Spell, Location, Quote and Description modes. Guess what's described; after 3 wrong guesses you get the first letter and length.
 - **Planespottle:** the photo starts zoomed in and pans out with each guess. Pick the make, model and airline; you get 5 guesses. Photo captions that name the plane stay hidden until the round ends.
